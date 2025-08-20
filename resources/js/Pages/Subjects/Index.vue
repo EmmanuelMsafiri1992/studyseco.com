@@ -6,22 +6,32 @@ const props = defineProps({
     auth: Object,
     subjects: Array
 });
+
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
 
-// Mock data fallback
-const subjects = ref(props.subjects.length > 0 ? props.subjects : [
-    { code: 'MATH101', name: 'Mathematics', department: 'Math', teacher: 'John Doe', credits: 4 },
-    { code: 'SCI102', name: 'Science', department: 'Science', teacher: 'Jane Smith', credits: 3 },
-    { code: 'ENG103', name: 'English', department: 'English', teacher: 'Bob Johnson', credits: 3 },
+// Centralized reactive variable for subjects, prioritizing props
+const allSubjects = ref(props.subjects && props.subjects.length > 0 ? props.subjects : [
+    { code: 'MATH101', name: 'Introduction to Calculus', department: 'Mathematics', teacher: 'John Doe', credits: 4, description: 'Learn the fundamental principles of differential and integral calculus.' },
+    { code: 'SCI102', name: 'General Physics I', department: 'Science', teacher: 'Jane Smith', credits: 3, description: 'Explore the basic laws of motion, energy, and thermodynamics.' },
+    { code: 'ENG103', name: 'Creative Writing Workshop', department: 'English', teacher: 'Bob Johnson', credits: 3, description: 'Develop your storytelling skills through a series of practical exercises.' },
+    { code: 'COMP201', name: 'Data Structures & Algorithms', department: 'Computer Science', teacher: 'Alice Green', credits: 4, description: 'Master the core building blocks of efficient software development.' },
+    { code: 'ART150', name: 'Introduction to Digital Art', department: 'Arts', teacher: 'Emily White', credits: 2, description: 'Discover the tools and techniques for creating digital illustrations.' },
 ]);
 
 const searchQuery = ref('');
 const selectedDepartment = ref('all');
 
+const departmentOptions = computed(() => {
+    const departments = new Set(allSubjects.value.map(s => s.department));
+    return ['all', ...departments];
+});
+
 const filteredSubjects = computed(() => {
-    return subjects.value.filter(subject => {
+    return allSubjects.value.filter(subject => {
         const matchesSearch = subject.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                              subject.code.toLowerCase().includes(searchQuery.value.toLowerCase());
+                             subject.code.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                             subject.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                             subject.teacher.toLowerCase().includes(searchQuery.value.toLowerCase());
         const matchesDepartment = selectedDepartment.value === 'all' || subject.department === selectedDepartment.value;
         return matchesSearch && matchesDepartment;
     });
@@ -30,9 +40,7 @@ const filteredSubjects = computed(() => {
 
 <template>
     <div class="flex h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
-        <!-- Sidebar (identical) -->
         <div class="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 flex-shrink-0 shadow-xl">
-            <!-- Same sidebar -->
             <div class="p-8 border-b border-slate-200/50">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -114,17 +122,15 @@ const filteredSubjects = computed(() => {
             </nav>
         </div>
 
-        <!-- Main Content -->
         <div class="flex-1 flex flex-col">
-            <!-- Header -->
             <header class="h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-8 flex items-center justify-between relative z-50">
                 <div>
                     <h1 class="text-2xl font-bold text-slate-800">Academics Management</h1>
-                    <p class="text-slate-500 text-sm">Manage all subjects</p>
+                    <p class="text-slate-500 text-sm">Explore and manage all subjects</p>
                 </div>
                 <div class="flex items-center space-x-4">
                     <div class="relative">
-                        <input type="text" placeholder="Search anything..." class="bg-slate-100/70 backdrop-blur-sm px-4 py-3 pl-10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white w-80 transition-all duration-200">
+                        <input v-model="searchQuery" type="text" placeholder="Search anything..." class="bg-slate-100/70 backdrop-blur-sm px-4 py-3 pl-10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white w-80 transition-all duration-200">
                         <svg class="absolute left-3 top-3.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
@@ -174,9 +180,7 @@ const filteredSubjects = computed(() => {
                 </div>
             </header>
 
-            <!-- Main Content -->
             <main class="flex-1 overflow-y-auto p-8 space-y-8 relative">
-                <!-- Search and Filter Bar -->
                 <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
                     <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
                         <div class="flex-1 max-w-md">
@@ -190,10 +194,7 @@ const filteredSubjects = computed(() => {
                         <div class="flex items-center space-x-4">
                             <select v-model="selectedDepartment" class="bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white appearance-none">
                                 <option value="all">All Departments</option>
-                                <option value="Math">Math</option>
-                                <option value="Science">Science</option>
-                                <option value="English">English</option>
-                                <!-- Add more -->
+                                <option v-for="department in departmentOptions.slice(1)" :key="department" :value="department">{{ department }}</option>
                             </select>
                             <Link href="/subjects/create" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                                 <div class="flex items-center space-x-2">
@@ -207,57 +208,68 @@ const filteredSubjects = computed(() => {
                     </div>
                 </div>
 
-                <!-- Subjects Table -->
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden">
-                    <div class="p-6 border-b border-slate-200/50">
-                        <h2 class="text-xl font-bold text-slate-800">All Subjects</h2>
-                        <p class="text-sm text-slate-500 mt-1">{{ filteredSubjects.length }} subjects found</p>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-slate-50/50">
-                                <tr>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Code</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Name</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Department</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Teacher</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Credits</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200/50">
-                                <tr v-for="subject in filteredSubjects" :key="subject.code" class="hover:bg-slate-50/50 transition-colors duration-150">
-                                    <td class="px-6 py-4 text-sm font-medium text-slate-800">{{ subject.code }}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-800">{{ subject.name }}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">{{ subject.department }}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">{{ subject.teacher }}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">{{ subject.credits }}</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center space-x-2">
-                                            <Link :href="`/subjects/${subject.code || ''}`" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View</Link>
-                                            <Link :href="`/subjects/${subject.code || ''}/edit`" class="text-amber-600 hover:text-amber-800 text-sm font-medium">Edit</Link>
-                                            <button class="text-red-600 hover:text-red-800 text-sm font-medium">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="px-6 py-4 border-t border-slate-200/50">
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm text-slate-600">Showing 1 to {{ filteredSubjects.length }} of {{ filteredSubjects.length }} results</p>
-                            <div class="flex items-center space-x-2">
-                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">Previous</button>
-                                <button class="px-3 py-2 text-sm bg-indigo-100 text-indigo-700 rounded-lg">1</button>
-                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">2</button>
-                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">3</button>
-                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">Next</button>
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-slate-800">All Subjects</h2>
+                    <p class="text-sm text-slate-500 mt-1">{{ filteredSubjects.length }} subjects found</p>
+
+                    <div v-if="filteredSubjects.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="subject in filteredSubjects" :key="subject.code" class="bg-white rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:scale-105">
+                            <div class="relative h-40 bg-gray-100">
+                                <img src="https://images.unsplash.com/photo-1542435503-956c469947f6?auto=format&fit=crop&q=80&w=300&h=160&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Subject Thumbnail" class="object-cover w-full h-full">
+                                <div class="absolute bottom-0 left-0 bg-gradient-to-t from-black/60 to-transparent w-full h-1/2"></div>
+                                <div class="absolute bottom-4 left-4 text-white">
+                                    <h3 class="text-xl font-bold">{{ subject.name }}</h3>
+                                    <p class="text-sm font-medium opacity-80">{{ subject.department }}</p>
+                                </div>
+                                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur text-slate-800 text-xs font-semibold px-3 py-1 rounded-full shadow">
+                                    {{ subject.credits }} Credits
+                                </div>
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col justify-between">
+                                <div class="mb-4">
+                                    <p class="text-slate-600 text-sm mb-2 line-clamp-2">{{ subject.description }}</p>
+                                    <div class="flex items-center space-x-2 text-sm text-slate-500">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                        <span>{{ subject.teacher }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between pt-4 border-t border-slate-200/50">
+                                    <Link :href="`/subjects/${subject.code}`" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View Subject</Link>
+                                    <div class="flex items-center space-x-2">
+                                        <Link :href="`/subjects/${subject.code}/edit`" class="p-2 text-amber-600 hover:bg-amber-100 rounded-full transition-colors duration-150">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                            </svg>
+                                        </Link>
+                                        <button class="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors duration-150">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <div v-else class="text-center p-12 bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg border border-slate-200/50">
+                        <p class="text-lg font-medium text-slate-500">No subjects found. Try adjusting your search or filters.</p>
+                    </div>
                 </div>
+
+                <div class="px-6 py-4 border-t border-slate-200/50 bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl flex items-center justify-between">
+                    <p class="text-sm text-slate-600">Showing 1 to {{ filteredSubjects.length }} of {{ filteredSubjects.length }} results</p>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">Previous</button>
+                        <button class="px-3 py-2 text-sm bg-indigo-100 text-indigo-700 rounded-lg">1</button>
+                        <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">2</button>
+                        <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">3</button>
+                        <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">Next</button>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
 </template>
-
