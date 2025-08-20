@@ -1,0 +1,263 @@
+<script setup>
+import { Head, Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+
+const props = defineProps({
+    auth: Object,
+    subjects: Array
+});
+const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
+
+// Mock data fallback
+const subjects = ref(props.subjects.length > 0 ? props.subjects : [
+    { code: 'MATH101', name: 'Mathematics', department: 'Math', teacher: 'John Doe', credits: 4 },
+    { code: 'SCI102', name: 'Science', department: 'Science', teacher: 'Jane Smith', credits: 3 },
+    { code: 'ENG103', name: 'English', department: 'English', teacher: 'Bob Johnson', credits: 3 },
+]);
+
+const searchQuery = ref('');
+const selectedDepartment = ref('all');
+
+const filteredSubjects = computed(() => {
+    return subjects.value.filter(subject => {
+        const matchesSearch = subject.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                              subject.code.toLowerCase().includes(searchQuery.value.toLowerCase());
+        const matchesDepartment = selectedDepartment.value === 'all' || subject.department === selectedDepartment.value;
+        return matchesSearch && matchesDepartment;
+    });
+});
+</script>
+
+<template>
+    <div class="flex h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
+        <!-- Sidebar (identical) -->
+        <div class="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 flex-shrink-0 shadow-xl">
+            <!-- Same sidebar -->
+            <div class="p-8 border-b border-slate-200/50">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197m.547-4.197h-.547"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-800">EduVerse</h1>
+                        <p class="text-sm text-slate-500">School Management</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="px-4 py-6 space-y-2">
+                <Link href="/dashboard" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span class="font-medium">Dashboard</span>
+                </Link>
+                <Link href="/students" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6-12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-medium">Students</span>
+                    <span v-if="user.role === 'admin'" class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">1,850</span>
+                </Link>
+                <template v-if="user.role === 'admin' || user.role === 'teacher'">
+                    <Link href="/teachers" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span class="font-medium">Faculty</span>
+                        <span v-if="user.role === 'admin'" class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">125</span>
+                    </Link>
+                </template>
+                <Link href="/subjects" class="flex items-center px-4 py-3 text-slate-700 bg-indigo-50 rounded-xl border border-indigo-100 transition-all duration-200 hover:bg-indigo-100">
+                    <svg class="h-5 w-5 mr-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
+                    </svg>
+                    <span class="font-medium">Academics</span>
+                </Link>
+                <template v-if="user.role === 'admin'">
+                    <Link href="/fees" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                        <span class="font-medium">Finance</span>
+                    </Link>
+                    <Link href="/payments" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                        <span class="font-medium">Payments</span>
+                    </Link>
+                    <Link href="/complaints" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
+                        </svg>
+                        <span class="font-medium">Support</span>
+                        <span class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">7</span>
+                    </Link>
+                    <Link href="/reports" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span class="font-medium">Analytics</span>
+                    </Link>
+                </template>
+                <div class="pt-4 mt-4 border-t border-slate-200">
+                    <Link href="/settings" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.82 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.82 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.82-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.82-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="font-medium">Settings</span>
+                    </Link>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <!-- Header -->
+            <header class="h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-8 flex items-center justify-between relative z-50">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800">Academics Management</h1>
+                    <p class="text-slate-500 text-sm">Manage all subjects</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search anything..." class="bg-slate-100/70 backdrop-blur-sm px-4 py-3 pl-10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white w-80 transition-all duration-200">
+                        <svg class="absolute left-3 top-3.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <button class="relative p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-2xl transition-all duration-200">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0a3 3 0 00-6 0"></path>
+                        </svg>
+                        <span class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                    </button>
+                    <div class="relative group">
+                        <div class="flex items-center space-x-3 pl-4 border-l border-slate-200 cursor-pointer">
+                            <img :src="user.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" :alt="user.name" class="h-12 w-12 rounded-2xl ring-2 ring-white shadow-md">
+                            <div class="text-sm">
+                                <p class="font-semibold text-slate-800">{{ user.name }}</p>
+                                <p class="text-slate-500">{{ user.role }}</p>
+                            </div>
+                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="absolute right-0 top-full mt-2 w-56 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
+                            <div class="p-2">
+                                <Link href="/profile" class="flex items-center px-4 py-3 text-slate-700 hover:bg-slate-100/70 rounded-xl transition-colors duration-150">
+                                    <svg class="w-4 h-4 mr-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    View Profile
+                                </Link>
+                                <Link href="/account-settings" class="flex items-center px-4 py-3 text-slate-700 hover:bg-slate-100/70 rounded-xl transition-colors duration-150">
+                                    <svg class="w-4 h-4 mr-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.82 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.82 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.82-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.82-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    Account Settings
+                                </Link>
+                                <hr class="my-2 border-slate-200">
+                                <Link href="/logout" method="post" as="button" class="flex items-center w-full px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors duration-150">
+                                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                    </svg>
+                                    Sign Out
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-auto p-8 space-y-8 relative">
+                <!-- Search and Filter Bar -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div class="flex-1 max-w-md">
+                            <div class="relative">
+                                <input v-model="searchQuery" type="text" placeholder="Search subjects..." class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 pl-10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200">
+                                <svg class="absolute left-3 top-3.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <select v-model="selectedDepartment" class="bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white appearance-none">
+                                <option value="all">All Departments</option>
+                                <option value="Math">Math</option>
+                                <option value="Science">Science</option>
+                                <option value="English">English</option>
+                                <!-- Add more -->
+                            </select>
+                            <Link href="/subjects/create" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    <span>Add Subject</span>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subjects Table -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden">
+                    <div class="p-6 border-b border-slate-200/50">
+                        <h2 class="text-xl font-bold text-slate-800">All Subjects</h2>
+                        <p class="text-sm text-slate-500 mt-1">{{ filteredSubjects.length }} subjects found</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-slate-50/50">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Code</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Name</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Department</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Teacher</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Credits</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200/50">
+                                <tr v-for="subject in filteredSubjects" :key="subject.code" class="hover:bg-slate-50/50 transition-colors duration-150">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-800">{{ subject.code }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-800">{{ subject.name }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">{{ subject.department }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">{{ subject.teacher }}</td>
+                                    <td class="px-6 py-4 text-sm text-slate-600">{{ subject.credits }}</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-2">
+                                            <Link :href="`/subjects/${subject.code || ''}`" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View</Link>
+                                            <Link :href="`/subjects/${subject.code || ''}/edit`" class="text-amber-600 hover:text-amber-800 text-sm font-medium">Edit</Link>
+                                            <button class="text-red-600 hover:text-red-800 text-sm font-medium">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-6 py-4 border-t border-slate-200/50">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-slate-600">Showing 1 to {{ filteredSubjects.length }} of {{ filteredSubjects.length }} results</p>
+                            <div class="flex items-center space-x-2">
+                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">Previous</button>
+                                <button class="px-3 py-2 text-sm bg-indigo-100 text-indigo-700 rounded-lg">1</button>
+                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">2</button>
+                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">3</button>
+                                <button class="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</template>
+
