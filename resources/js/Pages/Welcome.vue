@@ -340,46 +340,58 @@ onMounted(() => {
     // Auto-slide every 8 seconds
     setInterval(nextSlide, 8000);
 
-    // Hero Slider functionality
+    // Hero Image Slider functionality
     let currentHeroSlide = 0;
-    const heroSlides = document.querySelectorAll('.hero-slide');
-    const totalHeroSlides = heroSlides.length;
-    const heroSlidesContainer = document.getElementById('heroSlides');
-    const heroDots = document.querySelectorAll('.hero-dot');
+    const heroImageSlides = document.querySelectorAll('.hero-image-slide');
+    const totalHeroSlides = heroImageSlides.length;
+    const heroImageSlidesContainer = document.getElementById('heroImageSlides');
+    const heroImageDots = document.querySelectorAll('.hero-image-dot');
 
-    function updateHeroSlider() {
-        if (heroSlidesContainer) {
-            heroSlidesContainer.style.transform = `translateX(-${currentHeroSlide * 100}%)`;
+    function updateHeroImageSlider() {
+        if (heroImageSlidesContainer) {
+            heroImageSlidesContainer.style.transform = `translateX(-${currentHeroSlide * 100}%)`;
         }
         
         // Update dots
-        heroDots.forEach((dot, index) => {
-            dot.classList.remove('bg-emerald-500');
-            dot.classList.add('bg-gray-300/60');
+        heroImageDots.forEach((dot, index) => {
+            dot.classList.remove('bg-white/80');
+            dot.classList.add('bg-white/40');
             if (index === currentHeroSlide) {
-                dot.classList.add('bg-emerald-500');
-                dot.classList.remove('bg-gray-300/60');
+                dot.classList.add('bg-white/80');
+                dot.classList.remove('bg-white/40');
             }
         });
     }
 
-    function nextHeroSlide() {
+    function nextHeroImageSlide() {
         currentHeroSlide = (currentHeroSlide + 1) % totalHeroSlides;
-        updateHeroSlider();
+        updateHeroImageSlider();
+    }
+
+    function prevHeroImageSlide() {
+        currentHeroSlide = (currentHeroSlide - 1 + totalHeroSlides) % totalHeroSlides;
+        updateHeroImageSlider();
     }
 
     function goToHeroSlide(slideIndex) {
         currentHeroSlide = slideIndex;
-        updateHeroSlider();
+        updateHeroImageSlider();
     }
 
+    // Hero image slider navigation
+    const nextHeroBtn = document.getElementById('nextHeroSlide');
+    const prevHeroBtn = document.getElementById('prevHeroSlide');
+    
+    if (nextHeroBtn) nextHeroBtn.addEventListener('click', nextHeroImageSlide);
+    if (prevHeroBtn) prevHeroBtn.addEventListener('click', prevHeroImageSlide);
+
     // Hero dot navigation
-    heroDots.forEach((dot, index) => {
+    heroImageDots.forEach((dot, index) => {
         dot.addEventListener('click', () => goToHeroSlide(index));
     });
 
-    // Auto-slide hero every 4 seconds
-    setInterval(nextHeroSlide, 4000);
+    // Auto-slide hero every 5 seconds
+    setInterval(nextHeroImageSlide, 5000);
 });
 </script>
 
@@ -451,69 +463,133 @@ onMounted(() => {
                     Malawi Secondary School Online - Serving {{ studentCount }}+ Global Students
                 </div>
 
-                <!-- Hero Text Slider -->
-                <div class="hero-slider relative overflow-hidden">
-                    <div class="hero-slides flex transition-transform duration-1000 ease-in-out" id="heroSlides">
-                        <!-- Slide 1 -->
-                        <div class="hero-slide w-full flex-shrink-0">
-                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
-                                <span class="text-gray-900">
-                                    Complete Malawi
-                                </span>
-                                <br>
-                                <span class="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                                    Secondary Education
-                                </span>
-                            </h1>
+                <!-- Main Title -->
+                <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight mb-8">
+                    <span class="text-gray-900">
+                        Complete Malawi
+                    </span>
+                    <br>
+                    <span class="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                        Secondary Education
+                    </span>
+                </h1>
+
+                <!-- Hero Image Slider -->
+                <div class="hero-image-slider relative overflow-hidden rounded-3xl shadow-2xl mb-8 max-w-4xl mx-auto">
+                    <div class="hero-image-slides flex transition-transform duration-1000 ease-in-out" id="heroImageSlides">
+                        <!-- Slide 1: Students studying -->
+                        <div class="hero-image-slide w-full flex-shrink-0 relative">
+                            <div class="aspect-[16/9] bg-gradient-to-br from-emerald-100 to-blue-100 rounded-3xl overflow-hidden">
+                                <!-- Placeholder for student studying image -->
+                                <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-blue-500/20"></div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="text-center text-gray-700">
+                                        <div class="w-32 h-32 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-600">
+                                                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                                                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                                            </svg>
+                                        </div>
+                                        <h3 class="text-2xl font-bold mb-2">MANEB Certified Education</h3>
+                                        <p class="text-lg">Quality Malawian curriculum taught by qualified teachers</p>
+                                    </div>
+                                </div>
+                                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur rounded-full px-4 py-2">
+                                    <span class="text-emerald-600 font-semibold text-sm">📚 Form 1-4 Complete</span>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- Slide 2 -->
-                        <div class="hero-slide w-full flex-shrink-0">
-                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
-                                <span class="text-gray-900">
-                                    MANEB Certified
-                                </span>
-                                <br>
-                                <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                    Online Learning
-                                </span>
-                            </h1>
+                        <!-- Slide 2: Global students -->
+                        <div class="hero-image-slide w-full flex-shrink-0 relative">
+                            <div class="aspect-[16/9] bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20"></div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="text-center text-gray-700">
+                                        <div class="w-32 h-32 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                                                <path d="M2 12h20"/>
+                                            </svg>
+                                        </div>
+                                        <h3 class="text-2xl font-bold mb-2">Global Learning Community</h3>
+                                        <p class="text-lg">Join students from 25+ countries worldwide</p>
+                                    </div>
+                                </div>
+                                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur rounded-full px-4 py-2">
+                                    <span class="text-blue-600 font-semibold text-sm">🌍 25+ Countries</span>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- Slide 3 -->
-                        <div class="hero-slide w-full flex-shrink-0">
-                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
-                                <span class="text-gray-900">
-                                    Global Students
-                                </span>
-                                <br>
-                                <span class="bg-gradient-to-r from-purple-600 to-emerald-600 bg-clip-text text-transparent">
-                                    Malawian Roots
-                                </span>
-                            </h1>
+                        <!-- Slide 3: Online learning -->
+                        <div class="hero-image-slide w-full flex-shrink-0 relative">
+                            <div class="aspect-[16/9] bg-gradient-to-br from-purple-100 to-emerald-100 rounded-3xl overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-emerald-500/20"></div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="text-center text-gray-700">
+                                        <div class="w-32 h-32 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600">
+                                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                                <line x1="8" y1="21" x2="16" y2="21"/>
+                                                <line x1="12" y1="17" x2="12" y2="21"/>
+                                                <path d="M7 11l3 3 6-6"/>
+                                            </svg>
+                                        </div>
+                                        <h3 class="text-2xl font-bold mb-2">Flexible Online Learning</h3>
+                                        <p class="text-lg">Study at your own pace, anywhere in the world</p>
+                                    </div>
+                                </div>
+                                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur rounded-full px-4 py-2">
+                                    <span class="text-purple-600 font-semibold text-sm">💻 24/7 Access</span>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- Slide 4 -->
-                        <div class="hero-slide w-full flex-shrink-0">
-                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
-                                <span class="text-gray-900">
-                                    Quality Education
-                                </span>
-                                <br>
-                                <span class="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-                                    Anywhere, Anytime
-                                </span>
-                            </h1>
+                        <!-- Slide 4: Success stories -->
+                        <div class="hero-image-slide w-full flex-shrink-0 relative">
+                            <div class="aspect-[16/9] bg-gradient-to-br from-orange-100 to-red-100 rounded-3xl overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-red-500/20"></div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="text-center text-gray-700">
+                                        <div class="w-32 h-32 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-orange-600">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                            </svg>
+                                        </div>
+                                        <h3 class="text-2xl font-bold mb-2">Proven Success</h3>
+                                        <p class="text-lg">98% MSCE pass rate with excellent grades</p>
+                                    </div>
+                                </div>
+                                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur rounded-full px-4 py-2">
+                                    <span class="text-orange-600 font-semibold text-sm">🏆 98% Pass Rate</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Hero Slider Indicators -->
-                    <div class="flex justify-center mt-8 space-x-2">
-                        <button class="hero-dot w-3 h-3 bg-emerald-500 rounded-full transition-all duration-300" data-hero-slide="0"></button>
-                        <button class="hero-dot w-3 h-3 bg-gray-300/60 rounded-full transition-all duration-300 hover:bg-gray-400/60" data-hero-slide="1"></button>
-                        <button class="hero-dot w-3 h-3 bg-gray-300/60 rounded-full transition-all duration-300 hover:bg-gray-400/60" data-hero-slide="2"></button>
-                        <button class="hero-dot w-3 h-3 bg-gray-300/60 rounded-full transition-all duration-300 hover:bg-gray-400/60" data-hero-slide="3"></button>
+                    <!-- Hero Image Slider Navigation -->
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                        <div class="flex space-x-2">
+                            <button class="hero-image-dot w-3 h-3 bg-white/80 rounded-full transition-all duration-300 backdrop-blur" data-hero-slide="0"></button>
+                            <button class="hero-image-dot w-3 h-3 bg-white/40 rounded-full transition-all duration-300 hover:bg-white/60 backdrop-blur" data-hero-slide="1"></button>
+                            <button class="hero-image-dot w-3 h-3 bg-white/40 rounded-full transition-all duration-300 hover:bg-white/60 backdrop-blur" data-hero-slide="2"></button>
+                            <button class="hero-image-dot w-3 h-3 bg-white/40 rounded-full transition-all duration-300 hover:bg-white/60 backdrop-blur" data-hero-slide="3"></button>
+                        </div>
                     </div>
+
+                    <!-- Slider Navigation Arrows -->
+                    <button id="prevHeroSlide" class="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                    </button>
+                    <button id="nextHeroSlide" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <p class="hero-subtitle text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light leading-relaxed">
@@ -618,11 +694,13 @@ onMounted(() => {
 
                         <div class="flex items-center space-x-4">
                             <div class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">MKW</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
                             </div>
                             <div>
-                                <h3 class="text-xl font-semibold text-gray-900">Affordable Pricing</h3>
-                                <p class="text-gray-600">Only MKW 50,000 per subject - quality education within reach</p>
+                                <h3 class="text-xl font-semibold text-gray-900">Quality Assurance</h3>
+                                <p class="text-gray-600">Affordable quality education accessible to all students worldwide</p>
                             </div>
                         </div>
                     </div>
@@ -701,7 +779,7 @@ onMounted(() => {
                     </span>
                 </h2>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                    All subjects taught in Malawian secondary schools, from Form 1 to Form 4. Each subject is only MKW 50,000.
+                    All subjects taught in Malawian secondary schools, from Form 1 to Form 4. Quality MANEB-certified education.
                 </p>
                 <div class="inline-flex items-center px-6 py-3 bg-white rounded-full border border-emerald-200 shadow-sm">
                     <span class="text-emerald-600 font-semibold mr-2">📜</span>
@@ -927,11 +1005,11 @@ onMounted(() => {
                     Ready to Begin Your Journey?
                 </h2>
                 <p class="text-lg text-gray-600 mb-8">
-                    Join {{ studentCount }}+ students worldwide. Start with any subject for only MKW 50,000.
+                    Join {{ studentCount }}+ students worldwide. Start your educational journey today.
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
                     <button @click="showEnrollmentModal = true" class="group relative px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold text-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                        Enroll Now - MKW 50,000/Subject
+                        Enroll Now
                     </button>
                     <button @click="showChatModal = true" class="group px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full font-semibold text-lg hover:border-emerald-500 hover:text-emerald-600 transition-all duration-300">
                         Get Live Support
@@ -954,7 +1032,7 @@ onMounted(() => {
                 <span class="text-2xl font-bold">StudySeco</span>
             </div>
             <p class="text-gray-400 text-sm mb-6">
-                &copy; 2024 StudySeco. Bringing quality Malawian education to the world. Each subject only MKW 50,000.
+                &copy; 2024 StudySeco. Bringing quality Malawian education to the world.
             </p>
             <div class="flex justify-center space-x-6">
                 <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
@@ -1042,7 +1120,7 @@ onMounted(() => {
                                 <div>
                                     <div class="text-2xl mb-2">{{ subject.icon }}</div>
                                     <h4 class="font-semibold text-gray-900 text-sm">{{ subject.name }}</h4>
-                                    <p class="text-xs text-gray-600">MKW 50,000</p>
+                                    <p class="text-xs text-gray-600">MANEB Certified</p>
                                 </div>
                                 <div class="w-6 h-6 rounded-full border-2"
                                      :class="enrollmentForm.selected_subjects.includes(subject.id) 
