@@ -1,6 +1,11 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\TopicController;
+use App\Http\Controllers\LessonController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Admin\PaymentSettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -46,15 +51,27 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Teachers/Create');
     })->name('teachers.create');
 
-    Route::get('/subjects', function () {
-        return Inertia::render('Subjects/Index', [
-            'subjects' => []
-        ]);
-    })->name('subjects.index');
-
-    Route::get('/subjects/create', function () {
-        return Inertia::render('Subjects/Create');
-    })->name('subjects.create');
+    // Subject Management Routes
+    Route::resource('subjects', SubjectController::class);
+    
+    // Topic Management Routes (API)
+    Route::prefix('api')->group(function () {
+        Route::post('topics', [TopicController::class, 'store'])->name('topics.store');
+        Route::get('topics/{topic}', [TopicController::class, 'show'])->name('topics.show');
+        Route::put('topics/{topic}', [TopicController::class, 'update'])->name('topics.update');
+        Route::delete('topics/{topic}', [TopicController::class, 'destroy'])->name('topics.destroy');
+        Route::patch('topics/{topic}/reorder', [TopicController::class, 'reorder'])->name('topics.reorder');
+        
+        // Lesson Management Routes (API)
+        Route::post('lessons', [LessonController::class, 'store'])->name('lessons.store');
+        Route::put('lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
+        Route::delete('lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
+        Route::patch('lessons/{lesson}/publish', [LessonController::class, 'publish'])->name('lessons.publish');
+        Route::patch('lessons/{lesson}/unpublish', [LessonController::class, 'unpublish'])->name('lessons.unpublish');
+    });
+    
+    // Lesson Player Route
+    Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
 
     Route::get('/fees', function () {
         return Inertia::render('Fees/Index', [
@@ -66,11 +83,28 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Fees/Create');
     })->name('fees.create');
 
-    Route::get('/payments', function () {
-        return Inertia::render('Payments/Index', [
-            'payments' => []
-        ]);
-    })->name('payments.index');
+    // Payment Management Routes
+    Route::resource('payments', PaymentController::class)->except(['edit', 'update', 'destroy']);
+    Route::post('payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
+    Route::get('payments/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
+    Route::get('api/payments/check-access', [PaymentController::class, 'checkAccess'])->name('payments.check-access');
+
+    // Admin Payment Settings Routes
+    Route::prefix('admin/payment-settings')->name('admin.payment-settings.')->group(function () {
+        Route::get('/', [PaymentSettingsController::class, 'index'])->name('index');
+        
+        // Payment Methods
+        Route::post('/payment-methods', [PaymentSettingsController::class, 'storePaymentMethod'])->name('payment-methods.store');
+        Route::put('/payment-methods/{paymentMethod}', [PaymentSettingsController::class, 'updatePaymentMethod'])->name('payment-methods.update');
+        Route::delete('/payment-methods/{paymentMethod}', [PaymentSettingsController::class, 'destroyPaymentMethod'])->name('payment-methods.destroy');
+        Route::patch('/payment-methods/order', [PaymentSettingsController::class, 'updatePaymentMethodOrder'])->name('payment-methods.order');
+        
+        // Access Durations
+        Route::post('/access-durations', [PaymentSettingsController::class, 'storeAccessDuration'])->name('access-durations.store');
+        Route::put('/access-durations/{accessDuration}', [PaymentSettingsController::class, 'updateAccessDuration'])->name('access-durations.update');
+        Route::delete('/access-durations/{accessDuration}', [PaymentSettingsController::class, 'destroyAccessDuration'])->name('access-durations.destroy');
+        Route::patch('/access-durations/order', [PaymentSettingsController::class, 'updateAccessDurationOrder'])->name('access-durations.order');
+    });
 
     Route::get('/complaints', function () {
         return Inertia::render('Complaints/Index', [

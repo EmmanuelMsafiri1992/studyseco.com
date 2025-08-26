@@ -9,14 +9,8 @@ const props = defineProps({
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
 
-// Centralized reactive variable for subjects, prioritizing props
-const allSubjects = ref(props.subjects && props.subjects.length > 0 ? props.subjects : [
-    { code: 'MATH101', name: 'Introduction to Calculus', department: 'Mathematics', teacher: 'John Doe', credits: 4, description: 'Learn the fundamental principles of differential and integral calculus.' },
-    { code: 'SCI102', name: 'General Physics I', department: 'Science', teacher: 'Jane Smith', credits: 3, description: 'Explore the basic laws of motion, energy, and thermodynamics.' },
-    { code: 'ENG103', name: 'Creative Writing Workshop', department: 'English', teacher: 'Bob Johnson', credits: 3, description: 'Develop your storytelling skills through a series of practical exercises.' },
-    { code: 'COMP201', name: 'Data Structures & Algorithms', department: 'Computer Science', teacher: 'Alice Green', credits: 4, description: 'Master the core building blocks of efficient software development.' },
-    { code: 'ART150', name: 'Introduction to Digital Art', department: 'Arts', teacher: 'Emily White', credits: 2, description: 'Discover the tools and techniques for creating digital illustrations.' },
-]);
+// Use subjects from props or empty array
+const allSubjects = ref(props.subjects || []);
 
 const searchQuery = ref('');
 const selectedDepartment = ref('all');
@@ -30,8 +24,8 @@ const filteredSubjects = computed(() => {
     return allSubjects.value.filter(subject => {
         const matchesSearch = subject.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                              subject.code.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                             subject.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                             subject.teacher.toLowerCase().includes(searchQuery.value.toLowerCase());
+                             (subject.description && subject.description.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+                             (subject.teacher_name && subject.teacher_name.toLowerCase().includes(searchQuery.value.toLowerCase()));
         const matchesDepartment = selectedDepartment.value === 'all' || subject.department === selectedDepartment.value;
         return matchesSearch && matchesDepartment;
     });
@@ -55,61 +49,70 @@ const filteredSubjects = computed(() => {
                 </div>
             </div>
             <nav class="px-4 py-6 space-y-2">
+                <!-- Dashboard - Available to all roles -->
                 <Link href="/dashboard" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
                     <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
                     <span class="font-medium">Dashboard</span>
                 </Link>
-                <Link href="/students" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6-12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="font-medium">Students</span>
-                    <span v-if="user.role === 'admin'" class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">1,850</span>
-                </Link>
-                <template v-if="user.role === 'admin' || user.role === 'teacher'">
+                
+                <!-- Admin Only Items -->
+                <template v-if="user?.role === 'admin'">
+                    <Link href="/students" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6-12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="font-medium">Students</span>
+                        <span class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">1,850</span>
+                    </Link>
                     <Link href="/teachers" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
                         <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                         </svg>
                         <span class="font-medium">Faculty</span>
-                        <span v-if="user.role === 'admin'" class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">125</span>
+                        <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">125</span>
                     </Link>
-                </template>
-                <Link href="/subjects" class="flex items-center px-4 py-3 text-slate-700 bg-indigo-50 rounded-xl border border-indigo-100 transition-all duration-200 hover:bg-indigo-100">
-                    <svg class="h-5 w-5 mr-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
-                    </svg>
-                    <span class="font-medium">Academics</span>
-                </Link>
-                <template v-if="user.role === 'admin'">
                     <Link href="/fees" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
                         <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                         </svg>
                         <span class="font-medium">Finance</span>
                     </Link>
-                    <Link href="/payments" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
-                        <span class="font-medium">Payments</span>
-                    </Link>
-                    <Link href="/complaints" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
-                        </svg>
-                        <span class="font-medium">Support</span>
-                        <span class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">7</span>
-                    </Link>
-                    <Link href="/reports" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                        <span class="font-medium">Analytics</span>
-                    </Link>
                 </template>
+                
+                <!-- Academics - Available to all roles -->
+                <Link href="/subjects" class="flex items-center px-4 py-3 text-slate-700 bg-indigo-50 rounded-xl border border-indigo-100 transition-all duration-200 hover:bg-indigo-100">
+                    <svg class="h-5 w-5 mr-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
+                    </svg>
+                    <span class="font-medium">Academics</span>
+                </Link>
+                
+                <!-- Support - Available to all roles -->
+                <Link href="/complaints" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
+                    </svg>
+                    <span class="font-medium">Support</span>
+                    <span v-if="user?.role === 'admin'" class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">7</span>
+                </Link>
+                
+                <!-- Payments - Available to all roles -->
+                <Link href="/payments" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    <span class="font-medium">Payments</span>
+                </Link>
+                
+                <!-- Analytics - Available to all roles -->
+                <Link href="/reports" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <span class="font-medium">Analytics</span>
+                </Link>
                 <div class="pt-4 mt-4 border-t border-slate-200">
                     <Link href="/settings" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
                         <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,7 +199,7 @@ const filteredSubjects = computed(() => {
                                 <option value="all">All Departments</option>
                                 <option v-for="department in departmentOptions.slice(1)" :key="department" :value="department">{{ department }}</option>
                             </select>
-                            <Link href="/subjects/create" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                            <Link v-if="user?.role === 'admin'" :href="route('subjects.create')" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                                 <div class="flex items-center space-x-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -213,13 +216,13 @@ const filteredSubjects = computed(() => {
                     <p class="text-sm text-slate-500 mt-1">{{ filteredSubjects.length }} subjects found</p>
 
                     <div v-if="filteredSubjects.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div v-for="subject in filteredSubjects" :key="subject.code" class="bg-white rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:scale-105">
+                        <div v-for="subject in filteredSubjects" :key="subject.id" class="bg-white rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:scale-105">
                             <div class="relative h-40 bg-gray-100">
-                                <img src="https://images.unsplash.com/photo-1542435503-956c469947f6?auto=format&fit=crop&q=80&w=300&h=160&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Subject Thumbnail" class="object-cover w-full h-full">
+                                <img :src="subject.cover_image ? `/storage/${subject.cover_image}` : 'https://images.unsplash.com/photo-1542435503-956c469947f6?auto=format&fit=crop&q=80&w=300&h=160&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'" alt="Subject Thumbnail" class="object-cover w-full h-full">
                                 <div class="absolute bottom-0 left-0 bg-gradient-to-t from-black/60 to-transparent w-full h-1/2"></div>
                                 <div class="absolute bottom-4 left-4 text-white">
                                     <h3 class="text-xl font-bold">{{ subject.name }}</h3>
-                                    <p class="text-sm font-medium opacity-80">{{ subject.department }}</p>
+                                    <p class="text-sm font-medium opacity-80">{{ subject.department }} - {{ subject.grade_level }}</p>
                                 </div>
                                 <div class="absolute top-4 right-4 bg-white/90 backdrop-blur text-slate-800 text-xs font-semibold px-3 py-1 rounded-full shadow">
                                     {{ subject.credits }} Credits
@@ -227,27 +230,57 @@ const filteredSubjects = computed(() => {
                             </div>
                             <div class="p-6 flex-1 flex flex-col justify-between">
                                 <div class="mb-4">
-                                    <p class="text-slate-600 text-sm mb-2 line-clamp-2">{{ subject.description }}</p>
-                                    <div class="flex items-center space-x-2 text-sm text-slate-500">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                        </svg>
-                                        <span>{{ subject.teacher }}</span>
+                                    <p class="text-slate-600 text-sm mb-2 line-clamp-2">{{ subject.description || 'No description available.' }}</p>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center space-x-2 text-sm text-slate-500">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                            <span>{{ subject.teacher_name || 'No teacher assigned' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs text-slate-400">
+                                        <span>{{ subject.topic_count || 0 }} topics</span>
+                                        <span>{{ subject.lesson_count || 0 }} lessons</span>
+                                        <span v-if="subject.total_duration">{{ Math.floor(subject.total_duration / 60) }}h {{ subject.total_duration % 60 }}m</span>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between pt-4 border-t border-slate-200/50">
-                                    <Link :href="`/subjects/${subject.code}`" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View Subject</Link>
-                                    <div class="flex items-center space-x-2">
-                                        <Link :href="`/subjects/${subject.code}/edit`" class="p-2 text-amber-600 hover:bg-amber-100 rounded-full transition-colors duration-150">
+                                    <!-- Admin/Teacher: Manage Subject Button -->
+                                    <Link v-if="user?.role === 'admin' || user?.role === 'teacher'" 
+                                          :href="route('subjects.show', subject.id)" 
+                                          class="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors duration-200">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                                        </svg>
+                                        <span>Manage Subject</span>
+                                    </Link>
+                                    
+                                    <!-- Student: Start Learning Button -->
+                                    <Link v-else-if="user?.role === 'student'" 
+                                          :href="route('subjects.show', subject.id)" 
+                                          class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                        <span>Start Learning</span>
+                                    </Link>
+                                    
+                                    <!-- Fallback for other roles -->
+                                    <Link v-else 
+                                          :href="route('subjects.show', subject.id)" 
+                                          class="text-slate-600 hover:text-slate-800 text-sm font-medium">View Subject</Link>
+                                    <div class="flex items-center space-x-2" v-if="user?.role === 'admin'">
+                                        <Link :href="route('subjects.edit', subject.id)" class="p-2 text-amber-600 hover:bg-amber-100 rounded-full transition-colors duration-150">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                             </svg>
                                         </Link>
-                                        <button class="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors duration-150">
+                                        <Link :href="route('subjects.destroy', subject.id)" method="delete" as="button" class="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors duration-150" confirm="Are you sure you want to delete this subject?">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                             </svg>
-                                        </button>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
