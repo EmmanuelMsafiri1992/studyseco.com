@@ -1,0 +1,21 @@
+Training Access:
+Options
+Per term(4months)
+Per Academic Year
+Per Class(form 1,2, 3 or 4)
+Per Subject(50,000)
+
+
+Benefits
+- Student Collaborations Chat community
+
+
+
+
+
+I want a simple online application where people who wants to learn coding from zero to advanced can learn by buying time they want to spend on the platform, the platform must train students on project based not by watching videos for exams if one wants to become a frontend developer must do projects using frontend technologies and before starting each project they must be told like to be a frontend developer you need to know a,b,c and in this project we will using those technologies and first part of the project we will start with abc which uses abc technlogies and we use it because of abc. I hope my idea is very clear and also there must be able to learn end user computing for those who are completely new to computers. payment methods must be via western union, Remitly for countries that do support such methods and if those countries do support a user must not be able to choose other methods. otherwise if it does not support they can use paypal, western union or moneygram or bank but they must all be manual yet make as automated but making sure that they upload proof of payments and until they must have access except paypal which is automated.  on word remit and remitly methods are easy to withdraw in south africa because they linkedin with mukuru so when users are paying they simply choose of cash remittance they choose mukuru.
+
+there is no  1-on-1 Mentoring and the site title must be Zoswa Coding, everything else is AI powered instead of one on one support , and also reduce pricing by half and backend must use laravel framework implement implement the full backend and it must show in hrs not months and also include Backend and Full Stack and also AI Developer and also include free trial 7days
+
+
+
