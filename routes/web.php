@@ -7,6 +7,7 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\PaymentSettingsController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\SubjectDetailController;
 use App\Models\User;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,9 @@ Route::get('/', function () {
         'testimonials' => $testimonials
     ]);
 })->name('welcome');
+
+// Subject detail routes (public)
+Route::get('/subject/{id}', [SubjectDetailController::class, 'show'])->name('subject.detail');
 
 // Enrollment routes (public)
 Route::post('/enroll', [EnrollmentController::class, 'store'])->name('enrollment.store');

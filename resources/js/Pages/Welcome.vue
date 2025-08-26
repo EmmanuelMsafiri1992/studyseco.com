@@ -449,14 +449,26 @@ onMounted(() => {
                     </span>
                 </h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div v-for="subject in subjects.filter(s => s.type === 'core')" :key="subject.id" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-4">
+                    <Link 
+                        v-for="subject in subjects.filter(s => s.type === 'core')" 
+                        :key="subject.id" 
+                        :href="route('subject.detail', subject.id)"
+                        class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group cursor-pointer"
+                    >
+                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                             <span class="text-2xl">{{ subject.icon }}</span>
                         </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-2">{{ subject.name }}</h4>
+                        <h4 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">{{ subject.name }}</h4>
                         <p class="text-gray-600 text-sm mb-3">{{ subject.description }}</p>
-                        <div class="text-emerald-600 font-semibold text-lg">MKW 50,000</div>
-                    </div>
+                        <div class="flex items-center justify-between">
+                            <div class="text-emerald-600 font-semibold text-lg">MKW 50,000</div>
+                            <div class="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M7 17l9.2-9.2M17 17V7H7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </Link>
                 </div>
             </div>
 
@@ -467,14 +479,26 @@ onMounted(() => {
                     </span>
                 </h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div v-for="subject in subjects.filter(s => s.type === 'optional')" :key="subject.id" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                        <div class="w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4">
+                    <Link 
+                        v-for="subject in subjects.filter(s => s.type === 'optional')" 
+                        :key="subject.id" 
+                        :href="route('subject.detail', subject.id)"
+                        class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group cursor-pointer"
+                    >
+                        <div class="w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                             <span class="text-2xl">{{ subject.icon }}</span>
                         </div>
-                        <h4 class="text-xl font-bold text-gray-900 mb-2">{{ subject.name }}</h4>
+                        <h4 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300">{{ subject.name }}</h4>
                         <p class="text-gray-600 text-sm mb-3">{{ subject.description }}</p>
-                        <div class="text-emerald-600 font-semibold text-lg">MKW 50,000</div>
-                    </div>
+                        <div class="flex items-center justify-between">
+                            <div class="text-emerald-600 font-semibold text-lg">MKW 50,000</div>
+                            <div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M7 17l9.2-9.2M17 17V7H7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </Link>
                 </div>
             </div>
         </div>
