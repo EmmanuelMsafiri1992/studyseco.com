@@ -28,6 +28,14 @@ const props = defineProps({
     testimonials: {
         type: Array,
         default: () => []
+    },
+    accessDurations: {
+        type: Array,
+        default: () => []
+    },
+    studentStories: {
+        type: Array,
+        default: () => []
     }
 });
 
@@ -35,6 +43,12 @@ const navbar = ref(null);
 const showEnrollmentModal = ref(false);
 const showChatModal = ref(false);
 const showLibraryModal = ref(false);
+const showChatWidget = ref(false);
+const chatMessages = ref([
+    { type: 'bot', message: 'Hello! 👋 Welcome to StudySeco. How can I help you today?', timestamp: new Date() }
+]);
+const newMessage = ref('');
+const isTyping = ref(false);
 
 // Enrollment form
 const enrollmentForm = useForm({
@@ -43,16 +57,72 @@ const enrollmentForm = useForm({
     phone: '',
     address: '',
     selected_subjects: [],
+    access_duration_id: '',
     payment_method: '',
     payment_reference: '',
-    payment_proof: null
+    payment_proof: null,
+    terms_accepted: false
 });
 
-// Subject pricing
-const subjectPrice = 50000; // MKW 50,000 per subject
+// Default access durations if none provided
+const defaultAccessDurations = [
+    { id: 1, name: '6 Months Access', days: 180, price: 50000, description: 'Perfect for semester study' },
+    { id: 2, name: '1 Year Access', days: 365, price: 85000, description: 'Full academic year access' },
+    { id: 3, name: '2 Years Access', days: 730, price: 150000, description: 'Complete secondary education' }
+];
+
+const accessDurations = props.accessDurations.length ? props.accessDurations : defaultAccessDurations;
+
+// Default student stories for slider (fallback)
+const defaultSliderStories = [
+    {
+        id: 1,
+        name: 'Temwa Mwale',
+        location: 'London, UK',
+        country_flag: '🇬🇧',
+        current_status: 'University of Edinburgh - Engineering',
+        story: 'StudySeco allowed me to complete my Malawian secondary education while living in London. The teachers were incredible, and I passed my MSCE with 6 credits!',
+        msce_credits: 6,
+        avatar_color_from: 'emerald-500',
+        avatar_color_to: 'blue-500',
+        achievement_icon: '🎓'
+    },
+    {
+        id: 2,
+        name: 'Grace Kachingwe',
+        location: 'Toronto, Canada',
+        country_flag: '🇨🇦',
+        current_status: 'University of Toronto - Medicine',
+        story: 'The flexibility of studying online while maintaining the Malawian curriculum was perfect. I achieved my dream of studying medicine in Canada!',
+        msce_credits: 8,
+        avatar_color_from: 'purple-500',
+        avatar_color_to: 'pink-500',
+        achievement_icon: '🏆'
+    },
+    {
+        id: 3,
+        name: 'James Nyirenda',
+        location: 'Sydney, Australia',
+        country_flag: '🇦🇺',
+        current_status: 'UNSW Sydney - MBA Student',
+        story: 'StudySeco prepared me well for university. The quality of education was exceptional, and I\'m now pursuing my MBA while working in Sydney.',
+        msce_credits: 7,
+        avatar_color_from: 'orange-500',
+        avatar_color_to: 'red-500',
+        achievement_icon: '💼'
+    }
+];
+
+const sliderStories = props.studentStories.length ? props.studentStories : defaultSliderStories;
 
 const calculateTotal = () => {
-    return enrollmentForm.selected_subjects.length * subjectPrice;
+    const selectedDuration = accessDurations.find(d => d.id == enrollmentForm.access_duration_id);
+    if (!selectedDuration) return 0;
+    return enrollmentForm.selected_subjects.length * selectedDuration.price;
+};
+
+const getSelectedDuration = () => {
+    return accessDurations.find(d => d.id == enrollmentForm.access_duration_id);
 };
 
 const toggleSubject = (subjectId) => {
@@ -74,6 +144,54 @@ const submitEnrollment = () => {
             showEnrollmentModal.value = false;
         }
     });
+};
+
+// Chatbot functionality
+const sendMessage = async () => {
+    if (!newMessage.value.trim()) return;
+    
+    const userMessage = newMessage.value.trim();
+    chatMessages.value.push({
+        type: 'user',
+        message: userMessage,
+        timestamp: new Date()
+    });
+    
+    newMessage.value = '';
+    isTyping.value = true;
+    
+    // Simulate bot response delay
+    setTimeout(() => {
+        const botResponse = getBotResponse(userMessage);
+        chatMessages.value.push({
+            type: 'bot',
+            message: botResponse,
+            timestamp: new Date()
+        });
+        isTyping.value = false;
+    }, 1500);
+};
+
+const getBotResponse = (message) => {
+    const msg = message.toLowerCase();
+    
+    if (msg.includes('price') || msg.includes('cost') || msg.includes('fee')) {
+        return "Our subjects are competitively priced with flexible payment options. Click 'Enroll Now' to see detailed pricing and access durations! 💰";
+    } else if (msg.includes('subject') || msg.includes('course')) {
+        return "We offer all MANEB-certified subjects including Mathematics, English, Sciences, and more! Each subject is taught by qualified Malawian teachers. 📚";
+    } else if (msg.includes('enroll') || msg.includes('join') || msg.includes('register')) {
+        return "Great! You can enroll by clicking the 'Enroll Now' button. You'll be able to select your subjects, choose payment methods, and get started immediately! 🚀";
+    } else if (msg.includes('teacher') || msg.includes('instructor')) {
+        return "Our teachers are qualified professionals from top Malawian secondary schools with years of experience. They provide personalized attention to each student! 👨‍🏫";
+    } else if (msg.includes('certificate') || msg.includes('qualification')) {
+        return "Yes! Our courses are MANEB-certified and globally recognized. Students receive official certificates upon completion. 🏆";
+    } else if (msg.includes('support') || msg.includes('help')) {
+        return "We offer 24/7 student support through live chat, email, and phone. Our support team is always ready to help! 💬";
+    } else if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+        return "Hello! 😊 I'm here to help you with any questions about StudySeco. Feel free to ask about our courses, enrollment, or anything else!";
+    } else {
+        return "That's a great question! For detailed information, you can explore our website or contact our live support team. Is there anything specific about our courses I can help you with? 🤔";
+    }
 };
 
 // Default subjects if none provided
@@ -168,6 +286,100 @@ onMounted(() => {
             }
         }
     });
+
+    // Student Slider functionality
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const slidesContainer = document.getElementById('studentSlides');
+    const slideDots = document.querySelectorAll('.slide-dot');
+
+    function updateSlider() {
+        if (slidesContainer) {
+            slidesContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+        }
+        
+        // Update dots
+        slideDots.forEach((dot, index) => {
+            dot.classList.remove('bg-emerald-500');
+            dot.classList.add('bg-gray-300');
+            if (index === currentSlide) {
+                dot.classList.add('bg-emerald-500');
+                dot.classList.remove('bg-gray-300');
+            }
+        });
+    }
+
+    function nextSlide() {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        updateSlider();
+    }
+
+    function prevSlide() {
+        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+        updateSlider();
+    }
+
+    function goToSlide(slideIndex) {
+        currentSlide = slideIndex;
+        updateSlider();
+    }
+
+    // Add event listeners
+    const nextBtn = document.getElementById('nextSlide');
+    const prevBtn = document.getElementById('prevSlide');
+    
+    if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+    if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+
+    // Dot navigation
+    slideDots.forEach((dot, index) => {
+        dot.addEventListener('click', () => goToSlide(index));
+    });
+
+    // Auto-slide every 8 seconds
+    setInterval(nextSlide, 8000);
+
+    // Hero Slider functionality
+    let currentHeroSlide = 0;
+    const heroSlides = document.querySelectorAll('.hero-slide');
+    const totalHeroSlides = heroSlides.length;
+    const heroSlidesContainer = document.getElementById('heroSlides');
+    const heroDots = document.querySelectorAll('.hero-dot');
+
+    function updateHeroSlider() {
+        if (heroSlidesContainer) {
+            heroSlidesContainer.style.transform = `translateX(-${currentHeroSlide * 100}%)`;
+        }
+        
+        // Update dots
+        heroDots.forEach((dot, index) => {
+            dot.classList.remove('bg-emerald-500');
+            dot.classList.add('bg-gray-300/60');
+            if (index === currentHeroSlide) {
+                dot.classList.add('bg-emerald-500');
+                dot.classList.remove('bg-gray-300/60');
+            }
+        });
+    }
+
+    function nextHeroSlide() {
+        currentHeroSlide = (currentHeroSlide + 1) % totalHeroSlides;
+        updateHeroSlider();
+    }
+
+    function goToHeroSlide(slideIndex) {
+        currentHeroSlide = slideIndex;
+        updateHeroSlider();
+    }
+
+    // Hero dot navigation
+    heroDots.forEach((dot, index) => {
+        dot.addEventListener('click', () => goToHeroSlide(index));
+    });
+
+    // Auto-slide hero every 4 seconds
+    setInterval(nextHeroSlide, 4000);
 });
 </script>
 
@@ -239,25 +451,80 @@ onMounted(() => {
                     Malawi Secondary School Online - Serving {{ studentCount }}+ Global Students
                 </div>
 
-                <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
-                    <span class="text-gray-900">
-                        Complete Malawi
-                    </span>
-                    <br>
-                    <span class="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                        Secondary Education
-                    </span>
-                </h1>
+                <!-- Hero Text Slider -->
+                <div class="hero-slider relative overflow-hidden">
+                    <div class="hero-slides flex transition-transform duration-1000 ease-in-out" id="heroSlides">
+                        <!-- Slide 1 -->
+                        <div class="hero-slide w-full flex-shrink-0">
+                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
+                                <span class="text-gray-900">
+                                    Complete Malawi
+                                </span>
+                                <br>
+                                <span class="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                                    Secondary Education
+                                </span>
+                            </h1>
+                        </div>
+                        
+                        <!-- Slide 2 -->
+                        <div class="hero-slide w-full flex-shrink-0">
+                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
+                                <span class="text-gray-900">
+                                    MANEB Certified
+                                </span>
+                                <br>
+                                <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                    Online Learning
+                                </span>
+                            </h1>
+                        </div>
+                        
+                        <!-- Slide 3 -->
+                        <div class="hero-slide w-full flex-shrink-0">
+                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
+                                <span class="text-gray-900">
+                                    Global Students
+                                </span>
+                                <br>
+                                <span class="bg-gradient-to-r from-purple-600 to-emerald-600 bg-clip-text text-transparent">
+                                    Malawian Roots
+                                </span>
+                            </h1>
+                        </div>
+                        
+                        <!-- Slide 4 -->
+                        <div class="hero-slide w-full flex-shrink-0">
+                            <h1 class="hero-title text-5xl md:text-7xl font-black leading-tight">
+                                <span class="text-gray-900">
+                                    Quality Education
+                                </span>
+                                <br>
+                                <span class="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+                                    Anywhere, Anytime
+                                </span>
+                            </h1>
+                        </div>
+                    </div>
+                    
+                    <!-- Hero Slider Indicators -->
+                    <div class="flex justify-center mt-8 space-x-2">
+                        <button class="hero-dot w-3 h-3 bg-emerald-500 rounded-full transition-all duration-300" data-hero-slide="0"></button>
+                        <button class="hero-dot w-3 h-3 bg-gray-300/60 rounded-full transition-all duration-300 hover:bg-gray-400/60" data-hero-slide="1"></button>
+                        <button class="hero-dot w-3 h-3 bg-gray-300/60 rounded-full transition-all duration-300 hover:bg-gray-400/60" data-hero-slide="2"></button>
+                        <button class="hero-dot w-3 h-3 bg-gray-300/60 rounded-full transition-all duration-300 hover:bg-gray-400/60" data-hero-slide="3"></button>
+                    </div>
+                </div>
 
                 <p class="hero-subtitle text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light leading-relaxed">
-                    Study all Form 1-4 subjects with qualified teachers, flexible schedules, and globally recognized qualifications. Each subject only MKW 50,000.
+                    Study all Form 1-4 subjects with qualified teachers, flexible schedules, and globally recognized qualifications. Quality education accessible worldwide.
                 </p>
 
                 <div class="flex flex-wrap justify-center gap-4 text-sm">
                     <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full border border-blue-200 font-medium">🇲🇼 MANEB Certified</span>
                     <span class="px-4 py-2 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-200 font-medium">🌍 {{ studentCount }}+ Students</span>
                     <span class="px-4 py-2 bg-cyan-100 text-cyan-800 rounded-full border border-cyan-200 font-medium">📚 12+ Subjects</span>
-                    <span class="px-4 py-2 bg-purple-100 text-purple-800 rounded-full border border-purple-200 font-medium">💰 MKW 50,000/Subject</span>
+                    <span class="px-4 py-2 bg-purple-100 text-purple-800 rounded-full border border-purple-200 font-medium">🎓 Flexible Learning</span>
                 </div>
 
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
@@ -445,7 +712,7 @@ onMounted(() => {
             <div class="mb-16 reveal">
                 <h3 class="text-3xl font-bold text-center mb-12">
                     <span class="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                        Core Subjects (Compulsory) - MKW 50,000 each
+                        Core Subjects (Compulsory)
                     </span>
                 </h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -460,8 +727,7 @@ onMounted(() => {
                         </div>
                         <h4 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300">{{ subject.name }}</h4>
                         <p class="text-gray-600 text-sm mb-3">{{ subject.description }}</p>
-                        <div class="flex items-center justify-between">
-                            <div class="text-emerald-600 font-semibold text-lg">MKW 50,000</div>
+                        <div class="flex items-center justify-end">
                             <div class="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M7 17l9.2-9.2M17 17V7H7"/>
@@ -475,7 +741,7 @@ onMounted(() => {
             <div class="mb-16 reveal">
                 <h3 class="text-3xl font-bold text-center mb-12">
                     <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        Optional Subjects - MKW 50,000 each
+                        Optional Subjects
                     </span>
                 </h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -490,8 +756,7 @@ onMounted(() => {
                         </div>
                         <h4 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300">{{ subject.name }}</h4>
                         <p class="text-gray-600 text-sm mb-3">{{ subject.description }}</p>
-                        <div class="flex items-center justify-between">
-                            <div class="text-emerald-600 font-semibold text-lg">MKW 50,000</div>
+                        <div class="flex items-center justify-end">
                             <div class="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M7 17l9.2-9.2M17 17V7H7"/>
@@ -531,6 +796,124 @@ onMounted(() => {
                         <span v-for="star in 5" :key="star" class="text-yellow-400 text-lg">⭐</span>
                     </div>
                     <p class="text-gray-700 leading-relaxed">{{ testimonial.message }}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Student Success Stories Slider -->
+    <section class="py-24 bg-gradient-to-br from-blue-50 to-emerald-50 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-5xl font-bold mb-6">
+                    <span class="text-gray-900">Our Students</span>
+                    <br>
+                    <span class="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                        Around the World
+                    </span>
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Meet our successful students who are making their mark globally while staying connected to their Malawian roots.
+                </p>
+            </div>
+
+            <!-- Student Slider -->
+            <div class="relative">
+                <div class="student-slider overflow-hidden">
+                    <div class="student-slides flex transition-transform duration-700 ease-in-out" id="studentSlides">
+                        <!-- Dynamic Student Stories -->
+                        <div v-for="(story, index) in sliderStories" :key="story.id" class="slide w-full flex-shrink-0">
+                            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                                <div class="relative">
+                                    <div :class="`aspect-[4/3] bg-gradient-to-br from-${story.avatar_color_from.replace('-500', '-100')} to-${story.avatar_color_to.replace('-500', '-100')} rounded-3xl overflow-hidden shadow-2xl`">
+                                        <div :class="`absolute inset-0 bg-gradient-to-br from-${story.avatar_color_from}/20 to-${story.avatar_color_to}/20`"></div>
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div :class="`w-48 h-48 bg-gradient-to-br from-${story.avatar_color_from} to-${story.avatar_color_to} rounded-full flex items-center justify-center text-white text-6xl font-bold`">
+                                                {{ story.name.split(' ').map(n => n[0]).join('').slice(0, 2) }}
+                                            </div>
+                                        </div>
+                                        <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur rounded-full px-4 py-2">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                                <span class="text-sm font-medium text-gray-800">Currently studying in {{ story.location.split(',')[0] }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="absolute -top-6 -right-6 w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center text-2xl animate-bounce">
+                                        {{ story.achievement_icon }}
+                                    </div>
+                                </div>
+                                <div class="space-y-6">
+                                    <div class="space-y-4">
+                                        <h3 class="text-4xl font-bold text-gray-900">{{ story.name }}</h3>
+                                        <div class="flex items-center space-x-4">
+                                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">Top Performer</span>
+                                            <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium">{{ story.country_flag }} {{ story.location }}</span>
+                                        </div>
+                                    </div>
+                                    <blockquote class="text-xl text-gray-700 italic leading-relaxed">
+                                        "{{ story.story }}"
+                                    </blockquote>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="flex space-x-1">
+                                            <span class="text-yellow-400 text-xl">⭐</span>
+                                            <span class="text-yellow-400 text-xl">⭐</span>
+                                            <span class="text-yellow-400 text-xl">⭐</span>
+                                            <span class="text-yellow-400 text-xl">⭐</span>
+                                            <span class="text-yellow-400 text-xl">⭐</span>
+                                        </div>
+                                        <span v-if="story.msce_credits" class="text-gray-600 text-lg">MSCE: {{ story.msce_credits }} Credits</span>
+                                    </div>
+                                    <div :class="`bg-gradient-to-r from-${story.avatar_color_from.replace('-500', '-50')} to-${story.avatar_color_to.replace('-500', '-50')} border border-${story.avatar_color_from.replace('-500', '-200')} rounded-xl p-4`">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-700 font-medium">Current Status:</span>
+                                            <span :class="`text-${story.avatar_color_from} font-semibold`">{{ story.current_status }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slider Navigation -->
+                <div class="flex justify-center mt-12 space-x-4">
+                    <button id="prevSlide" class="w-12 h-12 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                    </button>
+                    <div class="flex space-x-2">
+                        <button v-for="(story, index) in sliderStories" :key="`dot-${story.id}`" 
+                                class="slide-dot w-3 h-3 rounded-full transition-all duration-300 hover:bg-gray-400" 
+                                :class="index === 0 ? 'bg-emerald-500' : 'bg-gray-300'"
+                                :data-slide="index"></button>
+                    </div>
+                    <button id="nextSlide" class="w-12 h-12 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Student Statistics -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
+                    <div class="text-center bg-white/80 backdrop-blur rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div class="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">{{ studentCount }}+</div>
+                        <div class="text-gray-600 text-sm font-medium">Global Students</div>
+                    </div>
+                    <div class="text-center bg-white/80 backdrop-blur rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">25+</div>
+                        <div class="text-gray-600 text-sm font-medium">Countries</div>
+                    </div>
+                    <div class="text-center bg-white/80 backdrop-blur rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">98%</div>
+                        <div class="text-gray-600 text-sm font-medium">Pass Rate</div>
+                    </div>
+                    <div class="text-center bg-white/80 backdrop-blur rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <div class="text-3xl font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent">150+</div>
+                        <div class="text-gray-600 text-sm font-medium">Universities</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -618,9 +1001,36 @@ onMounted(() => {
                     </div>
                 </div>
 
+                <!-- Access Duration Selection -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Choose Access Duration</h3>
+                    <div class="grid md:grid-cols-3 gap-4 mb-6">
+                        <div v-for="duration in accessDurations" :key="duration.id" 
+                             @click="enrollmentForm.access_duration_id = duration.id"
+                             class="p-4 rounded-xl border-2 cursor-pointer transition-all"
+                             :class="enrollmentForm.access_duration_id == duration.id 
+                                 ? 'border-emerald-500 bg-emerald-50' 
+                                 : 'border-gray-300 hover:border-gray-400'">
+                            <div class="text-center">
+                                <h4 class="font-semibold text-gray-900 mb-2">{{ duration.name }}</h4>
+                                <p class="text-2xl font-bold text-emerald-600 mb-1">MKW {{ duration.price.toLocaleString() }}</p>
+                                <p class="text-sm text-gray-600 mb-2">per subject</p>
+                                <p class="text-xs text-gray-500">{{ duration.description }}</p>
+                                <div class="mt-2 text-xs bg-gray-100 rounded-full px-3 py-1 inline-block">
+                                    {{ Math.ceil(duration.days / 30) }} months access
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Subject Selection -->
                 <div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Select Subjects (MKW 50,000 each)</h3>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Select Subjects 
+                        <span v-if="getSelectedDuration()" class="text-emerald-600 font-normal">
+                            ({{ getSelectedDuration().name }} - MKW {{ getSelectedDuration().price.toLocaleString() }} each)
+                        </span>
+                    </h3>
                     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div v-for="subject in subjects" :key="subject.id" 
                              @click="toggleSubject(subject.id)"
@@ -648,12 +1058,18 @@ onMounted(() => {
                 </div>
 
                 <!-- Total Cost -->
-                <div v-if="enrollmentForm.selected_subjects.length > 0" class="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-900 text-lg font-medium">Total Cost:</span>
-                        <span class="text-2xl font-bold text-emerald-600">MKW {{ calculateTotal().toLocaleString() }}</span>
+                <div v-if="enrollmentForm.selected_subjects.length > 0 && enrollmentForm.access_duration_id" class="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-900 text-lg font-medium">Total Cost:</span>
+                            <span class="text-2xl font-bold text-emerald-600">MKW {{ calculateTotal().toLocaleString() }}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 space-y-1">
+                            <p>{{ enrollmentForm.selected_subjects.length }} subject(s) selected</p>
+                            <p v-if="getSelectedDuration()">{{ getSelectedDuration().name }} ({{ Math.ceil(getSelectedDuration().days / 30) }} months)</p>
+                            <p v-if="getSelectedDuration()" class="font-medium">{{ enrollmentForm.selected_subjects.length }} × MKW {{ getSelectedDuration().price.toLocaleString() }} = MKW {{ calculateTotal().toLocaleString() }}</p>
+                        </div>
                     </div>
-                    <p class="text-sm text-gray-600 mt-2">{{ enrollmentForm.selected_subjects.length }} subject(s) selected</p>
                 </div>
 
                 <!-- Payment Method -->
@@ -732,8 +1148,40 @@ onMounted(() => {
                     </div>
                 </div>
 
+                <!-- Terms and Conditions -->
+                <div v-if="enrollmentForm.selected_subjects.length > 0 && enrollmentForm.access_duration_id && enrollmentForm.payment_method" class="space-y-4">
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Terms and Conditions</h3>
+                        <div class="max-h-48 overflow-y-auto text-sm text-gray-700 space-y-3 border border-gray-200 rounded-lg p-4 bg-white">
+                            <p><strong>1. Access Duration:</strong> Your access will be valid for the selected duration starting from enrollment confirmation. No extensions will be provided after expiration.</p>
+                            <p><strong>2. Payment Policy:</strong> All payments must be verified before access is granted. Refunds are only available within 7 days of enrollment and subject to our refund policy.</p>
+                            <p><strong>3. Academic Integrity:</strong> Students are expected to maintain academic honesty. Any form of cheating or plagiarism may result in suspension.</p>
+                            <p><strong>4. Content Access:</strong> Course materials are for registered students only and may not be shared, distributed, or resold.</p>
+                            <p><strong>5. Technical Support:</strong> We provide technical support during business hours. Students are responsible for maintaining stable internet connectivity.</p>
+                            <p><strong>6. Examination:</strong> MSCE examinations are conducted according to MANEB schedules and requirements. Students must meet all prerequisites.</p>
+                            <p><strong>7. Certificate Issuance:</strong> Certificates will be issued upon successful completion of coursework and examinations as per MANEB standards.</p>
+                            <p><strong>8. Data Privacy:</strong> Your personal information will be used solely for educational purposes and will not be shared with third parties.</p>
+                            <p><strong>9. Platform Updates:</strong> We reserve the right to update our platform and learning materials to improve educational quality.</p>
+                            <p><strong>10. Dispute Resolution:</strong> Any disputes will be resolved through our internal grievance process or legal channels in Malawi.</p>
+                        </div>
+                        
+                        <div class="mt-6 flex items-start space-x-3">
+                            <input 
+                                v-model="enrollmentForm.terms_accepted" 
+                                type="checkbox" 
+                                id="terms" 
+                                class="mt-1 w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                                required
+                            >
+                            <label for="terms" class="text-sm text-gray-700 cursor-pointer">
+                                I have read, understood, and agree to the Terms and Conditions. I confirm that all information provided is accurate and I am committed to following StudySeco's academic policies and procedures.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Submit Button -->
-                <div v-if="enrollmentForm.selected_subjects.length > 0 && enrollmentForm.payment_method" class="pt-6">
+                <div v-if="enrollmentForm.selected_subjects.length > 0 && enrollmentForm.access_duration_id && enrollmentForm.payment_method && enrollmentForm.terms_accepted" class="pt-6">
                     <button type="submit" :disabled="enrollmentForm.processing" class="w-full px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold text-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:transform-none">
                         <span v-if="enrollmentForm.processing">Processing...</span>
                         <span v-else>Submit Enrollment - MKW {{ calculateTotal().toLocaleString() }}</span>
@@ -897,6 +1345,101 @@ onMounted(() => {
             </div>
         </div>
     </div>
+
+    <!-- Chatbot Widget -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <!-- Chat Widget -->
+        <div v-show="showChatWidget" class="mb-4 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold">StudySeco Assistant</h3>
+                            <p class="text-xs text-white/80">Online • Ready to help</p>
+                        </div>
+                    </div>
+                    <button @click="showChatWidget = false" class="w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                <div v-for="msg in chatMessages" :key="msg.timestamp" 
+                     :class="[
+                         'flex',
+                         msg.type === 'user' ? 'justify-end' : 'justify-start'
+                     ]">
+                    <div :class="[
+                        'max-w-xs px-4 py-2 rounded-2xl text-sm',
+                        msg.type === 'user' 
+                            ? 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-br-sm' 
+                            : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm'
+                    ]">
+                        {{ msg.message }}
+                    </div>
+                </div>
+                
+                <!-- Typing indicator -->
+                <div v-if="isTyping" class="flex justify-start">
+                    <div class="bg-white border border-gray-200 px-4 py-2 rounded-2xl rounded-bl-sm text-sm text-gray-600 shadow-sm">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="p-4 border-t border-gray-200 bg-white">
+                <form @submit.prevent="sendMessage" class="flex space-x-2">
+                    <input 
+                        v-model="newMessage" 
+                        type="text" 
+                        placeholder="Type your message..." 
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                    >
+                    <button 
+                        type="submit" 
+                        :disabled="!newMessage.trim()" 
+                        class="w-10 h-10 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full flex items-center justify-center hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+                <p class="text-xs text-gray-500 mt-2 text-center">Press Enter to send • Powered by StudySeco AI</p>
+            </div>
+        </div>
+
+        <!-- Chat Toggle Button -->
+        <button 
+            @click="showChatWidget = !showChatWidget"
+            class="w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center justify-center group hover:scale-110 pulse-glow"
+        >
+            <svg v-if="!showChatWidget" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
 </template>
 
 <style scoped>
@@ -935,6 +1478,20 @@ body {
     10% { opacity: 0.6; }
     90% { opacity: 0.6; }
     100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+
+/* Pulse glow animation for chatbot */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+    }
+}
+
+.pulse-glow {
+    animation: pulse-glow 2s infinite;
 }
 
 /* Scroll reveal effect */

@@ -38,6 +38,11 @@ const user = page.props.auth?.user || { name: 'Admin', role: 'admin', profile_ph
                       class="px-3 py-2 rounded-lg transition-colors">
                     Payment Settings
                 </Link>
+                <Link :href="route('admin.site-content.index')" 
+                      :class="route().current('admin.site-content.*') ? 'text-indigo-600 font-semibold' : 'text-slate-600 hover:text-slate-900'"
+                      class="px-3 py-2 rounded-lg transition-colors">
+                    Frontend Content
+                </Link>
             </nav>
             
             <div class="flex items-center space-x-3">

@@ -5,7 +5,11 @@
       "Bash(php artisan make:model:*)",
       "Bash(php artisan make:controller:*)",
       "Bash(php artisan:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(git commit:*)",
+      "Bash(php artisan make:migration:*)",
+      "Bash(php artisan:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

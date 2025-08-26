@@ -6,9 +6,12 @@ use App\Http\Controllers\TopicController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\PaymentSettingsController;
+use App\Http\Controllers\Admin\SiteContentController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\SubjectDetailController;
 use App\Models\User;
+use App\Models\StudentStory;
+use App\Models\AccessDuration;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -16,6 +19,14 @@ use Inertia\Inertia;
 Route::get('/', function () {
     // Get student count
     $studentCount = User::where('role', 'student')->count();
+    
+    // Get featured student stories from database (fallback to default if none)
+    $studentStories = StudentStory::getFeatured();
+    
+    // Get access durations from database
+    $accessDurations = AccessDuration::where('is_active', true)
+        ->orderBy('sort_order')
+        ->get();
     
     // Default subjects
     $subjects = [
@@ -33,7 +44,7 @@ Route::get('/', function () {
         ['id' => 12, 'name' => 'Business Studies', 'description' => 'Principles of management, accounting, and commerce', 'icon' => '💼', 'type' => 'optional']
     ];
 
-    // Sample testimonials
+    // Sample testimonials (fallback for testimonial cards)
     $testimonials = [
         [
             'name' => 'Sarah Phiri',
@@ -65,7 +76,9 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
         'subjects' => $subjects,
         'studentCount' => max($studentCount, 500), // Show at least 500
-        'testimonials' => $testimonials
+        'testimonials' => $testimonials,
+        'studentStories' => $studentStories,
+        'accessDurations' => $accessDurations
     ]);
 })->name('welcome');
 
@@ -161,6 +174,23 @@ Route::middleware('auth')->group(function () {
         Route::put('/access-durations/{accessDuration}', [PaymentSettingsController::class, 'updateAccessDuration'])->name('access-durations.update');
         Route::delete('/access-durations/{accessDuration}', [PaymentSettingsController::class, 'destroyAccessDuration'])->name('access-durations.destroy');
         Route::patch('/access-durations/order', [PaymentSettingsController::class, 'updateAccessDurationOrder'])->name('access-durations.order');
+    });
+
+    // Admin Site Content Management Routes
+    Route::prefix('admin/site-content')->name('admin.site-content.')->group(function () {
+        Route::get('/', [SiteContentController::class, 'index'])->name('index');
+        
+        // Site Content
+        Route::post('/contents', [SiteContentController::class, 'storeContent'])->name('contents.store');
+        Route::put('/contents/{content}', [SiteContentController::class, 'updateContent'])->name('contents.update');
+        Route::delete('/contents/{content}', [SiteContentController::class, 'destroyContent'])->name('contents.destroy');
+        Route::patch('/contents/order', [SiteContentController::class, 'updateContentOrder'])->name('contents.order');
+        
+        // Student Stories
+        Route::post('/student-stories', [SiteContentController::class, 'storeStudentStory'])->name('student-stories.store');
+        Route::put('/student-stories/{story}', [SiteContentController::class, 'updateStudentStory'])->name('student-stories.update');
+        Route::delete('/student-stories/{story}', [SiteContentController::class, 'destroyStudentStory'])->name('student-stories.destroy');
+        Route::patch('/student-stories/order', [SiteContentController::class, 'updateStoryOrder'])->name('student-stories.order');
     });
 
     Route::get('/complaints', function () {
