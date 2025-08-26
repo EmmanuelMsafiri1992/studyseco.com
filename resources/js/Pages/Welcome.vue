@@ -574,7 +574,7 @@ onMounted(() => {
                     <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-6">
                         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                             <path d="M12 19c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                            <path d="M18 19c.552 0 1-.448 1-1s-.448-1-1-1h-2v-2c0-.552-.448-1-1-1s-1 .448-1 1v2h-2c-.552 0-1 .448-1 1s.448 1 1 1h2v2c0 .552.448 1 1 1s1-.448 1-1v-2h2c.552 0 1-.448 1-1z"/>
+                            <path d="M18 19c.552 0 1-.448 1-1s-.448-1-1-1h-2v-2c0-.552-.448-1-1-1s-1 .448-1 1v2h-2c-.552 0-1 .448-1 1s.448 1 1 1h2v2c0 .552.448 1 1 1s1-.448 1-1v-2h2c.552 0 1-.448 1-1s-.448-1-1-1z"/>
                         </svg>
                     </div>
                     <h3 class="text-2xl font-bold text-white mb-4">Community & Collaboration</h3>
@@ -769,5 +769,24 @@ body {
 
 .reveal .reveal {
     transition-delay: 0.2s;
+}
+
+/* Gradient Animated Text Fix */
+.gradient-animated {
+    background: linear-gradient(to right, #ffffff, #8be9fd, #6272a4);
+    background-size: 200% auto;
+    animation: gradient-flow 3s ease-in-out infinite;
+}
+
+@keyframes gradient-flow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }
 </style>
