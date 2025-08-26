@@ -6,18 +6,71 @@ use App\Http\Controllers\TopicController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\PaymentSettingsController;
+use App\Http\Controllers\EnrollmentController;
+use App\Models\User;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+    // Get student count
+    $studentCount = User::where('role', 'student')->count();
+    
+    // Default subjects
+    $subjects = [
+        ['id' => 1, 'name' => 'English Language', 'description' => 'Communication skills, literature, and composition', 'icon' => '📚', 'type' => 'core'],
+        ['id' => 2, 'name' => 'Mathematics', 'description' => 'Algebra, geometry, statistics, and applied mathematics', 'icon' => '📐', 'type' => 'core'],
+        ['id' => 3, 'name' => 'Physical Science', 'description' => 'Physics and chemistry fundamentals', 'icon' => '⚗️', 'type' => 'core'],
+        ['id' => 4, 'name' => 'Social Studies', 'description' => 'History, geography, civics, and current affairs', 'icon' => '🌍', 'type' => 'core'],
+        ['id' => 5, 'name' => 'Computer Studies', 'description' => 'Programming, hardware, and software applications', 'icon' => '💻', 'type' => 'core'],
+        ['id' => 6, 'name' => 'Creative Arts', 'description' => 'Visual arts, music, drama, and creative expression', 'icon' => '🎨', 'type' => 'core'],
+        ['id' => 7, 'name' => 'Biology', 'description' => 'Living organisms, ecology, and human biology', 'icon' => '🧬', 'type' => 'optional'],
+        ['id' => 8, 'name' => 'Chemistry', 'description' => 'Chemical reactions, elements, and compounds', 'icon' => '🧪', 'type' => 'optional'],
+        ['id' => 9, 'name' => 'Physics', 'description' => 'Motion, energy, electricity, and modern physics', 'icon' => '⚡', 'type' => 'optional'],
+        ['id' => 10, 'name' => 'Geography', 'description' => 'Physical and human geography', 'icon' => '🗺️', 'type' => 'optional'],
+        ['id' => 11, 'name' => 'History', 'description' => 'Malawian history, African history, and world history', 'icon' => '🏛️', 'type' => 'optional'],
+        ['id' => 12, 'name' => 'Business Studies', 'description' => 'Principles of management, accounting, and commerce', 'icon' => '💼', 'type' => 'optional']
+    ];
+
+    // Sample testimonials
+    $testimonials = [
+        [
+            'name' => 'Sarah Phiri',
+            'location' => 'London, UK',
+            'message' => 'StudySeco helped me maintain my connection to Malawian education while living abroad. The teachers are excellent!',
+            'rating' => 5,
+            'avatar' => 'SP'
+        ],
+        [
+            'name' => 'John Mwale',
+            'location' => 'Cape Town, South Africa',
+            'message' => 'The MANEB curriculum alignment is perfect. My son passed his MSCE with flying colors thanks to StudySeco.',
+            'rating' => 5,
+            'avatar' => 'JM'
+        ],
+        [
+            'name' => 'Grace Banda',
+            'location' => 'Toronto, Canada',
+            'message' => 'Flexible scheduling allowed me to study while working. The online library is incredibly comprehensive.',
+            'rating' => 5,
+            'avatar' => 'GB'
+        ]
+    ];
+
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'subjects' => $subjects,
+        'studentCount' => max($studentCount, 500), // Show at least 500
+        'testimonials' => $testimonials
     ]);
-});
+})->name('welcome');
+
+// Enrollment routes (public)
+Route::post('/enroll', [EnrollmentController::class, 'store'])->name('enrollment.store');
+Route::get('/enrollment/success', [EnrollmentController::class, 'success'])->name('enrollment.success');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -134,6 +187,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/account-settings', function () {
         return Inertia::render('Profile/AccountSettings');
     })->name('account.settings');
+
+    // Admin enrollment management (only for admin users)
+    Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/enrollments', [EnrollmentController::class, 'index'])->name('enrollments.index');
+        Route::get('/enrollments/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollments.show');
+        Route::patch('/enrollments/{enrollment}/approve', [EnrollmentController::class, 'approve'])->name('enrollments.approve');
+        Route::patch('/enrollments/{enrollment}/reject', [EnrollmentController::class, 'reject'])->name('enrollments.reject');
+    });
 });
 
 require __DIR__.'/auth.php';
