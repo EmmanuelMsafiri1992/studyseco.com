@@ -41,9 +41,31 @@ class PaymentController extends Controller
             ->where('access_expires_at', '>', Carbon::now())
             ->exists();
 
+        // Get stats for sidebar (if admin)
+        $stats = [];
+        if ($user->role === 'admin') {
+            try {
+                $stats = [
+                    'total_students' => \App\Models\User::where('role', 'student')->count(),
+                    'total_teachers' => \App\Models\User::where('role', 'teacher')->count(),
+                    'total_subjects' => \App\Models\Subject::where('is_active', true)->count(),
+                    'pending_enrollments' => \App\Models\Enrollment::where('status', 'pending')->count(),
+                ];
+            } catch (Exception $e) {
+                // Fallback if queries fail
+                $stats = [
+                    'total_students' => 0,
+                    'total_teachers' => 0,
+                    'total_subjects' => 0,
+                    'pending_enrollments' => 0,
+                ];
+            }
+        }
+
         return Inertia::render('Payments/Index', [
             'payments' => $payments,
-            'hasValidAccess' => $hasValidAccess
+            'hasValidAccess' => $hasValidAccess,
+            'stats' => $stats
         ]);
     }
 

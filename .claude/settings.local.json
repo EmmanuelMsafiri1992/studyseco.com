@@ -19,7 +19,12 @@
       "Bash(sed:*)",
       "Bash(timeout:*)",
       "Bash(npm run build:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npm install)",
+      "Bash(del database\\migrations\\2025_08_27_082204_create_enrollments_table.php)",
+      "Bash(del database\\migrations\\2025_08_27_082204_create_payment_methods_table.php)",
+      "Bash(del \"C:\\laragon\\www\\studyseco\\resources\\js\\Layouts\\DashboardLayout.vue\")",
+      "Bash(del databasemigrations2025_08_27_140348_add_access_tracking_to_enrollments_table.php)"
     ],
     "deny": [],
     "ask": [],

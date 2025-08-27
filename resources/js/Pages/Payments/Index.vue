@@ -1,11 +1,13 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     auth: Object,
     payments: Object,
     hasValidAccess: Boolean,
+    stats: Object,
 });
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
@@ -52,34 +54,10 @@ const activePayment = computed(() => {
 <template>
     <Head title="My Payments" />
     
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
-        <!-- Header -->
-        <header class="h-16 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-6 flex items-center justify-between relative z-50">
-            <div class="flex items-center space-x-4">
-                <Link :href="route('dashboard')" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
-                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </Link>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-800">My Payments</h1>
-                    <p class="text-sm text-slate-500">Payment history and system access</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-3">
-                <div class="text-right">
-                    <p class="text-sm font-semibold text-slate-800">{{ user.name }}</p>
-                    <p class="text-xs text-slate-500">{{ user.role }}</p>
-                </div>
-                <img :src="user.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" :alt="user.name" class="h-10 w-10 rounded-xl ring-2 ring-white shadow-md">
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="flex-1 p-6 max-w-6xl mx-auto">
+    <DashboardLayout title="My Payments" subtitle="Payment history and system access" :stats="stats">
+        <div class="space-y-8">
             <!-- Access Status Card -->
-            <div class="mb-8 bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="text-xl font-bold text-slate-800 mb-2">System Access Status</h2>
@@ -240,6 +218,6 @@ const activePayment = computed(() => {
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </DashboardLayout>
 </template>

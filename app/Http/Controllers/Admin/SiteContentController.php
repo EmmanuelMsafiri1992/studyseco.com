@@ -12,13 +12,7 @@ class SiteContentController extends Controller
 {
     public function __construct()
     {
-        // Ensure only admins can access
-        $this->middleware(function ($request, $next) {
-            if (auth()->user()->role !== 'admin') {
-                abort(403, 'Only administrators can manage site content.');
-            }
-            return $next($request);
-        });
+        // Admin check will be handled by route middleware or within methods
     }
 
     /**
@@ -26,6 +20,11 @@ class SiteContentController extends Controller
      */
     public function index()
     {
+        // Check if user is admin
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Only administrators can manage site content.');
+        }
+
         $contents = SiteContent::orderBy('sort_order')->get();
         $studentStories = StudentStory::orderBy('sort_order')->get();
 

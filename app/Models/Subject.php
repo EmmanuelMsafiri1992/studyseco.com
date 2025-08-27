@@ -20,10 +20,14 @@ class Subject extends Model
         'teacher_name',
         'cover_image',
         'is_active',
+        'is_compulsory',
+        'subject_type',
+        'sort_order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_compulsory' => 'boolean',
     ];
 
     public function topics(): HasMany

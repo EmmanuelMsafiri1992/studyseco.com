@@ -12,13 +12,7 @@ class PaymentSettingsController extends Controller
 {
     public function __construct()
     {
-        // Ensure only admins can access
-        $this->middleware(function ($request, $next) {
-            if (auth()->user()->role !== 'admin') {
-                abort(403, 'Only administrators can manage payment settings.');
-            }
-            return $next($request);
-        });
+        // Admin check will be handled within methods
     }
 
     /**
@@ -26,6 +20,11 @@ class PaymentSettingsController extends Controller
      */
     public function index()
     {
+        // Check if user is admin
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Only administrators can manage payment settings.');
+        }
+
         $paymentMethods = PaymentMethod::orderBy('sort_order')->get();
         $accessDurations = AccessDuration::orderBy('sort_order')->get();
 

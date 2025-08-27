@@ -159,7 +159,124 @@ const form = ref({
 
             <!-- Main Content -->
             <main class="flex-1 overflow-y-auto p-8 space-y-8 relative">
+                <!-- Settings Navigation Cards -->
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Frontend Content Management -->
+                    <Link href="/admin/site-content" v-if="user.role === 'admin'" class="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-800">Frontend Content</h3>
+                                <p class="text-sm text-slate-500">Manage website content</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600">Manage homepage content, student stories, and dynamic site content.</p>
+                    </Link>
+
+                    <!-- Payment Settings -->
+                    <Link href="/admin/payment-settings" v-if="user.role === 'admin'" class="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-800">Payment Settings</h3>
+                                <p class="text-sm text-slate-500">Configure payments</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600">Manage payment methods, pricing, and access duration settings.</p>
+                    </Link>
+
+                    <!-- Enrollment Management -->
+                    <Link href="/admin/enrollments" v-if="user.role === 'admin'" class="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0-7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-800">Enrollments</h3>
+                                <p class="text-sm text-slate-500">Manage student enrollments</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600">Review, approve, and manage student enrollment applications.</p>
+                    </Link>
+
+                    <!-- User Management -->
+                    <Link href="/students" v-if="user.role === 'admin'" class="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6-12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-800">User Management</h3>
+                                <p class="text-sm text-slate-500">Manage users and roles</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600">Manage students, teachers, and administrative users.</p>
+                    </Link>
+
+                    <!-- System Settings -->
+                    <Link href="/admin/system-settings" v-if="user.role === 'admin'" class="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-800">System Settings</h3>
+                                <p class="text-sm text-slate-500">Configure system</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600">Manage system name, logo, footer, contact details, and branding.</p>
+                    </Link>
+
+                    <!-- Subject Management -->
+                    <Link href="/subjects" class="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-800">Subject Management</h3>
+                                <p class="text-sm text-slate-500">Manage academic subjects</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600">Create and manage subjects, topics, and lesson content.</p>
+                    </Link>
+
+                    <!-- Reports & Analytics -->
+                    <Link href="/reports" class="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-800">Reports & Analytics</h3>
+                                <p class="text-sm text-slate-500">View system analytics</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-600">View enrollment statistics, payment reports, and system analytics.</p>
+                    </Link>
+                </div>
+
+                <!-- Personal Settings -->
                 <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
+                    <h2 class="text-xl font-semibold text-slate-800 mb-6">Personal Settings</h2>
                     <form>
                         <div class="grid grid-cols-1 gap-6">
                             <div>

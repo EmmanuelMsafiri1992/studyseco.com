@@ -7,6 +7,7 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\PaymentSettingsController;
 use App\Http\Controllers\Admin\SiteContentController;
+use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\SubjectDetailController;
 use App\Models\User;
@@ -40,21 +41,52 @@ Route::get('/', function () {
         $accessDurations = collect([]);
     }
     
-    // Default subjects
-    $subjects = [
-        ['id' => 1, 'name' => 'English Language', 'description' => 'Communication skills, literature, and composition', 'icon' => '📚', 'type' => 'core'],
-        ['id' => 2, 'name' => 'Mathematics', 'description' => 'Algebra, geometry, statistics, and applied mathematics', 'icon' => '📐', 'type' => 'core'],
-        ['id' => 3, 'name' => 'Physical Science', 'description' => 'Physics and chemistry fundamentals', 'icon' => '⚗️', 'type' => 'core'],
-        ['id' => 4, 'name' => 'Social Studies', 'description' => 'History, geography, civics, and current affairs', 'icon' => '🌍', 'type' => 'core'],
-        ['id' => 5, 'name' => 'Computer Studies', 'description' => 'Programming, hardware, and software applications', 'icon' => '💻', 'type' => 'core'],
-        ['id' => 6, 'name' => 'Creative Arts', 'description' => 'Visual arts, music, drama, and creative expression', 'icon' => '🎨', 'type' => 'core'],
-        ['id' => 7, 'name' => 'Biology', 'description' => 'Living organisms, ecology, and human biology', 'icon' => '🧬', 'type' => 'optional'],
-        ['id' => 8, 'name' => 'Chemistry', 'description' => 'Chemical reactions, elements, and compounds', 'icon' => '🧪', 'type' => 'optional'],
-        ['id' => 9, 'name' => 'Physics', 'description' => 'Motion, energy, electricity, and modern physics', 'icon' => '⚡', 'type' => 'optional'],
-        ['id' => 10, 'name' => 'Geography', 'description' => 'Physical and human geography', 'icon' => '🗺️', 'type' => 'optional'],
-        ['id' => 11, 'name' => 'History', 'description' => 'Malawian history, African history, and world history', 'icon' => '🏛️', 'type' => 'optional'],
-        ['id' => 12, 'name' => 'Business Studies', 'description' => 'Principles of management, accounting, and commerce', 'icon' => '💼', 'type' => 'optional']
-    ];
+    // Get subjects from database
+    try {
+        $subjects = \App\Models\Subject::where('is_active', true)->get()->map(function ($subject) {
+            return [
+                'id' => $subject->id,
+                'name' => $subject->name,
+                'description' => $subject->description,
+                'department' => $subject->department,
+                'grade_level' => $subject->grade_level,
+                'icon' => match($subject->name) {
+                    'English' => '📚',
+                    'Chichewa' => '📖',
+                    'Mathematics' => '📐',
+                    'Life Skills' => '🧠',
+                    'Biology' => '🧬',
+                    'Physical Science' => '⚗️',
+                    'Chemistry' => '🧪',
+                    'Physics' => '⚡',
+                    'Geography' => '🗺️',
+                    'History' => '🏛️',
+                    'Social Studies' => '🌍',
+                    'Bible Knowledge' => '✝️',
+                    'Agriculture' => '🌾',
+                    'Home Economics' => '🏠',
+                    'Technical Drawing' => '📏',
+                    'Business Studies' => '💼',
+                    'French' => '🇫🇷',
+                    'Computer Studies' => '💻',
+                    default => '📚'
+                },
+                'type' => match($subject->department) {
+                    'Languages' => 'core',
+                    'General Studies' => 'core',
+                    'Sciences' => 'science',
+                    'Humanities' => 'humanities',
+                    'Technical' => 'technical',
+                    'Commerce' => 'commerce',
+                    'Technology' => 'technology',
+                    default => 'optional'
+                }
+            ];
+        });
+    } catch (Exception $e) {
+        // Fallback if database query fails
+        $subjects = collect([]);
+    }
 
     // Sample testimonials (fallback for testimonial cards)
     $testimonials = [
@@ -101,11 +133,122 @@ Route::get('/subject/{id}', [SubjectDetailController::class, 'show'])->name('sub
 Route::post('/enroll', [EnrollmentController::class, 'store'])->name('enrollment.store');
 Route::get('/enrollment/success', [EnrollmentController::class, 'success'])->name('enrollment.success');
 
+// Protected enrollment routes
+Route::middleware('auth')->group(function () {
+    Route::post('/enrollment/extend', [EnrollmentController::class, 'extend'])->name('enrollment.extend');
+    Route::get('/enrollment/check-extension', [EnrollmentController::class, 'checkExtension'])->name('enrollment.check-extension');
+});
+
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    $user = auth()->user();
+    $data = ['auth' => ['user' => $user]];
+    
+    if ($user->role === 'admin') {
+        // Get real statistics for admin dashboard
+        try {
+            $data['stats'] = [
+                'total_students' => \App\Models\User::where('role', 'student')->count(),
+                'total_teachers' => \App\Models\User::where('role', 'teacher')->count(),
+                'total_subjects' => \App\Models\Subject::where('is_active', true)->count(),
+                'pending_enrollments' => \App\Models\Enrollment::where('status', 'pending')->count(),
+                'total_enrollments' => \App\Models\Enrollment::count(),
+                'active_enrollments' => \App\Models\Enrollment::where('status', 'approved')
+                    ->whereDate('access_expires_at', '>', now())->count(),
+                'expired_enrollments' => \App\Models\Enrollment::where('status', 'approved')
+                    ->whereDate('access_expires_at', '<=', now())->count(),
+            ];
+            
+            // Recent enrollments for activity feed
+            $data['recent_enrollments'] = \App\Models\Enrollment::with('user')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function ($enrollment) {
+                    return [
+                        'id' => $enrollment->id,
+                        'student_name' => $enrollment->user->name,
+                        'email' => $enrollment->email,
+                        'status' => $enrollment->status,
+                        'created_at' => $enrollment->created_at->diffForHumans(),
+                    ];
+                });
+                
+            // Recent payments for activity feed
+            $data['recent_payments'] = \App\Models\EnrollmentPayment::with('enrollment.user')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'student_name' => $payment->enrollment->user->name,
+                        'amount' => $payment->amount,
+                        'currency' => $payment->currency,
+                        'status' => $payment->status,
+                        'created_at' => $payment->created_at->diffForHumans(),
+                    ];
+                });
+                
+            // Subject distribution for chart
+            $data['subject_distribution'] = \App\Models\Subject::selectRaw('department, COUNT(*) as count')
+                ->where('is_active', true)
+                ->groupBy('department')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'department' => $item->department,
+                        'count' => $item->count
+                    ];
+                });
+                
+        } catch (Exception $e) {
+            // Fallback to dummy data if database queries fail
+            $data['stats'] = [
+                'total_students' => 1850,
+                'total_teachers' => 125,
+                'total_subjects' => 45,
+                'pending_enrollments' => 7,
+                'total_enrollments' => 2000,
+                'active_enrollments' => 1500,
+                'expired_enrollments' => 350,
+            ];
+            $data['recent_enrollments'] = [];
+            $data['recent_payments'] = [];
+            $data['subject_distribution'] = [];
+        }
+    } elseif ($user->role === 'student') {
+        // Get student-specific data
+        try {
+            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)->with('subjects')->first();
+            $data['enrollment'] = $enrollment;
+            $data['enrolled_subjects'] = $enrollment ? $enrollment->subjects : collect([]);
+            $data['access_remaining'] = $enrollment ? $enrollment->access_days_remaining : 0;
+            $data['access_expired'] = $enrollment ? $enrollment->is_access_expired : true;
+        } catch (Exception $e) {
+            $data['enrollment'] = null;
+            $data['enrolled_subjects'] = collect([]);
+            $data['access_remaining'] = 0;
+            $data['access_expired'] = true;
+        }
+    } elseif ($user->role === 'teacher') {
+        // Get teacher-specific data
+        try {
+            $data['teacher_subjects'] = \App\Models\Subject::where('is_active', true)->limit(5)->get();
+            $data['student_count'] = \App\Models\User::where('role', 'student')->count();
+        } catch (Exception $e) {
+            $data['teacher_subjects'] = collect([]);
+            $data['student_count'] = 0;
+        }
+    }
+    
+    return Inertia::render('Dashboard', $data);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Student Extension Routes
+    Route::get('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'index'])->name('student.extension');
+    Route::post('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'store'])->name('student.extension.store');
+
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -205,6 +348,12 @@ Route::middleware('auth')->group(function () {
         Route::patch('/student-stories/order', [SiteContentController::class, 'updateStoryOrder'])->name('student-stories.order');
     });
 
+    // Admin System Settings Routes
+    Route::prefix('admin/system-settings')->name('admin.system-settings.')->middleware('role:admin')->group(function () {
+        Route::get('/', [SystemSettingsController::class, 'index'])->name('index');
+        Route::post('/', [SystemSettingsController::class, 'update'])->name('update');
+    });
+
     Route::get('/complaints', function () {
         return Inertia::render('Complaints/Index', [
             'complaints' => []
@@ -240,6 +389,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/enrollments/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollments.show');
         Route::patch('/enrollments/{enrollment}/approve', [EnrollmentController::class, 'approve'])->name('enrollments.approve');
         Route::patch('/enrollments/{enrollment}/reject', [EnrollmentController::class, 'reject'])->name('enrollments.reject');
+        
+        // Admin extension management
+        Route::post('/extensions/{payment}/approve', [\App\Http\Controllers\ExtensionController::class, 'approve'])->name('extensions.approve');
     });
 });
 

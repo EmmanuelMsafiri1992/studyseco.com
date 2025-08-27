@@ -19,3 +19,39 @@ there is no  1-on-1 Mentoring and the site title must be Zoswa Coding, everythi
 
 
 
+firstly deeply analyse and understand how my whole project works and then compare if all my following requirements are implemented and those not implemented please implement them fully:
+
+how I wish to see on the frontend, everything else that is existing are fine dont remove them.
+but I need a system that when I a student visits must be able to :
+- grasp the general idea and learn how it works,
+- must also be able to see the list of the subjects
+- must be able to enroll and when enrolling they must see the following options:
+  - free 7 days trial period where they will be able to access everything but only within 7days.
+  - and when enrolling they must verify their email address and phone numbers to avoid fake scammers
+  - then they must be able to choose how many subjects they want to enrol and they system must automatically add the total cost to be paid based
+on the selected number of the subjects.
+  - remember Malawi secondary student term is between 3 to 4months hence our system access will allow the students to access for 4 months.
+  - the 4months access is regardless the number of the subjects enrolled either 1 subject, or 8 or 12 the access is only 4months, and the system must clearly show total duration remaining for the access.
+  - if the duration has passed but the student has not completed, the student must be able to extend by 1month, 2month, 3month, 4month or 12months to make one academic year and each extension must have appropriate fees.
+
+payment process. as I said when enrolling the students must be able to choose number of the subjects they need and which country they are located
+and as I said that it will be the manual payment it means when Enroll now, you must be taken to the payment methods page if you are not on free trial. the list of payment methods must be based on where you are coming from. and when you click on it you must be able to pay then after paying manually, enter your payment reference number or attach the proof of the payment. when you submit the details the system must show processing and tell the student to wait until the payment is validated. after the payment has been validated, the student will receive email and text notification to use to create username and password then they will now have access to their portal.
+
+
+other frontend/landing page fixes:
+the chat bot button appears on the left but when clicked it appears on the right side. please both must be on the right bottom corner and make sure the chatbot is fully functional by making sure that the anyone like teacher or admin who has loggedin can be able to answer the questions accordingly.
+
+and on subjects, when I click on subjects I dont want to see the pricing, just subject details its fine. and when I click on contact it must take the user to the contact section.
+
+now on the dashboard fixes:
+- notifications does not work please fix.
+- Quick Actions buttons does not work, please fix them all
+- Dashboard http://127.0.0.1:8000/dashboard must not show dummy data or sample data but the real data.
+- under support, beside on what is already available, please also add the chat bot interface where you can directly reply users who are reaching
+out from the frontend, just remember if there are many requesting for help others must be in queue.
+- under analytics I need the real data not sample data
+- unlike when I click on other buttons like Analytics I am able to see the dashboard layout side bar but when I click on Payments, side bar is not show, its like I am clicking on a different system page, please fix i need all uniform structure.
+- under faculty, when adding the teacher, I must also be able to add his or her default password so that he or she can login then later update the password same with when adding students however when adding students you must able to able to choose subjects and payment status.
+- also under the settings I must be able to change the dashboard logo and update school name.
+
+
