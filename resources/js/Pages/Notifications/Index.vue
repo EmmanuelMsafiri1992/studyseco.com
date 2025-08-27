@@ -1,204 +1,437 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const props = defineProps({
     auth: Object,
     notifications: Array
 });
-const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
 
-// Mock data fallback
-const notifications = ref(props.notifications.length > 0 ? props.notifications : [
-    { type: 'student', title: 'New Enrollment', description: 'Alex Kumar joined Grade 11B', time: '5 minutes ago' },
-    { type: 'payment', title: 'Fee Payment', description: 'Lisa Park paid $850', time: '10 minutes ago' },
-    { type: 'alert', title: 'Low Attendance', description: 'Grade 9A below threshold', time: '1 hour ago' },
+// Mock data with enhanced structure
+const notificationData = ref(props.notifications.length > 0 ? props.notifications : [
+    { 
+        id: 1,
+        type: 'enrollment', 
+        title: 'New Student Enrollment', 
+        description: 'Alex Kumar has enrolled in Grade 11 Mathematics and Science programs', 
+        time: '5 minutes ago',
+        timestamp: new Date(Date.now() - 5 * 60 * 1000),
+        read: false,
+        priority: 'normal',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face'
+    },
+    { 
+        id: 2,
+        type: 'payment', 
+        title: 'Payment Received', 
+        description: 'Lisa Park successfully paid MWK 85,000 for 1-year access subscription', 
+        time: '12 minutes ago',
+        timestamp: new Date(Date.now() - 12 * 60 * 1000),
+        read: false,
+        priority: 'high',
+        amount: 'MWK 85,000'
+    },
+    { 
+        id: 3,
+        type: 'alert', 
+        title: 'Low Attendance Warning', 
+        description: 'Grade 9A Mathematics class attendance has dropped below 75% threshold', 
+        time: '1 hour ago',
+        timestamp: new Date(Date.now() - 60 * 60 * 1000),
+        read: true,
+        priority: 'high'
+    },
+    { 
+        id: 4,
+        type: 'assignment', 
+        title: 'Assignment Submitted', 
+        description: 'John Mwangi submitted Physics Lab Report - Wave Properties assignment', 
+        time: '2 hours ago',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        read: true,
+        priority: 'normal',
+        subject: 'Physics'
+    },
+    { 
+        id: 5,
+        type: 'system', 
+        title: 'System Maintenance', 
+        description: 'Scheduled maintenance window completed. All services are now operational', 
+        time: '3 hours ago',
+        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
+        read: true,
+        priority: 'low'
+    },
+    { 
+        id: 6,
+        type: 'message', 
+        title: 'New Support Ticket', 
+        description: 'Sarah Phiri created a new support ticket regarding login issues', 
+        time: '4 hours ago',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+        read: false,
+        priority: 'normal'
+    }
 ]);
+
+const filterType = ref('all');
+const searchQuery = ref('');
+
+// Computed properties
+const filteredNotifications = computed(() => {
+    let filtered = notificationData.value;
+    
+    if (filterType.value !== 'all') {
+        if (filterType.value === 'unread') {
+            filtered = filtered.filter(n => !n.read);
+        } else {
+            filtered = filtered.filter(n => n.type === filterType.value);
+        }
+    }
+    
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        filtered = filtered.filter(n => 
+            n.title.toLowerCase().includes(query) || 
+            n.description.toLowerCase().includes(query)
+        );
+    }
+    
+    return filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+});
+
+const unreadCount = computed(() => 
+    notificationData.value.filter(n => !n.read).length
+);
+
+const notificationStats = computed(() => {
+    const stats = {
+        enrollment: 0,
+        payment: 0,
+        alert: 0,
+        assignment: 0,
+        system: 0,
+        message: 0
+    };
+    
+    notificationData.value.forEach(n => {
+        if (stats.hasOwnProperty(n.type)) {
+            stats[n.type]++;
+        }
+    });
+    
+    return stats;
+});
+
+// Methods
+const markAsRead = (notification) => {
+    notification.read = true;
+};
+
+const markAllAsRead = () => {
+    notificationData.value.forEach(n => n.read = true);
+};
+
+const getNotificationIcon = (type) => {
+    const icons = {
+        enrollment: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+        payment: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
+        alert: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z',
+        assignment: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+        system: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.82 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.82 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.82-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.82-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
+        message: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C4.925 15.355 6 13.668 6 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'
+    };
+    
+    return icons[type] || icons.system;
+};
+
+const getPriorityClass = (priority) => {
+    const classes = {
+        high: 'border-l-4 border-l-error-400 bg-gradient-to-r from-error-50 to-white',
+        normal: 'border-l-4 border-l-primary-400 bg-gradient-to-r from-primary-50 to-white',
+        low: 'border-l-4 border-l-secondary-300 bg-gradient-to-r from-secondary-50 to-white'
+    };
+    
+    return classes[priority] || classes.normal;
+};
+
+const getTypeColor = (type) => {
+    const colors = {
+        enrollment: { bg: 'from-primary-500 to-primary-600', text: 'text-primary-600', badge: 'bg-primary-100 text-primary-800' },
+        payment: { bg: 'from-success-500 to-success-600', text: 'text-success-600', badge: 'bg-success-100 text-success-800' },
+        alert: { bg: 'from-warning-500 to-warning-600', text: 'text-warning-600', badge: 'bg-warning-100 text-warning-800' },
+        assignment: { bg: 'from-accent-500 to-accent-600', text: 'text-accent-600', badge: 'bg-accent-100 text-accent-800' },
+        system: { bg: 'from-secondary-500 to-secondary-600', text: 'text-secondary-600', badge: 'bg-secondary-100 text-secondary-800' },
+        message: { bg: 'from-primary-500 to-primary-600', text: 'text-primary-600', badge: 'bg-primary-100 text-primary-800' }
+    };
+    
+    return colors[type] || colors.system;
+};
 </script>
 
 <template>
-    <div class="flex h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
-        <!-- Sidebar -->
-        <div class="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 flex-shrink-0 shadow-xl">
-            <!-- Same -->
-            <div class="p-8 border-b border-slate-200/50">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197m.547-4.197h-.547"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-slate-800">EduVerse</h1>
-                        <p class="text-sm text-slate-500">School Management</p>
+    <Head title="Notifications" />
+    
+    <AuthenticatedLayout>
+        <template #header>
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="heading-lg text-secondary-900">Notifications</h2>
+                    <p class="text-secondary-600 mt-1">Stay updated with important activities and alerts</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div v-if="unreadCount > 0" class="flex items-center space-x-2">
+                        <span class="status-warning">{{ unreadCount }} unread</span>
+                        <button @click="markAllAsRead" class="btn-secondary btn-sm">
+                            Mark all as read
+                        </button>
                     </div>
                 </div>
             </div>
-            <nav class="px-4 py-6 space-y-2">
-                <Link href="/dashboard" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                    </svg>
-                    <span class="font-medium">Dashboard</span>
-                </Link>
-                <Link href="/students" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6-12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="font-medium">Students</span>
-                    <span v-if="user.role === 'admin'" class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">1,850</span>
-                </Link>
-                <template v-if="user.role === 'admin' || user.role === 'teacher'">
-                    <Link href="/teachers" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                        <span class="font-medium">Faculty</span>
-                        <span v-if="user.role === 'admin'" class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">125</span>
-                    </Link>
-                </template>
-                <Link href="/subjects" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
-                    </svg>
-                    <span class="font-medium">Academics</span>
-                </Link>
-                <Link href="/fees" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                    </svg>
-                    <span class="font-medium">Finance</span>
-                </Link>
-                <Link href="/payments" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                    </svg>
-                    <span class="font-medium">Payments</span>
-                </Link>
-                <Link href="/complaints" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
-                    </svg>
-                    <span class="font-medium">Support</span>
-                    <span class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">7</span>
-                </Link>
-                <Link href="/reports" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                    <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    <span class="font-medium">Analytics</span>
-                </Link>
-                <Link href="/notifications" class="flex items-center px-4 py-3 text-slate-700 bg-indigo-50 rounded-xl border border-indigo-100 transition-all duration-200 hover:bg-indigo-100">
-                    <svg class="h-5 w-5 mr-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0a3 3 0 00-6 0"></path>
-                    </svg>
-                    <span class="font-medium">Notifications</span>
-                </Link>
-                <div class="pt-4 mt-4 border-t border-slate-200">
-                    <Link href="/settings" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
-                        <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.82 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.82 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.82-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.82-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <span class="font-medium">Settings</span>
-                    </Link>
-                </div>
-            </nav>
-        </div>
+        </template>
 
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
-            <!-- Header -->
-            <header class="h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-8 flex items-center justify-between relative z-50">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-800">Notifications</h1>
-                    <p class="text-slate-500 text-sm">Recent updates</p>
+        <div class="container-custom">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                <div class="card-hover p-4 text-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center mx-auto mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.enrollment }}</div>
+                    <div class="text-xs text-secondary-600">Enrollments</div>
                 </div>
-                <div class="flex items-center space-x-4">
+
+                <div class="card-hover p-4 text-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-success-500 to-success-600 flex items-center justify-center mx-auto mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.payment }}</div>
+                    <div class="text-xs text-secondary-600">Payments</div>
+                </div>
+
+                <div class="card-hover p-4 text-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-warning-500 to-warning-600 flex items-center justify-center mx-auto mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.alert }}</div>
+                    <div class="text-xs text-secondary-600">Alerts</div>
+                </div>
+
+                <div class="card-hover p-4 text-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 flex items-center justify-center mx-auto mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                        </svg>
+                    </div>
+                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.assignment }}</div>
+                    <div class="text-xs text-secondary-600">Assignments</div>
+                </div>
+
+                <div class="card-hover p-4 text-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-secondary-500 to-secondary-600 flex items-center justify-center mx-auto mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                        </svg>
+                    </div>
+                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.system }}</div>
+                    <div class="text-xs text-secondary-600">System</div>
+                </div>
+
+                <div class="card-hover p-4 text-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center mx-auto mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.message }}</div>
+                    <div class="text-xs text-secondary-600">Messages</div>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="card p-6 mb-8">
+                <div class="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+                    <div class="flex flex-wrap gap-2">
+                        <button 
+                            @click="filterType = 'all'"
+                            :class="filterType === 'all' ? 'btn-primary' : 'btn-secondary'"
+                            class="btn-sm"
+                        >
+                            All Notifications
+                        </button>
+                        <button 
+                            @click="filterType = 'unread'"
+                            :class="filterType === 'unread' ? 'btn-primary' : 'btn-secondary'"
+                            class="btn-sm"
+                        >
+                            Unread
+                            <span v-if="unreadCount > 0" class="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">{{ unreadCount }}</span>
+                        </button>
+                        <button 
+                            @click="filterType = 'enrollment'"
+                            :class="filterType === 'enrollment' ? 'btn-primary' : 'btn-secondary'"
+                            class="btn-sm"
+                        >
+                            Enrollments
+                        </button>
+                        <button 
+                            @click="filterType = 'payment'"
+                            :class="filterType === 'payment' ? 'btn-primary' : 'btn-secondary'"
+                            class="btn-sm"
+                        >
+                            Payments
+                        </button>
+                        <button 
+                            @click="filterType = 'alert'"
+                            :class="filterType === 'alert' ? 'btn-primary' : 'btn-secondary'"
+                            class="btn-sm"
+                        >
+                            Alerts
+                        </button>
+                    </div>
+                    
                     <div class="relative">
-                        <input type="text" placeholder="Search anything..." class="bg-slate-100/70 backdrop-blur-sm px-4 py-3 pl-10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white w-80 transition-all duration-200">
-                        <svg class="absolute left-3 top-3.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
                         </svg>
-                    </div>
-                    <button class="relative p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-2xl transition-all duration-200">
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0a3 3 0 00-6 0"></path>
-                        </svg>
-                        <span class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
-                    </button>
-                    <div class="relative group">
-                        <div class="flex items-center space-x-3 pl-4 border-l border-slate-200 cursor-pointer">
-                            <img :src="user.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" :alt="user.name" class="h-12 w-12 rounded-2xl ring-2 ring-white shadow-md">
-                            <div class="text-sm">
-                                <p class="font-semibold text-slate-800">{{ user.name }}</p>
-                                <p class="text-slate-500">{{ user.role }}</p>
-                            </div>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </div>
-                        <div class="absolute right-0 top-full mt-2 w-56 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
-                            <div class="p-2">
-                                <Link href="/profile" class="flex items-center px-4 py-3 text-slate-700 hover:bg-slate-100/70 rounded-xl transition-colors duration-150">
-                                    <svg class="w-4 h-4 mr-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                    </svg>
-                                    View Profile
-                                </Link>
-                                <Link href="/account-settings" class="flex items-center px-4 py-3 text-slate-700 hover:bg-slate-100/70 rounded-xl transition-colors duration-150">
-                                    <svg class="w-4 h-4 mr-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.82 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.82 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.82-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.82-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    </svg>
-                                    Account Settings
-                                </Link>
-                                <hr class="my-2 border-slate-200">
-                                <Link href="/logout" method="post" as="button" class="flex items-center w-full px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors duration-150">
-                                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                                    </svg>
-                                    Sign Out
-                                </Link>
-                            </div>
-                        </div>
+                        <input 
+                            v-model="searchQuery"
+                            type="text" 
+                            placeholder="Search notifications..."
+                            class="form-input pl-10 w-80"
+                        >
                     </div>
                 </div>
-            </header>
+            </div>
 
-            <!-- Main Content -->
-            <main class="flex-1 overflow-y-auto p-8 space-y-8 relative">
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div v-for="notification in notifications" :key="notification.title" class="p-6 rounded-2xl" :class="{
-                            'bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200': notification.type === 'student',
-                            'bg-gradient-to-br from-emerald-50 to-green-100 border border-emerald-200': notification.type === 'payment',
-                            'bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200': notification.type === 'alert'
-                        }">
-                            <div class="flex items-start justify-between mb-3">
-                                <div class="p-2 rounded-xl" :class="{
-                                    'bg-blue-500': notification.type === 'student',
-                                    'bg-emerald-500': notification.type === 'payment',
-                                    'bg-amber-500': notification.type === 'alert'
-                                }">
-                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1z"></path>
+            <!-- Notifications List -->
+            <div class="space-y-4">
+                <div v-if="filteredNotifications.length === 0" class="card p-12 text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-secondary-400">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-secondary-900 mb-2">No notifications found</h3>
+                    <p class="text-secondary-600">{{ searchQuery ? 'Try adjusting your search terms or filters' : 'You\'re all caught up! No new notifications at this time.' }}</p>
+                </div>
+
+                <div 
+                    v-for="notification in filteredNotifications" 
+                    :key="notification.id"
+                    :class="[
+                        'card-hover p-6 cursor-pointer transition-all duration-200',
+                        getPriorityClass(notification.priority),
+                        { 'ring-2 ring-primary-200': !notification.read }
+                    ]"
+                    @click="markAsRead(notification)"
+                >
+                    <div class="flex items-start space-x-4">
+                        <!-- Notification Icon/Avatar -->
+                        <div class="flex-shrink-0">
+                            <div v-if="notification.avatar" class="relative">
+                                <img :src="notification.avatar" :alt="notification.title" class="w-12 h-12 rounded-full object-cover">
+                                <div :class="[
+                                    'absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center',
+                                    `bg-gradient-to-r ${getTypeColor(notification.type).bg}`
+                                ]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                        <path :d="getNotificationIcon(notification.type)"/>
                                     </svg>
                                 </div>
-                                <span class="text-xs" :class="{
-                                    'bg-blue-200 text-blue-600': notification.type === 'student',
-                                    'bg-emerald-200 text-emerald-600': notification.type === 'payment',
-                                    'bg-amber-200 text-amber-600': notification.type === 'alert'
-                                }" class="px-2 py-1 rounded-full">{{ notification.type }}</span>
                             </div>
-                            <h3 class="font-semibold text-slate-800 mb-1">{{ notification.title }}</h3>
-                            <p class="text-sm text-slate-600 mb-2">{{ notification.description }}</p>
-                            <p class="text-xs text-slate-500">{{ notification.time }}</p>
+                            <div v-else :class="[
+                                'w-12 h-12 rounded-xl flex items-center justify-center',
+                                `bg-gradient-to-r ${getTypeColor(notification.type).bg}`
+                            ]">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                    <path :d="getNotificationIcon(notification.type)"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Notification Content -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 :class="[
+                                    'font-semibold truncate',
+                                    !notification.read ? 'text-secondary-900' : 'text-secondary-700'
+                                ]">
+                                    {{ notification.title }}
+                                </h3>
+                                <div class="flex items-center space-x-3 flex-shrink-0 ml-4">
+                                    <span :class="[
+                                        'px-2 py-1 rounded-full text-xs font-medium capitalize',
+                                        getTypeColor(notification.type).badge
+                                    ]">
+                                        {{ notification.type }}
+                                    </span>
+                                    <div v-if="!notification.read" class="w-2 h-2 bg-primary-500 rounded-full"></div>
+                                </div>
+                            </div>
+
+                            <p :class="[
+                                'text-sm mb-3 line-clamp-2',
+                                !notification.read ? 'text-secondary-600' : 'text-secondary-500'
+                            ]">
+                                {{ notification.description }}
+                            </p>
+
+                            <!-- Additional Info -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="text-xs text-secondary-500 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12,6 12,12 16,14"/>
+                                        </svg>
+                                        {{ notification.time }}
+                                    </span>
+                                    
+                                    <span v-if="notification.amount" class="text-xs font-semibold text-success-600">
+                                        {{ notification.amount }}
+                                    </span>
+                                    
+                                    <span v-if="notification.subject" :class="[
+                                        'text-xs px-2 py-1 rounded-full',
+                                        getTypeColor('assignment').badge
+                                    ]">
+                                        {{ notification.subject }}
+                                    </span>
+                                </div>
+
+                                <div v-if="notification.priority === 'high'" class="flex items-center text-xs text-error-600 font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+                                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                    </svg>
+                                    High Priority
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </main>
+            </div>
         </div>
-    </div>
+    </AuthenticatedLayout>
 </template>
 
+<style scoped>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>

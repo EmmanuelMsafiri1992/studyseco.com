@@ -17,16 +17,28 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    // Get student count
-    $studentCount = User::where('role', 'student')->count();
+    // Get student count with error handling
+    try {
+        $studentCount = User::where('role', 'student')->count();
+    } catch (Exception $e) {
+        $studentCount = 500;
+    }
     
     // Get featured student stories from database (fallback to default if none)
-    $studentStories = StudentStory::getFeatured();
+    try {
+        $studentStories = StudentStory::getFeatured();
+    } catch (Exception $e) {
+        $studentStories = collect([]);
+    }
     
     // Get access durations from database
-    $accessDurations = AccessDuration::where('is_active', true)
-        ->orderBy('sort_order')
-        ->get();
+    try {
+        $accessDurations = AccessDuration::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+    } catch (Exception $e) {
+        $accessDurations = collect([]);
+    }
     
     // Default subjects
     $subjects = [

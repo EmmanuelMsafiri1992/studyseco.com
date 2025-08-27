@@ -296,7 +296,6 @@ const props = defineProps({
 
 // Payment Method Modal State
 const showMethodModal = ref(false)
-const showAddMethodModal = ref(false)
 const editingMethod = ref(null)
 const methodProcessing = ref(false)
 
@@ -311,7 +310,6 @@ const methodForm = ref({
 
 // Access Duration Modal State
 const showDurationModal = ref(false)
-const showAddDurationModal = ref(false)
 const editingDuration = ref(null)
 const durationProcessing = ref(false)
 

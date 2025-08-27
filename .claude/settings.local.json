@@ -9,7 +9,17 @@
       "Bash(git commit:*)",
       "Bash(php artisan make:migration:*)",
       "Bash(php artisan:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 5 npm run dev)",
+      "Bash(npx vue-tsc:*)",
+      "Bash(node:*)",
+      "Bash(php -l:*)",
+      "Bash(composer install:*)",
+      "Bash(sed:*)",
+      "Bash(timeout:*)",
+      "Bash(npm run build:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": [],
