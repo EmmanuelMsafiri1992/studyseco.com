@@ -1,5 +1,5 @@
 <template>
-  <AppLayout title="Extend Access">
+  <AuthenticatedLayout title="Extend Access">
     <template #header>
       <h2 class="font-semibold text-xl text-gray-800 leading-tight">
         Extend Access Period
@@ -45,7 +45,7 @@
                   <h3 class="text-lg font-medium text-gray-900 mb-4">Choose Extension Duration</h3>
                   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     <div v-for="(price, months) in extensionPricing" :key="months"
-                         :class="['border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md', 
+                         :class="['border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md',
                                   form.extension_months == months ? 'border-blue-500 bg-blue-50 shadow-lg' : 'border-gray-200 hover:border-blue-300']"
                          @click="form.extension_months = parseInt(months)">
                       <div class="text-center">
@@ -70,7 +70,7 @@
                   <h3 class="text-lg font-medium text-gray-900 mb-4">Select Payment Method</h3>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div v-for="method in paymentMethods" :key="method.id"
-                         :class="['border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md flex items-center', 
+                         :class="['border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md flex items-center',
                                   form.payment_method_id == method.id ? 'border-blue-500 bg-blue-50 shadow-lg' : 'border-gray-200 hover:border-blue-300']"
                          @click="form.payment_method_id = method.id">
                       <div class="flex-1">
@@ -182,8 +182,8 @@
                       {{ formatPrice(payment.amount, payment.currency) }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                      <span :class="['px-2 inline-flex text-xs leading-5 font-semibold rounded-full', 
-                                     payment.status === 'verified' ? 'bg-green-100 text-green-800' : 
+                      <span :class="['px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
+                                     payment.status === 'verified' ? 'bg-green-100 text-green-800' :
                                      payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800']">
                         {{ payment.status.charAt(0).toUpperCase() + payment.status.slice(1) }}
                       </span>
@@ -196,13 +196,13 @@
         </div>
       </div>
     </div>
-  </AppLayout>
+  </AuthenticatedLayout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import AppLayout from '@/Layouts/AppLayout.vue'
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 import TextInput from '@/Components/TextInput.vue'
@@ -261,7 +261,7 @@ const resetForm = () => {
 
 const submitExtension = () => {
   processing.value = true
-  
+
   form.transform((data) => ({
     ...data,
     _method: 'POST'
