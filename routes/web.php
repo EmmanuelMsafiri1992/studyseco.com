@@ -384,6 +384,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{role}/edit', [\App\Http\Controllers\Admin\RoleController::class, 'edit'])->name('edit');
         Route::put('/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->name('update');
         Route::delete('/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->name('destroy');
+        Route::post('/{role}/toggle', [\App\Http\Controllers\Admin\RoleController::class, 'toggle'])->name('toggle');
         
         // User role assignment
         Route::post('/assign', [\App\Http\Controllers\Admin\RoleController::class, 'assignRole'])->name('assign');

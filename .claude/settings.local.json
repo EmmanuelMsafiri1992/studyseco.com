@@ -26,7 +26,14 @@
       "Bash(del \"C:\\laragon\\www\\studyseco\\resources\\js\\Layouts\\DashboardLayout.vue\")",
       "Bash(del databasemigrations2025_08_27_140348_add_access_tracking_to_enrollments_table.php)",
       "Bash(del databasemigrations2025_08_28_073321_add_verification_fields_to_enrollments_table.php)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(copy .env.example .env)",
+      "Bash(cp:*)",
+      "Bash(touch:*)",
+      "Bash(composer validate:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm install:*)",
+      "Bash(composer:*)"
     ],
     "deny": [],
     "ask": [],

@@ -13,9 +13,11 @@ const form = ref({
     notifications: true,
     school_name: 'StudySeco',
     logo: null,
+    favicon: null,
 });
 
 const logoPreview = ref(null);
+const faviconPreview = ref(null);
 
 const handleLogoUpload = (event) => {
     const file = event.target.files[0];
@@ -24,6 +26,18 @@ const handleLogoUpload = (event) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             logoPreview.value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+const handleFaviconUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        form.value.favicon = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            faviconPreview.value = e.target.result;
         };
         reader.readAsDataURL(file);
     }
@@ -181,6 +195,35 @@ const saveSettings = () => {
                                     Choose Logo File
                                 </label>
                                 <p class="text-xs text-slate-500 mt-1">PNG, JPG up to 2MB. Recommended: 64x64px</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Favicon Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Website Favicon</label>
+                        <div class="flex items-center space-x-4">
+                            <!-- Current/Preview Favicon -->
+                            <div class="w-16 h-16 bg-slate-100 border-2 border-slate-200 rounded-xl flex items-center justify-center overflow-hidden">
+                                <img v-if="faviconPreview" :src="faviconPreview" alt="Favicon Preview" class="w-8 h-8 object-cover">
+                                <svg v-else class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                            </div>
+                            
+                            <!-- Upload Button -->
+                            <div class="flex-1">
+                                <input 
+                                    type="file" 
+                                    @change="handleFaviconUpload"
+                                    accept="image/x-icon,image/png,image/jpeg,image/svg+xml"
+                                    class="hidden" 
+                                    id="favicon-upload"
+                                >
+                                <label for="favicon-upload" class="cursor-pointer bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-medium text-slate-700 transition-colors">
+                                    Choose Favicon File
+                                </label>
+                                <p class="text-xs text-slate-500 mt-1">ICO, PNG, JPG, SVG up to 1MB. Recommended: 32x32px</p>
                             </div>
                         </div>
                     </div>

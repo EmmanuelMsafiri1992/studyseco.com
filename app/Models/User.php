@@ -77,6 +77,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get enrollment payments made by this user
+     */
+    public function enrollmentPayments(): HasMany
+    {
+        return $this->hasMany(EnrollmentPayment::class, 'user_id');
+    }
+
+    /**
+     * Get enrollment payments verified by this admin
+     */
+    public function verifiedEnrollmentPayments(): HasMany
+    {
+        return $this->hasMany(EnrollmentPayment::class, 'verified_by');
+    }
+
+    /**
      * Check if user has valid access
      */
     public function hasValidAccess(): bool

@@ -15,7 +15,13 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, $role): Response
     {
-        if (!$request->user() || $request->user()->role !== $role) {
+        $user = $request->user();
+        
+        if (!$user) {
+            abort(403, 'Access denied. Authentication required.');
+        }
+        
+        if (!$user->hasRole($role)) {
             abort(403, 'Access denied. Insufficient permissions.');
         }
 

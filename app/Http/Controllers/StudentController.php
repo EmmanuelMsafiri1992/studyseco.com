@@ -12,9 +12,7 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::where('role', 'student')->with(['enrollments' => function($q) {
-            $q->with('subjects');
-        }]);
+        $query = User::where('role', 'student')->with('enrollments');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -46,7 +44,8 @@ class StudentController extends Controller
             
             $student->is_active = (bool) $activeEnrollment;
             $student->enrollment_status = $activeEnrollment ? 'Active' : 'Inactive';
-            $student->subjects_count = $activeEnrollment ? $activeEnrollment->subjects->count() : 0;
+            $student->subjects_count = $activeEnrollment && $activeEnrollment->selected_subjects 
+                ? count($activeEnrollment->selected_subjects) : 0;
             $student->access_expires_at = $activeEnrollment?->access_expires_at;
             
             return $student;
@@ -103,7 +102,7 @@ class StudentController extends Controller
         }
 
         $user->load([
-            'enrollments.subjects', 
+            'enrollments', 
             'payments' => function($q) {
                 $q->orderBy('created_at', 'desc');
             }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -67,9 +68,14 @@ class Enrollment extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function payments()
+    public function payments(): HasMany
     {
         return $this->hasMany(EnrollmentPayment::class);
+    }
+
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class);
     }
 
     // Generate unique enrollment number

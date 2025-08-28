@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PaymentMethod extends Model
 {
@@ -70,6 +71,12 @@ class PaymentMethod extends Model
     public function scopeForRegion($query, $region)
     {
         return $query->where('region', $region);
+    }
+
+    // Get enrollment payments using this payment method
+    public function enrollmentPayments(): HasMany
+    {
+        return $this->hasMany(EnrollmentPayment::class);
     }
 
     // Get price per subject for this payment method's currency

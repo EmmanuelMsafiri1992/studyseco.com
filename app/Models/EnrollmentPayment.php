@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EnrollmentPayment extends Model
 {
@@ -27,18 +28,23 @@ class EnrollmentPayment extends Model
         'verified_at' => 'datetime'
     ];
 
-    public function enrollment()
+    public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
     }
 
-    public function paymentMethod()
+    public function paymentMethod(): BelongsTo
     {
         return $this->belongsTo(PaymentMethod::class);
     }
 
-    public function verifiedBy()
+    public function verifiedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

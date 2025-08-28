@@ -17,10 +17,12 @@ class PaymentConfigurationSeeder extends Seeder
         // Create default payment methods
         PaymentMethod::create([
             'name' => 'TNM Mpamba',
-            'key' => 'tnm_mpamba',
+            'code' => 'tnm_mpamba',
             'type' => 'mobile_money',
+            'region' => 'malawi',
+            'currency' => 'MWK',
             'instructions' => 'Send money to the TNM Mpamba number below and upload screenshot of the transaction.',
-            'config' => [
+            'requirements' => [
                 'phone_number' => '+265123456789',
                 'merchant_code' => '12345',
             ],
@@ -30,10 +32,12 @@ class PaymentConfigurationSeeder extends Seeder
 
         PaymentMethod::create([
             'name' => 'Airtel Money',
-            'key' => 'airtel_money',
+            'code' => 'airtel_money',
             'type' => 'mobile_money',
+            'region' => 'malawi',
+            'currency' => 'MWK',
             'instructions' => 'Send money to the Airtel Money number below and upload screenshot of the transaction.',
-            'config' => [
+            'requirements' => [
                 'phone_number' => '+265987654321',
                 'merchant_code' => '54321',
             ],
@@ -43,10 +47,12 @@ class PaymentConfigurationSeeder extends Seeder
 
         PaymentMethod::create([
             'name' => 'Bank Transfer',
-            'key' => 'bank_transfer',
+            'code' => 'bank_transfer',
             'type' => 'bank_transfer',
+            'region' => 'malawi',
+            'currency' => 'MWK',
             'instructions' => 'Transfer money to the bank account below and upload screenshot of the transaction or enter reference number.',
-            'config' => [
+            'requirements' => [
                 'bank_name' => 'National Bank of Malawi',
                 'account_name' => 'StudySeco Secondary School',
                 'account_number' => '1234567890123',
