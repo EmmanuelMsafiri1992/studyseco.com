@@ -173,7 +173,43 @@ class RoleController extends Controller
         $role->update(['is_active' => !$role->is_active]);
 
         $status = $role->is_active ? 'activated' : 'deactivated';
-        
+
         return back()->with('success', "Role {$status} successfully.");
+    }
+
+    /**
+     * Assign role to user
+     */
+    public function assignRole(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role_id' => 'required|exists:roles,id'
+        ]);
+
+        $user = \App\Models\User::findOrFail($request->user_id);
+        $role = Role::findOrFail($request->role_id);
+
+        $user->assignRole($role, auth()->id());
+
+        return back()->with('success', 'Role assigned successfully.');
+    }
+
+    /**
+     * Revoke role from user
+     */
+    public function revokeRole(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role_id' => 'required|exists:roles,id'
+        ]);
+
+        $user = \App\Models\User::findOrFail($request->user_id);
+        $role = Role::findOrFail($request->role_id);
+
+        $user->removeRole($role);
+
+        return back()->with('success', 'Role revoked successfully.');
     }
 }

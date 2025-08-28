@@ -262,27 +262,24 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // School Management Routes
-    Route::get('/students', function () {
-        return Inertia::render('Students/Index', [
-            // You can pass mock data here later
-            'students' => []
-        ]);
-    })->name('students.index');
+    // Admin-Only School Management Routes
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/students', [\App\Http\Controllers\StudentController::class, 'index'])->name('students.index');
+        Route::get('/students/create', [\App\Http\Controllers\StudentController::class, 'create'])->name('students.create');
+        Route::post('/students', [\App\Http\Controllers\StudentController::class, 'store'])->name('students.store');
+        Route::get('/students/{user}', [\App\Http\Controllers\StudentController::class, 'show'])->name('students.show');
+        Route::get('/students/{user}/edit', [\App\Http\Controllers\StudentController::class, 'edit'])->name('students.edit');
+        Route::put('/students/{user}', [\App\Http\Controllers\StudentController::class, 'update'])->name('students.update');
+        Route::delete('/students/{user}', [\App\Http\Controllers\StudentController::class, 'destroy'])->name('students.destroy');
 
-    Route::get('/students/create', function () {
-        return Inertia::render('Students/Create');
-    })->name('students.create');
-
-    Route::get('/teachers', function () {
-        return Inertia::render('Teachers/Index', [
-            'teachers' => []
-        ]);
-    })->name('teachers.index');
-
-    Route::get('/teachers/create', function () {
-        return Inertia::render('Teachers/Create');
-    })->name('teachers.create');
+        Route::get('/teachers', [\App\Http\Controllers\TeacherController::class, 'index'])->name('teachers.index');
+        Route::get('/teachers/create', [\App\Http\Controllers\TeacherController::class, 'create'])->name('teachers.create');
+        Route::post('/teachers', [\App\Http\Controllers\TeacherController::class, 'store'])->name('teachers.store');
+        Route::get('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'show'])->name('teachers.show');
+        Route::get('/teachers/{user}/edit', [\App\Http\Controllers\TeacherController::class, 'edit'])->name('teachers.edit');
+        Route::put('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'update'])->name('teachers.update');
+        Route::delete('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'destroy'])->name('teachers.destroy');
+    });
 
     // Subject Management Routes
     Route::resource('subjects', SubjectController::class);
@@ -316,10 +313,13 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Fees/Create');
     })->name('fees.create');
 
-    // Payment Management Routes
-    Route::resource('payments', PaymentController::class)->except(['edit', 'update', 'destroy']);
-    Route::post('payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
-    Route::get('payments/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
+    // Payment Management Routes (Admin-only viewing, students can only create)
+    Route::get('/payments', [PaymentController::class, 'index'])->middleware('role:admin')->name('payments.index');
+    Route::get('/payments/create', [PaymentController::class, 'create'])->name('payments.create');
+    Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+    Route::post('payments/{payment}/verify', [PaymentController::class, 'verify'])->middleware('role:admin')->name('payments.verify');
+    Route::get('payments/statistics', [PaymentController::class, 'statistics'])->middleware('role:admin')->name('payments.statistics');
     Route::get('api/payments/check-access', [PaymentController::class, 'checkAccess'])->name('payments.check-access');
 
     // Admin Payment Settings Routes
@@ -362,23 +362,33 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [SystemSettingsController::class, 'update'])->name('update');
     });
 
-    Route::get('/complaints', function () {
-        return Inertia::render('Complaints/Index', [
-            'complaints' => []
-        ]);
-    })->name('complaints.index');
+    // Complaints Routes - All users can create, admins can manage
+    Route::get('/complaints', [\App\Http\Controllers\ComplaintController::class, 'index'])->name('complaints.index');
+    Route::get('/complaints/create', [\App\Http\Controllers\ComplaintController::class, 'create'])->name('complaints.create');
+    Route::post('/complaints', [\App\Http\Controllers\ComplaintController::class, 'store'])->name('complaints.store');
+    Route::get('/complaints/{complaint}', [\App\Http\Controllers\ComplaintController::class, 'show'])->name('complaints.show');
 
-    Route::get('/complaints/create', function () {
-        return Inertia::render('Complaints/Create');
-    })->name('complaints.create');
+    // Reports Routes - Admin only
+    Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->middleware('role:admin')->name('reports.index');
 
-    Route::get('/reports', function () {
-        return Inertia::render('Reports/Index');
-    })->name('reports.index');
+    // Settings Routes - Admin only for system settings, users for personal settings
+    Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->middleware('role:admin')->name('settings.index');
+    Route::post('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->middleware('role:admin')->name('settings.update');
 
-    Route::get('/settings', function () {
-        return Inertia::render('Settings/Index');
-    })->name('settings.index');
+    // Role Management Routes - Admin only
+    Route::middleware('role:admin')->prefix('admin/roles')->name('admin.roles.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\RoleController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\RoleController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->name('store');
+        Route::get('/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'show'])->name('show');
+        Route::get('/{role}/edit', [\App\Http\Controllers\Admin\RoleController::class, 'edit'])->name('edit');
+        Route::put('/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->name('update');
+        Route::delete('/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->name('destroy');
+        
+        // User role assignment
+        Route::post('/assign', [\App\Http\Controllers\Admin\RoleController::class, 'assignRole'])->name('assign');
+        Route::post('/revoke', [\App\Http\Controllers\Admin\RoleController::class, 'revokeRole'])->name('revoke');
+    });
 
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
@@ -409,6 +419,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('getMessages');
         Route::post('/{chatGroup}/join', [\App\Http\Controllers\ChatController::class, 'join'])->name('join');
         Route::post('/{chatGroup}/leave', [\App\Http\Controllers\ChatController::class, 'leave'])->name('leave');
+    });
+
+    // Library Routes
+    Route::prefix('library')->name('library.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\LibraryController::class, 'index'])->name('index');
+        Route::get('/books', [\App\Http\Controllers\LibraryController::class, 'books'])->name('books');
+        Route::get('/past-papers', [\App\Http\Controllers\LibraryController::class, 'pastPapers'])->name('pastPapers');
+        Route::get('/search', [\App\Http\Controllers\LibraryController::class, 'search'])->name('search');
+        Route::get('/{resource}', [\App\Http\Controllers\LibraryController::class, 'show'])->name('show');
+        Route::get('/{resource}/stream', [\App\Http\Controllers\LibraryController::class, 'stream'])->name('stream');
+    });
+
+    // Achievement Routes
+    Route::prefix('achievements')->name('achievements.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\AchievementController::class, 'index'])->name('index');
+        Route::get('/leaderboard', [\App\Http\Controllers\AchievementController::class, 'leaderboard'])->name('leaderboard');
+        Route::get('/{achievement}', [\App\Http\Controllers\AchievementController::class, 'show'])->name('show');
     });
 });
 

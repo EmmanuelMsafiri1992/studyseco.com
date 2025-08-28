@@ -241,4 +241,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(ChatGroup::class, 'created_by');
     }
+
+    /**
+     * Get achievements earned by this user
+     */
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(Achievement::class);
+    }
+
+    /**
+     * Get achievements awarded by this user
+     */
+    public function awardedAchievements(): HasMany
+    {
+        return $this->hasMany(Achievement::class, 'awarded_by');
+    }
+
+    /**
+     * Get enrollments for this user
+     */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
 }

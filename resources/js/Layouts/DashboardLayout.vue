@@ -35,7 +35,34 @@
           <span class="font-medium">Academics</span>
         </Link>
 
-        <!-- Students - Admin only but always reserved space -->
+        <!-- Library - Available to all roles -->
+        <Link href="/library" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                       $page.component?.includes('Library') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 00-2 2v2m0 0V9a2 2 0 012-2m0 2a2 2 0 012-2h4a2 2 0 012 2m0 2v10"></path>
+          </svg>
+          <span class="font-medium">Library</span>
+        </Link>
+
+        <!-- Chat - Available to all roles -->
+        <Link href="/chat" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                    $page.component?.includes('Chat') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
+          </svg>
+          <span class="font-medium">Chat</span>
+        </Link>
+
+        <!-- Achievements - Available to all roles -->
+        <Link href="/achievements" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                           $page.component?.includes('Achievement') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+          </svg>
+          <span class="font-medium">Achievements</span>
+        </Link>
+
+        <!-- Students - Admin only -->
         <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/students" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                         $page.component?.includes('Student') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +72,7 @@
           <span class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{{ stats?.total_students || 0 }}</span>
         </Link>
 
-        <!-- Faculty - Admin only but always reserved space -->
+        <!-- Faculty - Admin only -->
         <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/teachers" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                         $page.component?.includes('Teacher') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,13 +82,22 @@
           <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{{ stats?.total_teachers || 0 }}</span>
         </Link>
 
-        <!-- Finance - Admin only but always reserved space -->
+        <!-- Finance - Admin only for full access, students see limited view -->
         <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/payments" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                     $page.component?.includes('Payment') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
           </svg>
           <span class="font-medium">Finance</span>
+        </Link>
+        
+        <!-- Payments for Students - Limited access to own payments -->
+        <Link v-if="$page.props.auth?.user?.role === 'student'" href="/payments/create" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                    $page.component?.includes('Payment') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+          <span class="font-medium">Payments</span>
         </Link>
 
         <!-- Support - Available to all roles -->
@@ -74,8 +110,8 @@
           <span v-if="$page.props.auth?.user?.role === 'admin'" class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">{{ stats?.pending_enrollments || 0 }}</span>
         </Link>
 
-        <!-- Analytics - Available to all roles -->
-        <Link href="/reports" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+        <!-- Analytics - Admin only -->
+        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/reports" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                        $page.component?.includes('Report') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -83,9 +119,19 @@
           <span class="font-medium">Analytics</span>
         </Link>
 
-        <!-- Settings - Admin only, separated section -->
-        <div class="pt-4 mt-4 border-t border-slate-200">
-          <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/settings" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+        <!-- Admin-only section -->
+        <div v-if="$page.props.auth?.user?.role === 'admin'" class="pt-4 mt-4 border-t border-slate-200">
+          <!-- Role Management -->
+          <Link href="/admin/roles" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                             $page.component?.includes('Role') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+            </svg>
+            <span class="font-medium">Role Management</span>
+          </Link>
+          
+          <!-- Settings -->
+          <Link href="/settings" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                           $page.component?.includes('Setting') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
             <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.82 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.82 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.82-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.82-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>

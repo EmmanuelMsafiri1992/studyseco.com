@@ -50,7 +50,7 @@ class Role extends Model
         if (is_string($permission)) {
             return $this->permissions()->where('slug', $permission)->exists();
         }
-        
+
         return $this->permissions()->where('id', $permission->id)->exists();
     }
 
