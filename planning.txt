@@ -1,57 +1,106 @@
-Training Access:
-Options
-Per term(4months)
-Per Academic Year
-Per Class(form 1,2, 3 or 4)
-Per Subject(50,000)
+when you are done with our previous conversation implement the following without skipping any. first make sure you analyse the current working
+of the system before implement new to avoid duplicates and make sure your implementations are production ready.
 
 
-Benefits
-- Student Collaborations Chat community
+1. User Permissions & Role Management
+Admin User Capabilities
 
+Full System Access: Admin can view and manage all platform features
+User Management: Admin can view, edit, and manage all users (teachers and students)
+Role Assignment: Admin can elevate users to teacher or admin roles
+Feature Control: Admin can customize which features each user sees on their dashboard
+Granular Permissions: Admin can enable/disable specific features for individual users
 
+Permission Hierarchy
 
+Admin: Full access to all features and user management
+Teacher: Access to assigned classes, student progress, and teaching tools
+Student: Access to courses, resources, and communication features
 
+2. Real-Time Chat System
+Subject-Based Group Chats
 
-I want a simple online application where people who wants to learn coding from zero to advanced can learn by buying time they want to spend on the platform, the platform must train students on project based not by watching videos for exams if one wants to become a frontend developer must do projects using frontend technologies and before starting each project they must be told like to be a frontend developer you need to know a,b,c and in this project we will using those technologies and first part of the project we will start with abc which uses abc technlogies and we use it because of abc. I hope my idea is very clear and also there must be able to learn end user computing for those who are completely new to computers. payment methods must be via western union, Remitly for countries that do support such methods and if those countries do support a user must not be able to choose other methods. otherwise if it does not support they can use paypal, western union or moneygram or bank but they must all be manual yet make as automated but making sure that they upload proof of payments and until they must have access except paypal which is automated.  on word remit and remitly methods are easy to withdraw in south africa because they linkedin with mukuru so when users are paying they simply choose of cash remittance they choose mukuru.
+Automatic Grouping: Students are automatically added to chat groups based on shared subjects
+Topic Restriction: Chat discussions are limited to school and academic subjects only
+Teacher Participation: Teachers can join or leave subject-specific chats at any time
+Real-Time Support: Teachers can provide immediate assistance and answer student questions
+Live Communication: All chat interactions happen in real-time
 
-there is no  1-on-1 Mentoring and the site title must be Zoswa Coding, everything else is AI powered instead of one on one support , and also reduce pricing by half and backend must use laravel framework implement implement the full backend and it must show in hrs not months and also include Backend and Full Stack and also AI Developer and also include free trial 7days
+Chat Features
 
+Subject-specific channels (e.g., Physics Chat, Mathematics Chat)
+Teacher supervision and moderation
+Academic discussion focus only
 
+3. Digital Library & Resources
+Online Library Access
 
-firstly deeply analyse and understand how my whole project works and then compare if all my following requirements are implemented and those not implemented please implement them fully:
+Book Collection: Students can access a comprehensive list of books online
+Past Papers: Archive of previous examination papers available for study
+Additional Resources: Various educational materials and references
+Online Reading Only: All resources are viewable online without download capability
 
-how I wish to see on the frontend, everything else that is existing are fine dont remove them.
-but I need a system that when I a student visits must be able to :
-- grasp the general idea and learn how it works,
-- must also be able to see the list of the subjects
-- must be able to enroll and when enrolling they must see the following options:
-  - free 7 days trial period where they will be able to access everything but only within 7days.
-  - and when enrolling they must verify their email address and phone numbers to avoid fake scammers
-  - then they must be able to choose how many subjects they want to enrol and they system must automatically add the total cost to be paid based
-on the selected number of the subjects.
-  - remember Malawi secondary student term is between 3 to 4months hence our system access will allow the students to access for 4 months.
-  - the 4months access is regardless the number of the subjects enrolled either 1 subject, or 8 or 12 the access is only 4months, and the system must clearly show total duration remaining for the access.
-  - if the duration has passed but the student has not completed, the student must be able to extend by 1month, 2month, 3month, 4month or 12months to make one academic year and each extension must have appropriate fees.
+Content Protection
 
-payment process. as I said when enrolling the students must be able to choose number of the subjects they need and which country they are located
-and as I said that it will be the manual payment it means when Enroll now, you must be taken to the payment methods page if you are not on free trial. the list of payment methods must be based on where you are coming from. and when you click on it you must be able to pay then after paying manually, enter your payment reference number or attach the proof of the payment. when you submit the details the system must show processing and tell the student to wait until the payment is validated. after the payment has been validated, the student will receive email and text notification to use to create username and password then they will now have access to their portal.
+Screenshot Prevention: Technical measures to prevent screenshot capture
+Download Restrictions: All resources are protected from downloading
+View-Only Access: Students can only read materials within the platform
 
+4. Student Achievement Display
+Public Recognition System
 
-other frontend/landing page fixes:
-the chat bot button appears on the left but when clicked it appears on the right side. please both must be on the right bottom corner and make sure the chatbot is fully functional by making sure that the anyone like teacher or admin who has loggedin can be able to answer the questions accordingly.
+Achievement Visibility: Students can view other students' academic achievements
+Performance Examples: Display achievements like "Student A achieved 98% in Physics"
+Motivation System: Public recognition to encourage academic excellence
+Subject-Specific Achievements: Achievements are categorized by subject areas
 
-and on subjects, when I click on subjects I dont want to see the pricing, just subject details its fine. and when I click on contact it must take the user to the contact section.
+5. Automated Student-Teacher Assignment
+Automatic Assignment Process
 
-now on the dashboard fixes:
-- notifications does not work please fix.
-- Quick Actions buttons does not work, please fix them all
-- Dashboard http://127.0.0.1:8000/dashboard must not show dummy data or sample data but the real data.
-- under support, beside on what is already available, please also add the chat bot interface where you can directly reply users who are reaching
-out from the frontend, just remember if there are many requesting for help others must be in queue.
-- under analytics I need the real data not sample data
-- unlike when I click on other buttons like Analytics I am able to see the dashboard layout side bar but when I click on Payments, side bar is not show, its like I am clicking on a different system page, please fix i need all uniform structure.
-- under faculty, when adding the teacher, I must also be able to add his or her default password so that he or she can login then later update the password same with when adding students however when adding students you must able to able to choose subjects and payment status.
-- also under the settings I must be able to change the dashboard logo and update school name.
+Subject-Based Matching: Teachers are automatically assigned new students based on subject expertise
+Example: When a new physics student registers, they are automatically assigned to the physics teacher
+Welcome System: Assigned teachers receive notifications to welcome new students
 
+Teacher Responsibilities for New Students
 
+Welcome Message: Send personalized welcome message through the system
+Meeting Scheduling: Schedule initial meeting via WhatsApp integration
+Activity Logging: Record all interaction details and meeting schedules
+Progress Monitoring: Track student progress against expected completion timelines
+Follow-up Support: Proactive check-ins to identify and address student needs
+
+Manual Override System
+
+Admin Intervention: Admin can manually assign students to teachers when needed
+Coverage Scenarios: Used when subject teachers are unavailable or overloaded
+Flexible Assignment: Admin can reassign students based on availability and workload
+
+6. Student Progress Tracking
+Progress Monitoring Features
+
+Timeline Tracking: Monitor student progress against expected completion dates
+Performance Analytics: Track academic performance and engagement metrics
+Support Identification: Flag students who may need additional assistance
+Intervention Alerts: Notify teachers when students fall behind schedule
+
+Teacher Dashboard Features
+
+Student progress overview
+Assignment completion rates
+Performance trend analysis
+Support request tracking
+Communication history log
+
+7. Communication & Integration
+WhatsApp Integration
+
+Direct meeting scheduling through WhatsApp
+Seamless communication bridge between platform and messaging app
+Meeting confirmation and reminder system
+
+System Notifications
+
+New student assignment alerts for teachers
+Progress milestone notifications
+Achievement announcements
+Meeting reminders and confirmations

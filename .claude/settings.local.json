@@ -24,7 +24,9 @@
       "Bash(del database\\migrations\\2025_08_27_082204_create_enrollments_table.php)",
       "Bash(del database\\migrations\\2025_08_27_082204_create_payment_methods_table.php)",
       "Bash(del \"C:\\laragon\\www\\studyseco\\resources\\js\\Layouts\\DashboardLayout.vue\")",
-      "Bash(del databasemigrations2025_08_27_140348_add_access_tracking_to_enrollments_table.php)"
+      "Bash(del databasemigrations2025_08_27_140348_add_access_tracking_to_enrollments_table.php)",
+      "Bash(del databasemigrations2025_08_28_073321_add_verification_fields_to_enrollments_table.php)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": [],

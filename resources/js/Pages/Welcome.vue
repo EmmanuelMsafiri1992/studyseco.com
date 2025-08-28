@@ -256,6 +256,14 @@ const prevSlide = () => {
     currentSlide.value = (currentSlide.value - 1 + studentStories.value.length) % studentStories.value.length;
 };
 
+const scrollToContact = (e) => {
+    e.preventDefault();
+    const contactElement = document.getElementById('contact');
+    if (contactElement) {
+        contactElement.scrollIntoView({ behavior: 'smooth' });
+    }
+};
+
 // Lifecycle
 onMounted(() => {
     const handleScroll = () => {
@@ -307,7 +315,7 @@ onMounted(() => {
                     <a href="#subjects" class="nav-link text-secondary-700">Subjects</a>
                     <a href="#about" class="nav-link text-secondary-700">About</a>
                     <button @click="showLibraryModal = true" class="nav-link text-secondary-700">Resources</button>
-                    <a href="#contact" class="nav-link text-secondary-700">Contact</a>
+                    <a href="#contact" @click="scrollToContact" class="nav-link text-secondary-700">Contact</a>
                 </div>
 
                 <!-- CTA Buttons -->
@@ -429,7 +437,7 @@ onMounted(() => {
             </div>
             
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div v-for="subject in subjects.slice(0, 8)" :key="subject.id" class="card-hover p-6 text-center group cursor-pointer" @click="showSubjectEnrollment(subject)">
+                <div v-for="subject in subjects" :key="subject.id" class="card-hover p-6 text-center group cursor-pointer" @click="showSubjectEnrollment(subject)">
                     <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-100 to-accent-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                         <span class="text-3xl">{{ subject.icon }}</span>
                     </div>
@@ -985,7 +993,7 @@ onMounted(() => {
 
     <!-- Chat Modal -->
     <div v-if="showChatModal" class="fixed inset-0 z-50 pointer-events-none">
-        <div class="absolute bottom-6 right-6 w-96 h-96 pointer-events-auto">
+        <div class="absolute bottom-20 right-6 w-96 h-96 pointer-events-auto">
             <div class="modal-content w-full h-full flex flex-col">
                 <div class="flex justify-between items-center p-6 border-b border-secondary-200">
                     <h3 class="font-semibold text-secondary-900">Chat with StudySeco</h3>
@@ -1136,9 +1144,6 @@ onMounted(() => {
                 </div>
                 
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-primary-600 mb-2">MK 50,000</div>
-                    <p class="text-sm text-secondary-600 mb-6">Complete access to all materials and resources</p>
-                    
                     <div class="flex gap-4">
                         <button @click="showSubjectModal = false" class="btn-secondary flex-1">
                             Browse More Subjects

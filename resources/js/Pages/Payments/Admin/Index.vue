@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     auth: Object,
@@ -91,32 +92,8 @@ const getStatusColor = (status) => {
 <template>
     <Head title="Payment Verification" />
     
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
-        <!-- Header -->
-        <header class="h-16 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-6 flex items-center justify-between relative z-50">
-            <div class="flex items-center space-x-4">
-                <Link :href="route('dashboard')" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
-                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </Link>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-800">Payment Verification</h1>
-                    <p class="text-sm text-slate-500">Verify student payments manually</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-3">
-                <div class="text-right">
-                    <p class="text-sm font-semibold text-slate-800">{{ user.name }}</p>
-                    <p class="text-xs text-slate-500">{{ user.role }}</p>
-                </div>
-                <img :src="user.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" :alt="user.name" class="h-10 w-10 rounded-xl ring-2 ring-white shadow-md">
-            </div>
-        </header>
-
+    <DashboardLayout title="Payment Verification" subtitle="Verify student payments manually">
         <!-- Main Content -->
-        <main class="flex-1 p-6 max-w-7xl mx-auto">
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6">
@@ -277,7 +254,6 @@ const getStatusColor = (status) => {
                     </div>
                 </div>
             </div>
-        </main>
 
         <!-- Verification Modal -->
         <div v-if="showVerificationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -419,5 +395,5 @@ const getStatusColor = (status) => {
                 </div>
             </div>
         </div>
-    </div>
+    </DashboardLayout>
 </template>

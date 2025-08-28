@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class Enrollment extends Model
@@ -32,7 +33,13 @@ class Enrollment extends Model
         'admin_notes',
         'approved_at',
         'approved_by',
-        'user_id'
+        'user_id',
+        'email_verification_token',
+        'email_verified_at',
+        'phone_verification_code',
+        'phone_verified_at',
+        'verification_expires_at',
+        'is_verified'
     ];
 
     protected $casts = [
@@ -43,7 +50,11 @@ class Enrollment extends Model
         'trial_started_at' => 'datetime',
         'trial_expires_at' => 'datetime',
         'access_expires_at' => 'datetime',
-        'approved_at' => 'datetime'
+        'approved_at' => 'datetime',
+        'email_verified_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
+        'verification_expires_at' => 'datetime',
+        'is_verified' => 'boolean'
     ];
 
     public function approvedBy(): BelongsTo
@@ -237,5 +248,92 @@ class Enrollment extends Model
     public function scopeExpiredAccess($query)
     {
         return $query->where('access_expires_at', '<=', now());
+    }
+
+    // Generate verification codes
+    public function generateEmailVerificationCode()
+    {
+        $this->email_verification_token = Str::random(60);
+        $this->verification_expires_at = now()->addMinutes(10);
+        $this->save();
+
+        return $this->email_verification_token;
+    }
+
+    public function generatePhoneVerificationCode()
+    {
+        $this->phone_verification_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $this->verification_expires_at = now()->addMinutes(10);
+        $this->save();
+
+        return $this->phone_verification_code;
+    }
+
+    // Verify codes
+    public function verifyEmailCode($token)
+    {
+        if ($this->email_verification_token === $token && 
+            $this->verification_expires_at && 
+            now()->lessThan($this->verification_expires_at)) {
+            
+            $this->email_verified_at = now();
+            $this->email_verification_token = null;
+            $this->checkFullVerification();
+            $this->save();
+            
+            return true;
+        }
+
+        return false;
+    }
+
+    public function verifyPhoneCode($code)
+    {
+        if ($this->phone_verification_code === $code && 
+            $this->verification_expires_at && 
+            now()->lessThan($this->verification_expires_at)) {
+            
+            $this->phone_verified_at = now();
+            $this->phone_verification_code = null;
+            $this->checkFullVerification();
+            $this->save();
+            
+            return true;
+        }
+
+        return false;
+    }
+
+    // Check if both email and phone are verified
+    private function checkFullVerification()
+    {
+        if ($this->email_verified_at && $this->phone_verified_at) {
+            $this->is_verified = true;
+            $this->verification_expires_at = null;
+        }
+    }
+
+    // Check if verification is still required
+    public function needsVerification()
+    {
+        return !$this->is_verified && (!$this->email_verified_at || !$this->phone_verified_at);
+    }
+
+    // Get verification status
+    public function getVerificationStatusAttribute()
+    {
+        if ($this->is_verified) {
+            return 'verified';
+        }
+
+        if ($this->email_verified_at && !$this->phone_verified_at) {
+            return 'email_verified';
+        }
+
+        if (!$this->email_verified_at && $this->phone_verified_at) {
+            return 'phone_verified';
+        }
+
+        return 'pending';
     }
 }

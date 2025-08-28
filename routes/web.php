@@ -133,6 +133,14 @@ Route::get('/subject/{id}', [SubjectDetailController::class, 'show'])->name('sub
 Route::post('/enroll', [EnrollmentController::class, 'store'])->name('enrollment.store');
 Route::get('/enrollment/success', [EnrollmentController::class, 'success'])->name('enrollment.success');
 
+// Verification routes (public)
+Route::get('/verification/{enrollment}', [\App\Http\Controllers\VerificationController::class, 'show'])->name('verification.show');
+Route::post('/verification/{enrollment}/email/send', [\App\Http\Controllers\VerificationController::class, 'sendEmailVerification'])->name('verification.email.send');
+Route::post('/verification/{enrollment}/phone/send', [\App\Http\Controllers\VerificationController::class, 'sendPhoneVerification'])->name('verification.phone.send');
+Route::post('/verification/{enrollment}/email/verify', [\App\Http\Controllers\VerificationController::class, 'verifyEmail'])->name('verification.email.verify');
+Route::post('/verification/{enrollment}/phone/verify', [\App\Http\Controllers\VerificationController::class, 'verifyPhone'])->name('verification.phone.verify');
+Route::get('/verification/{enrollment}/status', [\App\Http\Controllers\VerificationController::class, 'status'])->name('verification.status');
+
 // Protected enrollment routes
 Route::middleware('auth')->group(function () {
     Route::post('/enrollment/extend', [EnrollmentController::class, 'extend'])->name('enrollment.extend');
@@ -372,11 +380,10 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Settings/Index');
     })->name('settings.index');
 
-    Route::get('/notifications', function () {
-        return Inertia::render('Notifications/Index', [
-            'notifications' => []
-        ]);
-    })->name('notifications.index');
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::get('/api/notifications/count', [\App\Http\Controllers\NotificationController::class, 'getUnreadCount'])->name('notifications.count');
 
     // Account Settings Route (from dropdown)
     Route::get('/account-settings', function () {
@@ -392,6 +399,16 @@ Route::middleware('auth')->group(function () {
         
         // Admin extension management
         Route::post('/extensions/{payment}/approve', [\App\Http\Controllers\ExtensionController::class, 'approve'])->name('extensions.approve');
+    });
+
+    // Chat Routes
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ChatController::class, 'index'])->name('index');
+        Route::get('/{chatGroup}', [\App\Http\Controllers\ChatController::class, 'show'])->name('show');
+        Route::post('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'storeMessage'])->name('storeMessage');
+        Route::get('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('getMessages');
+        Route::post('/{chatGroup}/join', [\App\Http\Controllers\ChatController::class, 'join'])->name('join');
+        Route::post('/{chatGroup}/leave', [\App\Http\Controllers\ChatController::class, 'leave'])->name('leave');
     });
 });
 

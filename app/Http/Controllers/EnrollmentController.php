@@ -123,6 +123,11 @@ class EnrollmentController extends Controller
             // Mail::to($user->email)->send(new TrialWelcomeMail($user, $tempPassword));
         }
 
+        // Redirect to verification if verification is required, otherwise to success page
+        if ($enrollment->needsVerification()) {
+            return redirect()->route('verification.show', $enrollment->id);
+        }
+        
         return redirect()->route('enrollment.success')->with('enrollment_id', $enrollment->id);
     }
 

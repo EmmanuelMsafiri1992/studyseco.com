@@ -35,34 +35,36 @@
           <span class="font-medium">Academics</span>
         </Link>
 
-        <!-- Admin Only Items -->
-        <template v-if="$page.props.auth?.user?.role === 'admin'">
-          <Link href="/students" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                          $page.component?.includes('Student') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-            </svg>
-            <span class="font-medium">Students</span>
-            <span class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{{ stats?.total_students || 0 }}</span>
-          </Link>
-          <Link href="/teachers" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                          $page.component?.includes('Teacher') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
-            <span class="font-medium">Faculty</span>
-            <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{{ stats?.total_teachers || 0 }}</span>
-          </Link>
-          <Link href="/fees" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                      $page.component?.includes('Fee') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-            </svg>
-            <span class="font-medium">Finance</span>
-          </Link>
-        </template>
+        <!-- Students - Admin only but always reserved space -->
+        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/students" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                        $page.component?.includes('Student') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+          </svg>
+          <span class="font-medium">Students</span>
+          <span class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{{ stats?.total_students || 0 }}</span>
+        </Link>
 
-        <!-- Available to all roles -->
+        <!-- Faculty - Admin only but always reserved space -->
+        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/teachers" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                        $page.component?.includes('Teacher') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <span class="font-medium">Faculty</span>
+          <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{{ stats?.total_teachers || 0 }}</span>
+        </Link>
+
+        <!-- Finance - Admin only but always reserved space -->
+        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/payments" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                    $page.component?.includes('Payment') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+          <span class="font-medium">Finance</span>
+        </Link>
+
+        <!-- Support - Available to all roles -->
         <Link href="/complaints" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                           $page.component?.includes('Complaint') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,14 +74,7 @@
           <span v-if="$page.props.auth?.user?.role === 'admin'" class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">{{ stats?.pending_enrollments || 0 }}</span>
         </Link>
 
-        <Link href="/payments" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                        $page.component?.includes('Payment') ? 'text-slate-700 bg-indigo-50 border-indigo-100' : 'text-slate-600']">
-          <svg class="h-5 w-5 mr-4" :class="$page.component?.includes('Payment') ? 'text-indigo-600' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-          </svg>
-          <span class="font-medium">Payments</span>
-        </Link>
-
+        <!-- Analytics - Available to all roles -->
         <Link href="/reports" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                        $page.component?.includes('Report') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,9 +83,9 @@
           <span class="font-medium">Analytics</span>
         </Link>
 
-        <!-- Settings - Admin only -->
-        <div v-if="$page.props.auth?.user?.role === 'admin'" class="pt-4 mt-4 border-t border-slate-200">
-          <Link href="/settings" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+        <!-- Settings - Admin only, separated section -->
+        <div class="pt-4 mt-4 border-t border-slate-200">
+          <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/settings" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                           $page.component?.includes('Setting') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
             <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.82 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.82 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.82-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.82-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
@@ -126,7 +121,7 @@
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0a3 3 0 00-6 0"></path>
             </svg>
-            <span class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+            <span v-if="notificationCount > 0" class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{{ notificationCount }}</span>
           </Link>
 
           <div class="relative group">
@@ -179,6 +174,7 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3'
+import { ref, onMounted } from 'vue'
 
 defineProps({
   title: {
@@ -193,5 +189,23 @@ defineProps({
     type: Object,
     default: () => ({})
   }
+})
+
+const notificationCount = ref(0)
+
+// Fetch notification count
+const fetchNotificationCount = async () => {
+  try {
+    const response = await fetch('/api/notifications/count')
+    const data = await response.json()
+    notificationCount.value = data.count
+  } catch (error) {
+    console.error('Failed to fetch notification count:', error)
+  }
+}
+
+// Initialize notification count on mount
+onMounted(() => {
+  fetchNotificationCount()
 })
 </script>
