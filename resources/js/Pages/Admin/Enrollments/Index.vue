@@ -1,229 +1,266 @@
-<template>
-    <div>
-        <Head title="Enrollment Management" />
-        
-        <AuthenticatedLayout>
-            <template #header>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Enrollment Management
-                </h2>
-            </template>
-
-            <div class="py-12">
-                <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6">
-                            <div class="text-2xl font-bold text-blue-600">{{ enrollmentStats.total || 0 }}</div>
-                            <div class="text-sm text-gray-600">Total Enrollments</div>
-                        </div>
-                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6">
-                            <div class="text-2xl font-bold text-yellow-600">{{ enrollmentStats.pending || 0 }}</div>
-                            <div class="text-sm text-gray-600">Pending Review</div>
-                        </div>
-                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6">
-                            <div class="text-2xl font-bold text-green-600">{{ enrollmentStats.approved || 0 }}</div>
-                            <div class="text-sm text-gray-600">Approved</div>
-                        </div>
-                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6">
-                            <div class="text-2xl font-bold text-red-600">{{ enrollmentStats.rejected || 0 }}</div>
-                            <div class="text-sm text-gray-600">Rejected</div>
-                        </div>
-                    </div>
-
-                    <!-- Enrollments Table -->
-                    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-                        <div class="p-6 border-b border-gray-200">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-lg font-semibold">Student Enrollments</h3>
-                                <div class="flex space-x-2">
-                                    <select v-model="statusFilter" @change="filterEnrollments" class="rounded-md border-gray-300">
-                                        <option value="">All Status</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="rejected">Rejected</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Student
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Contact
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Subjects
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Amount
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Date
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr v-for="enrollment in enrollments.data" :key="enrollment.id" class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                                        <span class="text-sm font-medium text-gray-700">
-                                                            {{ enrollment.name.charAt(0) }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">{{ enrollment.name }}</div>
-                                                    <div class="text-sm text-gray-500">{{ enrollment.enrollment_number }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <div>{{ enrollment.email }}</div>
-                                            <div>{{ enrollment.phone }}</div>
-                                            <div class="text-xs">{{ enrollment.country }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">
-                                            <div class="max-w-xs">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    {{ enrollment.selected_subjects ? enrollment.selected_subjects.length : 0 }} subjects
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <div class="font-medium">
-                                                {{ formatCurrency(enrollment.total_amount, enrollment.currency) }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="getStatusClass(enrollment.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                                                {{ enrollment.status }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ formatDate(enrollment.created_at) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <Link :href="route('admin.enrollments.show', enrollment.id)" 
-                                                  class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                                View
-                                            </Link>
-                                            <button v-if="enrollment.status === 'pending'" 
-                                                    @click="approveEnrollment(enrollment.id)"
-                                                    class="text-green-600 hover:text-green-900 mr-3">
-                                                Approve
-                                            </button>
-                                            <button v-if="enrollment.status === 'pending'" 
-                                                    @click="rejectEnrollment(enrollment.id)"
-                                                    class="text-red-600 hover:text-red-900">
-                                                Reject
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Pagination -->
-                        <div v-if="enrollments.links" class="px-6 py-3 border-t border-gray-200">
-                            <nav class="flex items-center justify-between">
-                                <div class="flex justify-between flex-1 sm:hidden">
-                                    <Link v-if="enrollments.prev_page_url" :href="enrollments.prev_page_url" 
-                                          class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:text-gray-400">
-                                        Previous
-                                    </Link>
-                                    <Link v-if="enrollments.next_page_url" :href="enrollments.next_page_url" 
-                                          class="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:text-gray-400">
-                                        Next
-                                    </Link>
-                                </div>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </AuthenticatedLayout>
-    </div>
-</template>
-
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     enrollments: Object,
     enrollmentStats: Object
 });
 
-const statusFilter = ref('');
+const showRejectModal = ref(false);
+const enrollmentToReject = ref(null);
 
-const getStatusClass = (status) => {
-    switch (status) {
-        case 'pending':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'approved':
-            return 'bg-green-100 text-green-800';
-        case 'rejected':
-            return 'bg-red-100 text-red-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
+const rejectForm = useForm({
+    admin_notes: ''
+});
+
+const confirmReject = (enrollment) => {
+    enrollmentToReject.value = enrollment;
+    showRejectModal.value = true;
 };
 
-const formatCurrency = (amount, currency) => {
-    const symbols = {
-        'MWK': 'MK',
-        'ZAR': 'R',
-        'USD': '$'
-    };
-    return `${symbols[currency] || currency} ${new Intl.NumberFormat().format(amount)}`;
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-};
-
-const approveEnrollment = (id) => {
-    if (confirm('Are you sure you want to approve this enrollment?')) {
-        const form = useForm({});
-        form.patch(route('admin.enrollments.approve', id));
-    }
-};
-
-const rejectEnrollment = (id) => {
-    const reason = prompt('Please provide a reason for rejection (optional):');
-    if (reason !== null) {
-        const form = useForm({
-            admin_notes: reason
+const rejectEnrollment = () => {
+    if (enrollmentToReject.value) {
+        rejectForm.patch(route('admin.enrollments.reject', enrollmentToReject.value.id), {
+            onSuccess: () => {
+                showRejectModal.value = false;
+                enrollmentToReject.value = null;
+                rejectForm.reset();
+            }
         });
-        form.patch(route('admin.enrollments.reject', id));
     }
 };
 
-const filterEnrollments = () => {
-    // Implementation would reload with filter
-    const params = statusFilter.value ? { status: statusFilter.value } : {};
-    router.get(route('admin.enrollments.index'), params, {
-        preserveState: true,
-        preserveScroll: true
-    });
+const approveEnrollment = (enrollment) => {
+    router.patch(route('admin.enrollments.approve', enrollment.id));
+};
+
+const getStatusBadge = (status) => {
+    const badges = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'approved': 'bg-green-100 text-green-800',
+        'rejected': 'bg-red-100 text-red-800',
+        'expired': 'bg-gray-100 text-gray-800'
+    };
+    return badges[status] || 'bg-gray-100 text-gray-800';
+};
+
+const getPaymentStatusBadge = (status) => {
+    const badges = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'verified': 'bg-green-100 text-green-800',
+        'rejected': 'bg-red-100 text-red-800'
+    };
+    return badges[status] || 'bg-gray-100 text-gray-800';
 };
 </script>
+
+<template>
+    <Head title="Enrollments Management" />
+
+    <DashboardLayout 
+        title="Enrollments Management" 
+        subtitle="Review and manage student enrollments">
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-2xl bg-blue-500 text-white">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-slate-600">Total Enrollments</h3>
+                        <p class="text-2xl font-bold text-slate-900">{{ enrollmentStats.total }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-2xl bg-yellow-500 text-white">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-slate-600">Pending</h3>
+                        <p class="text-2xl font-bold text-slate-900">{{ enrollmentStats.pending }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-2xl bg-green-500 text-white">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-slate-600">Approved</h3>
+                        <p class="text-2xl font-bold text-slate-900">{{ enrollmentStats.approved }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-2xl bg-red-500 text-white">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-slate-600">Rejected</h3>
+                        <p class="text-2xl font-bold text-slate-900">{{ enrollmentStats.rejected }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrollments Table -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden">
+            <div class="p-6 border-b border-slate-200/50">
+                <h2 class="text-xl font-bold text-slate-800">All Enrollments</h2>
+                <p class="text-sm text-slate-500 mt-1">Review and manage student enrollments</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50/50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Student</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Contact</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Type</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Payment</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Status</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Date</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200/50">
+                        <tr v-for="enrollment in enrollments.data" :key="enrollment.id" class="hover:bg-slate-50/50 transition-colors duration-150">
+                            <td class="px-6 py-4">
+                                <div>
+                                    <div class="font-medium text-slate-900">{{ enrollment.name }}</div>
+                                    <div class="text-sm text-slate-500">{{ enrollment.country }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div>
+                                    <div class="text-sm text-slate-900">{{ enrollment.email }}</div>
+                                    <div class="text-sm text-slate-500">{{ enrollment.phone }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full" 
+                                      :class="enrollment.enrollment_type === 'trial' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
+                                    {{ enrollment.enrollment_type === 'trial' ? 'Free Trial' : 'Paid' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div v-if="enrollment.payments && enrollment.payments.length > 0">
+                                    <span :class="getPaymentStatusBadge(enrollment.payments[0].status)" 
+                                          class="px-3 py-1 text-xs font-semibold rounded-full">
+                                        {{ enrollment.payments[0].status }}
+                                    </span>
+                                    <div class="text-xs text-slate-500 mt-1">
+                                        {{ enrollment.payments[0].payment_method?.name }}
+                                    </div>
+                                </div>
+                                <span v-else class="text-sm text-slate-400">No payment</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span :class="getStatusBadge(enrollment.status)" class="px-3 py-1 text-xs font-semibold rounded-full capitalize">
+                                    {{ enrollment.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-500">
+                                {{ new Date(enrollment.created_at).toLocaleDateString() }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <Link :href="route('admin.enrollments.show', enrollment.id)" 
+                                          class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                                        View
+                                    </Link>
+                                    
+                                    <button v-if="enrollment.status === 'pending'" 
+                                            @click="approveEnrollment(enrollment)"
+                                            class="text-green-600 hover:text-green-800 text-sm font-medium">
+                                        Approve
+                                    </button>
+                                    
+                                    <button v-if="enrollment.status === 'pending'" 
+                                            @click="confirmReject(enrollment)"
+                                            class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                        Reject
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div v-if="enrollments.links" class="px-6 py-4 border-t border-slate-200/50">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm text-slate-600">
+                        Showing {{ enrollments.from }} to {{ enrollments.to }} of {{ enrollments.total }} results
+                    </p>
+                    <div class="flex items-center space-x-2">
+                        <Link v-for="link in enrollments.links" 
+                              :key="link.label"
+                              :href="link.url" 
+                              v-html="link.label"
+                              :class="link.active 
+                                  ? 'px-3 py-2 text-sm bg-indigo-500 text-white rounded-lg' 
+                                  : 'px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150'"
+                              class="transition-colors duration-150">
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject Confirmation Modal -->
+        <div v-if="showRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Reject Enrollment</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Are you sure you want to reject "{{ enrollmentToReject?.name }}"'s enrollment?
+                </p>
+                
+                <div class="mb-4">
+                    <label for="admin_notes" class="block text-sm font-medium text-gray-700 mb-2">
+                        Rejection Reason (Optional)
+                    </label>
+                    <textarea 
+                        v-model="rejectForm.admin_notes"
+                        id="admin_notes"
+                        rows="3"
+                        class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
+                        placeholder="Enter reason for rejection..."
+                    ></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-4">
+                    <button @click="showRejectModal = false" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="rejectEnrollment" 
+                            :disabled="rejectForm.processing"
+                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-2xl hover:bg-red-700 transition-colors disabled:opacity-50">
+                        {{ rejectForm.processing ? 'Rejecting...' : 'Reject Enrollment' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </DashboardLayout>
+</template>

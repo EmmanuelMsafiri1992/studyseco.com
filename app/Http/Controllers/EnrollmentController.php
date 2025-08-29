@@ -212,6 +212,8 @@ class EnrollmentController extends Controller
 
         // Send approval notification
         try {
+            // Load subjects relationship before sending notification
+            $enrollment->load('subjects');
             $user->notify(new PaymentApproved($enrollment));
         } catch (\Exception $e) {
             // Log error but don't fail the approval
