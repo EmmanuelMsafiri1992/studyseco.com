@@ -310,19 +310,47 @@ class Enrollment extends Model
         return false;
     }
 
-    // Check if both email and phone are verified
+    // Check if all required verifications are completed
     private function checkFullVerification()
     {
-        if ($this->email_verified_at && $this->phone_verified_at) {
+        // Get system settings
+        $emailRequired = SystemSetting::get('email_verification_required', true);
+        $phoneRequired = SystemSetting::get('phone_verification_required', true);
+        
+        $emailVerified = !$emailRequired || $this->email_verified_at;
+        $phoneVerified = !$phoneRequired || $this->phone_verified_at;
+        
+        if ($emailVerified && $phoneVerified) {
             $this->is_verified = true;
             $this->verification_expires_at = null;
         }
     }
 
-    // Check if verification is still required
+    // Check if verification is still required based on system settings
     public function needsVerification()
     {
-        return !$this->is_verified && (!$this->email_verified_at || !$this->phone_verified_at);
+        // Get system settings
+        $emailRequired = SystemSetting::get('email_verification_required', true);
+        $phoneRequired = SystemSetting::get('phone_verification_required', true);
+        
+        // Check if verification is required for this enrollment type
+        if ($this->is_trial) {
+            $verificationForTrial = SystemSetting::get('verification_for_trial', false);
+            if (!$verificationForTrial) {
+                return false; // Skip verification for trials if disabled
+            }
+        } else {
+            $verificationForPaid = SystemSetting::get('verification_for_paid', true);
+            if (!$verificationForPaid) {
+                return false; // Skip verification for paid if disabled
+            }
+        }
+        
+        // Check which verifications are needed
+        $emailNeeded = $emailRequired && !$this->email_verified_at;
+        $phoneNeeded = $phoneRequired && !$this->phone_verified_at;
+        
+        return !$this->is_verified && ($emailNeeded || $phoneNeeded);
     }
 
     // Get verification status

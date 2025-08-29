@@ -9,8 +9,59 @@ class ComplaintController extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
+        
+        // Mock complaints data - in a real app, this would come from database
+        $allComplaints = [
+            [
+                'id' => 'C001', 
+                'user_id' => 1, // Different user ID 
+                'user' => 'Student A', 
+                'issue' => 'Classroom issue', 
+                'status' => 'open', 
+                'date' => '2023-08-20'
+            ],
+            [
+                'id' => 'C002', 
+                'user_id' => 2, // Different user ID
+                'user' => 'Parent B', 
+                'issue' => 'Fee dispute', 
+                'status' => 'resolved', 
+                'date' => '2023-08-10'
+            ],
+            [
+                'id' => 'C003', 
+                'user_id' => 3, // Different user ID
+                'user' => 'Teacher C', 
+                'issue' => 'Equipment fault', 
+                'status' => 'open', 
+                'date' => '2023-08-15'
+            ],
+            [
+                'id' => 'C004', 
+                'user_id' => $user->id, // Current user's complaint
+                'user' => $user->name, 
+                'issue' => 'Access issue with trial account', 
+                'status' => 'open', 
+                'date' => now()->format('Y-m-d')
+            ],
+        ];
+        
+        // Filter complaints based on user role
+        $complaints = collect($allComplaints);
+        
+        if ($user->role === 'student') {
+            // Students only see their own complaints
+            $complaints = $complaints->where('user_id', $user->id)->values();
+        } elseif ($user->role === 'teacher') {
+            // Teachers only see their own complaints  
+            $complaints = $complaints->where('user_id', $user->id)->values();
+        }
+        // Admin sees all complaints (no filtering)
+
         return Inertia::render('Complaints/Index', [
-            'complaints' => []
+            'auth' => ['user' => $user],
+            'complaints' => $complaints->toArray()
         ]);
     }
 

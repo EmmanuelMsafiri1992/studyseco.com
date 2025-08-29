@@ -51,7 +51,7 @@ class PaymentApproved extends Notification implements ShouldQueue
             ->line('**Access Details:**')
             ->line('• Expires: ' . $expiresAt->format('F j, Y'))
             ->line('• Duration: ' . $daysRemaining . ' days remaining')
-            ->line('• Subjects: ' . $this->enrollment->subjects->count() . ' enrolled')
+            ->line('• Subjects: ' . ($this->enrollment->subjects ? $this->enrollment->subjects->count() : 0) . ' enrolled')
             ->action('Access Your Dashboard', route('dashboard'))
             ->line('You can now access all your enrolled subjects and start learning!')
             ->line('If you have any questions, our support team is here to help.')

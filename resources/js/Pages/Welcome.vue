@@ -11,7 +11,8 @@ const props = defineProps({
     studentCount: { type: Number, default: 500 },
     testimonials: { type: Array, default: () => [] },
     accessDurations: { type: Array, default: () => [] },
-    studentStories: { type: Array, default: () => [] }
+    studentStories: { type: Array, default: () => [] },
+    paymentMethods: { type: Object, default: () => ({}) }
 });
 
 // State management
@@ -53,9 +54,23 @@ const showTrialOption = ref(true);
 const detectedCountry = ref('');
 const detectedCurrency = ref('');
 
+// Get payment methods for the selected country/region
+const availablePaymentMethods = computed(() => {
+    const countryToRegion = {
+        'Malawi': 'malawi',
+        'South Africa': 'south_africa', 
+        'United States': 'international',
+        'Canada': 'international',
+        'Australia': 'international',
+        'Other': 'international'
+    };
+    
+    const region = countryToRegion[enrollmentForm.country] || 'international';
+    return props.paymentMethods?.[region] || [];
+});
+
 // Payment state
 const showPaymentStep = ref(false);
-const availablePaymentMethods = ref([]);
 const selectedRegion = computed(() => {
     if (!enrollmentForm.country) return 'international';
     const country = enrollmentForm.country.toLowerCase();
@@ -210,17 +225,62 @@ const prevEnrollmentStep = () => {
 };
 
 const submitEnrollment = () => {
-    if (enrollmentStep.value !== 3 && enrollmentForm.enrollment_type === 'paid') {
+    // For paid enrollment, ensure we're on step 3 before submission
+    if (enrollmentForm.enrollment_type === 'paid' && enrollmentStep.value < 3) {
         nextEnrollmentStep();
         return;
     }
     
+    // Validate required fields for paid enrollment on step 3
+    if (enrollmentForm.enrollment_type === 'paid' && enrollmentStep.value === 3) {
+        if (!enrollmentForm.payment_method_id) {
+            alert('Please select a payment method');
+            return;
+        }
+        if (!enrollmentForm.payment_reference) {
+            alert('Please enter your payment reference number');
+            return;
+        }
+        if (!enrollmentForm.payment_proof) {
+            alert('Please upload your payment proof');
+            return;
+        }
+        if (!enrollmentForm.terms_accepted) {
+            alert('Please accept the terms of service');
+            return;
+        }
+    }
+    
+    // Ensure selected subjects are set
+    enrollmentForm.selected_subjects = selectedSubjects.value.map(s => s.id);
+    
+    // For trial enrollments, clear payment fields to avoid validation issues
+    if (enrollmentForm.enrollment_type === 'trial') {
+        enrollmentForm.payment_method_id = null;
+        enrollmentForm.payment_reference = null;
+        enrollmentForm.payment_proof = null;
+    }
+    
+    console.log('About to submit enrollment:');
+    console.log('- Form data:', enrollmentForm.data());
+    console.log('- Selected subjects:', selectedSubjects.value);
+    console.log('- Subject IDs:', enrollmentForm.selected_subjects);
+    console.log('- Enrollment type:', enrollmentForm.enrollment_type);
+    
     enrollmentForm.post(route('enrollment.store'), {
-        onSuccess: () => {
+        onSuccess: (response) => {
+            console.log('Enrollment successful:', response);
             showEnrollmentModal.value = false;
             enrollmentForm.reset();
             selectedSubjects.value = [];
             enrollmentStep.value = 1;
+        },
+        onError: (errors) => {
+            console.error('Enrollment errors:', errors);
+            console.log('Full error object:', errors);
+        },
+        onFinish: () => {
+            console.log('Enrollment request finished');
         }
     });
 };
@@ -871,38 +931,39 @@ onMounted(() => {
                     <div>
                         <label class="form-label">Payment Method *</label>
                         <div class="grid md:grid-cols-2 gap-4 mt-3">
-                            <div v-if="enrollmentForm.country === 'Malawi'" class="space-y-3">
-                                <div :class="['border-2 rounded-xl p-4 cursor-pointer transition-all', enrollmentForm.payment_method_id === '1' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300']" @click="enrollmentForm.payment_method_id = '1'">
+                            <div v-if="availablePaymentMethods.length > 0" class="space-y-3">
+                                <div 
+                                    v-for="method in availablePaymentMethods" 
+                                    :key="method.id"
+                                    :class="['border-2 rounded-xl p-4 cursor-pointer transition-all', enrollmentForm.payment_method_id == method.id ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300']" 
+                                    @click="enrollmentForm.payment_method_id = method.id.toString()"
+                                >
                                     <div class="flex items-center">
-                                        <input type="radio" v-model="enrollmentForm.payment_method_id" value="1" class="mr-3">
-                                        <div>
-                                            <h5 class="font-semibold">Airtel Money</h5>
-                                            <p class="text-sm text-secondary-600">Pay via Airtel Money</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div :class="['border-2 rounded-xl p-4 cursor-pointer transition-all', enrollmentForm.payment_method_id === '2' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300']" @click="enrollmentForm.payment_method_id = '2'">
-                                    <div class="flex items-center">
-                                        <input type="radio" v-model="enrollmentForm.payment_method_id" value="2" class="mr-3">
-                                        <div>
-                                            <h5 class="font-semibold">TNM Mpamba</h5>
-                                            <p class="text-sm text-secondary-600">Pay via TNM Mpamba</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div :class="['border-2 rounded-xl p-4 cursor-pointer transition-all', enrollmentForm.payment_method_id === '3' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300']" @click="enrollmentForm.payment_method_id = '3'">
-                                    <div class="flex items-center">
-                                        <input type="radio" v-model="enrollmentForm.payment_method_id" value="3" class="mr-3">
-                                        <div>
-                                            <h5 class="font-semibold">Bank Transfer</h5>
-                                            <p class="text-sm text-secondary-600">Direct bank transfer</p>
+                                        <input type="radio" v-model="enrollmentForm.payment_method_id" :value="method.id.toString()" class="mr-3">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-2xl">{{ method.icon }}</span>
+                                            <div>
+                                                <h5 class="font-semibold">{{ method.name }}</h5>
+                                                <p class="text-sm text-secondary-600">{{ method.type }} - {{ method.currency }}</p>
+                                                <div v-if="method.instructions" class="text-xs text-secondary-500 mt-1">
+                                                    {{ method.instructions }}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div v-else class="text-center p-8">
-                                <p class="text-secondary-600 mb-4">Payment methods will be shown based on your selected country.</p>
-                                <p class="text-sm text-secondary-500">Please select your country in the previous step.</p>
+                                <p class="text-secondary-600 mb-4">No payment methods available for your selected country.</p>
+                                <p class="text-sm text-secondary-500">Please select your country in the previous step or contact support.</p>
+                                <!-- Temporary debug info -->
+                                <div class="mt-4 p-4 bg-gray-100 rounded text-xs text-left">
+                                    <p><strong>Debug Info:</strong></p>
+                                    <p>Selected Country: "{{ enrollmentForm.country }}"</p>
+                                    <p>Available Regions: {{ Object.keys(paymentMethods || {}).join(', ') }}</p>
+                                    <p>Total Payment Methods: {{ Object.values(paymentMethods || {}).flat().length }}</p>
+                                    <p>PaymentMethods Object: {{ JSON.stringify(paymentMethods) }}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -930,13 +991,22 @@ onMounted(() => {
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
                             <label class="form-label">Payment Reference Number *</label>
-                            <input v-model="enrollmentForm.payment_reference" type="text" class="form-input" required placeholder="e.g., TXN123456789">
+                            <input v-model="enrollmentForm.payment_reference" 
+                                   name="payment_reference"
+                                   type="text" 
+                                   class="form-input" 
+                                   :required="enrollmentForm.enrollment_type === 'paid'" 
+                                   placeholder="e.g., TXN123456789">
                             <p class="text-xs text-secondary-600 mt-1">Exactly as shown in your payment confirmation</p>
                         </div>
                         <div>
                             <label class="form-label">Upload Payment Proof *</label>
-                            <input type="file" @input="enrollmentForm.payment_proof = $event.target.files[0]" 
-                                   accept=".jpg,.jpeg,.png,.pdf" class="form-input" required>
+                            <input type="file" 
+                                   name="payment_proof"
+                                   @input="enrollmentForm.payment_proof = $event.target.files[0]" 
+                                   accept=".jpg,.jpeg,.png,.pdf" 
+                                   class="form-input" 
+                                   :required="enrollmentForm.enrollment_type === 'paid'">
                             <p class="text-xs text-secondary-600 mt-1">Screenshot or receipt (JPG, PNG, PDF - max 5MB)</p>
                         </div>
                     </div>

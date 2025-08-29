@@ -113,6 +113,13 @@ Route::get('/', function () {
         ]
     ];
 
+    // Get active payment methods grouped by region
+    try {
+        $paymentMethods = \App\Models\PaymentMethod::active()->get()->groupBy('region');
+    } catch (Exception $e) {
+        $paymentMethods = collect([]);
+    }
+
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -122,7 +129,8 @@ Route::get('/', function () {
         'studentCount' => max($studentCount, 500), // Show at least 500
         'testimonials' => $testimonials,
         'studentStories' => $studentStories,
-        'accessDurations' => $accessDurations
+        'accessDurations' => $accessDurations,
+        'paymentMethods' => $paymentMethods
     ]);
 })->name('welcome');
 
@@ -410,6 +418,10 @@ Route::middleware('auth')->group(function () {
         
         // Admin extension management
         Route::post('/extensions/{payment}/approve', [\App\Http\Controllers\ExtensionController::class, 'approve'])->name('extensions.approve');
+        
+        // Admin payment methods management
+        Route::resource('payment-methods', \App\Http\Controllers\Admin\PaymentMethodController::class);
+        Route::post('payment-methods/{paymentMethod}/toggle', [\App\Http\Controllers\Admin\PaymentMethodController::class, 'toggle'])->name('payment-methods.toggle');
     });
 
     // Chat Routes

@@ -86,6 +86,7 @@ class PaymentController extends Controller
         $accessDurations = AccessDuration::active()->get();
 
         return Inertia::render('Payments/Create', [
+            'auth' => ['user' => $user],
             'hasPendingPayment' => $hasPendingPayment,
             'paymentMethods' => $paymentMethods,
             'accessDurations' => $accessDurations,

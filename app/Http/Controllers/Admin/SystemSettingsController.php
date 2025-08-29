@@ -34,13 +34,43 @@ class SystemSettingsController extends Controller
         }
 
         $validated = $request->validate([
-            'settings' => 'required|array',
-            'settings.*.key' => 'required|string',
-            'settings.*.value' => 'nullable',
+            'settings' => 'required',
+            'favicon' => 'nullable|file|mimes:ico,png,jpg,jpeg|max:2048',
         ]);
 
-        foreach ($validated['settings'] as $settingData) {
-            SystemSetting::set($settingData['key'], $settingData['value']);
+        // Handle different settings format (JSON string or array)
+        $settings = $validated['settings'];
+        if (is_string($settings)) {
+            $settings = json_decode($settings, true);
+        }
+
+        // Handle favicon upload
+        if ($request->hasFile('favicon')) {
+            $faviconPath = $request->file('favicon')->store('favicons', 'public');
+            SystemSetting::set('favicon_url', '/storage/' . $faviconPath);
+        }
+
+        if (is_array($settings)) {
+            foreach ($settings as $settingData) {
+                if (isset($settingData['key']) && array_key_exists('value', $settingData)) {
+                    $setting = SystemSetting::where('key', $settingData['key'])->first();
+                    if ($setting) {
+                        // Update existing setting
+                        $setting->value = $settingData['value'];
+                        $setting->save();
+                    } else {
+                        // Create new setting (shouldn't happen with defaults, but just in case)
+                        SystemSetting::create([
+                            'key' => $settingData['key'],
+                            'value' => $settingData['value'],
+                            'name' => $settingData['key'],
+                            'type' => 'text',
+                            'group' => 'general',
+                            'description' => ''
+                        ]);
+                    }
+                }
+            }
         }
 
         return back()->with('success', 'System settings updated successfully.');
@@ -163,6 +193,40 @@ class SystemSettingsController extends Controller
                 'type' => 'json',
                 'group' => 'footer',
                 'description' => 'Footer navigation links'
+            ],
+
+            // Verification Settings
+            [
+                'key' => 'email_verification_required',
+                'name' => 'Email Verification Required',
+                'value' => true,
+                'type' => 'boolean',
+                'group' => 'verification',
+                'description' => 'Require email verification for student enrollment'
+            ],
+            [
+                'key' => 'phone_verification_required',
+                'name' => 'Phone Verification Required',
+                'value' => true,
+                'type' => 'boolean',
+                'group' => 'verification',
+                'description' => 'Require phone verification for student enrollment'
+            ],
+            [
+                'key' => 'verification_for_trial',
+                'name' => 'Verification Required for Trial',
+                'value' => false,
+                'type' => 'boolean',
+                'group' => 'verification',
+                'description' => 'Require verification even for free trials'
+            ],
+            [
+                'key' => 'verification_for_paid',
+                'name' => 'Verification Required for Paid',
+                'value' => true,
+                'type' => 'boolean',
+                'group' => 'verification',
+                'description' => 'Require verification for paid enrollments'
             ],
 
             // Academic Settings

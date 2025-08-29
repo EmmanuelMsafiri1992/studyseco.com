@@ -90,6 +90,51 @@ class NotificationController extends Controller
                     'priority' => 'high'
                 ]);
             }
+        } elseif ($user->role === 'student') {
+            // Student-specific notifications
+            $enrollment = Enrollment::where('email', $user->email)->first();
+            
+            if ($enrollment) {
+                // Account type notification
+                $systemNotifications->push([
+                    'id' => 'account_type',
+                    'type' => 'account',
+                    'title' => 'Account Type',
+                    'description' => $enrollment->is_trial ? 'Free Trial Account - ' . $enrollment->trial_days_remaining . ' days remaining' : 'Full Access Account',
+                    'time' => $enrollment->created_at->diffForHumans(),
+                    'timestamp' => $enrollment->created_at,
+                    'read' => true,
+                    'priority' => $enrollment->is_trial && $enrollment->trial_days_remaining <= 2 ? 'high' : 'normal'
+                ]);
+                
+                // Trial expiry warning
+                if ($enrollment->is_trial && $enrollment->trial_days_remaining <= 3) {
+                    $systemNotifications->push([
+                        'id' => 'trial_expiry',
+                        'type' => 'warning',
+                        'title' => 'Trial Expiring Soon',
+                        'description' => 'Your free trial will expire in ' . $enrollment->trial_days_remaining . ' days. Upgrade to continue access.',
+                        'time' => 'Now',
+                        'timestamp' => now(),
+                        'read' => false,
+                        'priority' => 'high'
+                    ]);
+                }
+                
+                // Welcome notification for new enrollments
+                if ($enrollment->created_at->greaterThan(now()->subDays(1))) {
+                    $systemNotifications->push([
+                        'id' => 'welcome',
+                        'type' => 'welcome',
+                        'title' => 'Welcome to StudySeco!',
+                        'description' => 'Your enrollment has been processed. You now have access to ' . count($enrollment->selected_subjects) . ' subjects.',
+                        'time' => $enrollment->created_at->diffForHumans(),
+                        'timestamp' => $enrollment->created_at,
+                        'read' => false,
+                        'priority' => 'normal'
+                    ]);
+                }
+            }
         }
 
         // Combine user notifications and system notifications

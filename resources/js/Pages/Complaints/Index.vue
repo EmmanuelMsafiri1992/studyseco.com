@@ -12,12 +12,8 @@ const props = defineProps({
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
 
-// Mock data fallback
-const complaints = ref(props.complaints?.length > 0 ? props.complaints : [
-    { id: 'C001', user: 'Student A', issue: 'Classroom issue', status: 'open', date: '2023-08-20' },
-    { id: 'C002', user: 'Parent B', issue: 'Fee dispute', status: 'resolved', date: '2023-08-10' },
-    { id: 'C003', user: 'Teacher C', issue: 'Equipment fault', status: 'open', date: '2023-08-15' },
-]);
+// Use complaints from controller (role-based filtered)
+const complaints = ref(props.complaints || []);
 
 const searchQuery = ref(props.filters?.search || '');
 const selectedStatus = ref(props.filters?.status || 'all');
@@ -112,7 +108,9 @@ const formatDate = (date) => {
         <!-- Complaints Table -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden">
             <div class="p-6 border-b border-slate-200/50">
-                <h2 class="text-xl font-bold text-slate-800">All Complaints</h2>
+                <h2 class="text-xl font-bold text-slate-800">
+                    {{ user.role === 'admin' ? 'All Complaints' : 'My Complaints' }}
+                </h2>
                 <p class="text-sm text-slate-500 mt-1">{{ filteredComplaints.length }} complaints found</p>
             </div>
             <div class="overflow-x-auto">
@@ -120,7 +118,7 @@ const formatDate = (date) => {
                     <thead class="bg-slate-50/50">
                         <tr>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Complaint ID</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">User</th>
+                            <th v-if="user.role === 'admin'" class="px-6 py-4 text-left text-sm font-semibold text-slate-600">User</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Issue</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Status</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Date</th>
@@ -130,7 +128,7 @@ const formatDate = (date) => {
                     <tbody class="divide-y divide-slate-200/50">
                         <tr v-for="complaint in filteredComplaints" :key="complaint.id" class="hover:bg-slate-50/50 transition-colors duration-150">
                             <td class="px-6 py-4 text-sm font-medium text-slate-800">{{ complaint.id }}</td>
-                            <td class="px-6 py-4">
+                            <td v-if="user.role === 'admin'" class="px-6 py-4">
                                 <div class="flex items-center space-x-3">
                                     <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                                         {{ complaint.user.charAt(0) }}

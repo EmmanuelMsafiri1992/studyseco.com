@@ -1,15 +1,17 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     auth: Object,
     notifications: Array
 });
 
-// Mock data with enhanced structure
-const notificationData = ref(props.notifications.length > 0 ? props.notifications : [
+const user = props.auth?.user || { name: 'Guest', role: 'guest' };
+
+// Use notifications from controller (role-based filtered)
+const notificationData = ref(props.notifications || [
     { 
         id: 1,
         type: 'enrollment', 
@@ -173,135 +175,162 @@ const getTypeColor = (type) => {
 <template>
     <Head title="Notifications" />
     
-    <AuthenticatedLayout>
-        <template #header>
+    <DashboardLayout 
+        title="Notifications" 
+        subtitle="Stay updated with important activities and alerts">
+
+        <div class="mb-8">
             <div class="flex justify-between items-center">
-                <div>
-                    <h2 class="heading-lg text-secondary-900">Notifications</h2>
-                    <p class="text-secondary-600 mt-1">Stay updated with important activities and alerts</p>
-                </div>
+                <h2 class="text-2xl font-bold text-slate-800">{{ user.role === 'admin' ? 'All Notifications' : 'My Notifications' }}</h2>
                 <div class="flex items-center space-x-4">
                     <div v-if="unreadCount > 0" class="flex items-center space-x-2">
-                        <span class="status-warning">{{ unreadCount }} unread</span>
-                        <button @click="markAllAsRead" class="btn-secondary btn-sm">
+                        <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">{{ unreadCount }} unread</span>
+                        <button @click="markAllAsRead" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                             Mark all as read
                         </button>
                     </div>
                 </div>
             </div>
-        </template>
+        </div>
 
-        <div class="container-custom">
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                <div class="card-hover p-4 text-center">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center mx-auto mb-3">
+        <div>
+            <!-- Stats Cards - Only show for admin -->
+            <div v-if="user.role === 'admin'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg border border-slate-200/50 hover:shadow-xl transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                             <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
                     </div>
-                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.enrollment }}</div>
-                    <div class="text-xs text-secondary-600">Enrollments</div>
+                    <div class="text-lg font-bold text-slate-900">{{ notificationStats.enrollment }}</div>
+                    <div class="text-xs text-slate-600">Enrollments</div>
                 </div>
 
-                <div class="card-hover p-4 text-center">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-success-500 to-success-600 flex items-center justify-center mx-auto mb-3">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg border border-slate-200/50 hover:shadow-xl transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center mx-auto mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                             <line x1="1" y1="10" x2="23" y2="10"/>
                         </svg>
                     </div>
-                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.payment }}</div>
-                    <div class="text-xs text-secondary-600">Payments</div>
+                    <div class="text-lg font-bold text-slate-900">{{ notificationStats.payment }}</div>
+                    <div class="text-xs text-slate-600">Payments</div>
                 </div>
 
-                <div class="card-hover p-4 text-center">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-warning-500 to-warning-600 flex items-center justify-center mx-auto mb-3">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg border border-slate-200/50 hover:shadow-xl transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-600 flex items-center justify-center mx-auto mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                             <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                         </svg>
                     </div>
-                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.alert }}</div>
-                    <div class="text-xs text-secondary-600">Alerts</div>
+                    <div class="text-lg font-bold text-slate-900">{{ notificationStats.alert }}</div>
+                    <div class="text-xs text-slate-600">Alerts</div>
                 </div>
 
-                <div class="card-hover p-4 text-center">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 flex items-center justify-center mx-auto mb-3">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg border border-slate-200/50 hover:shadow-xl transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 flex items-center justify-center mx-auto mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                             <polyline points="14,2 14,8 20,8"/>
                         </svg>
                     </div>
-                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.assignment }}</div>
-                    <div class="text-xs text-secondary-600">Assignments</div>
+                    <div class="text-lg font-bold text-slate-900">{{ notificationStats.assignment }}</div>
+                    <div class="text-xs text-slate-600">Assignments</div>
                 </div>
 
-                <div class="card-hover p-4 text-center">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-secondary-500 to-secondary-600 flex items-center justify-center mx-auto mb-3">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg border border-slate-200/50 hover:shadow-xl transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-slate-500 to-slate-600 flex items-center justify-center mx-auto mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                             <circle cx="12" cy="12" r="3"/>
                             <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
                         </svg>
                     </div>
-                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.system }}</div>
-                    <div class="text-xs text-secondary-600">System</div>
+                    <div class="text-lg font-bold text-slate-900">{{ notificationStats.system }}</div>
+                    <div class="text-xs text-slate-600">System</div>
                 </div>
 
-                <div class="card-hover p-4 text-center">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center mx-auto mb-3">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-lg border border-slate-200/50 hover:shadow-xl transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                         </svg>
                     </div>
-                    <div class="text-lg font-bold text-secondary-900">{{ notificationStats.message }}</div>
-                    <div class="text-xs text-secondary-600">Messages</div>
+                    <div class="text-lg font-bold text-slate-900">{{ notificationStats.message }}</div>
+                    <div class="text-xs text-slate-600">Messages</div>
                 </div>
             </div>
 
             <!-- Filters and Search -->
-            <div class="card p-6 mb-8">
+            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 mb-8">
                 <div class="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
                     <div class="flex flex-wrap gap-2">
                         <button 
                             @click="filterType = 'all'"
-                            :class="filterType === 'all' ? 'btn-primary' : 'btn-secondary'"
-                            class="btn-sm"
+                            :class="filterType === 'all' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
                         >
                             All Notifications
                         </button>
                         <button 
                             @click="filterType = 'unread'"
-                            :class="filterType === 'unread' ? 'btn-primary' : 'btn-secondary'"
-                            class="btn-sm"
+                            :class="filterType === 'unread' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
                         >
                             Unread
                             <span v-if="unreadCount > 0" class="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">{{ unreadCount }}</span>
                         </button>
-                        <button 
-                            @click="filterType = 'enrollment'"
-                            :class="filterType === 'enrollment' ? 'btn-primary' : 'btn-secondary'"
-                            class="btn-sm"
-                        >
-                            Enrollments
-                        </button>
-                        <button 
-                            @click="filterType = 'payment'"
-                            :class="filterType === 'payment' ? 'btn-primary' : 'btn-secondary'"
-                            class="btn-sm"
-                        >
-                            Payments
-                        </button>
-                        <button 
-                            @click="filterType = 'alert'"
-                            :class="filterType === 'alert' ? 'btn-primary' : 'btn-secondary'"
-                            class="btn-sm"
-                        >
-                            Alerts
-                        </button>
+                        <!-- Admin-specific filters -->
+                        <template v-if="user.role === 'admin'">
+                            <button 
+                                @click="filterType = 'enrollment'"
+                                :class="filterType === 'enrollment' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
+                            >
+                                Enrollments
+                            </button>
+                            <button 
+                                @click="filterType = 'payment'"
+                                :class="filterType === 'payment' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
+                            >
+                                Payments
+                            </button>
+                            <button 
+                                @click="filterType = 'alert'"
+                                :class="filterType === 'alert' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
+                            >
+                                Alerts
+                            </button>
+                        </template>
+                        <!-- Student-specific filters -->
+                        <template v-else>
+                            <button 
+                                @click="filterType = 'account'"
+                                :class="filterType === 'account' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
+                            >
+                                Account
+                            </button>
+                            <button 
+                                @click="filterType = 'welcome'"
+                                :class="filterType === 'welcome' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
+                            >
+                                Welcome
+                            </button>
+                            <button 
+                                @click="filterType = 'warning'"
+                                :class="filterType === 'warning' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                class="px-4 py-2 rounded-2xl text-sm font-medium transition-all"
+                            >
+                                Warnings
+                            </button>
+                        </template>
                     </div>
                     
                     <div class="relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
                             <circle cx="11" cy="11" r="8"/>
                             <path d="m21 21-4.35-4.35"/>
                         </svg>
@@ -309,7 +338,7 @@ const getTypeColor = (type) => {
                             v-model="searchQuery"
                             type="text" 
                             placeholder="Search notifications..."
-                            class="form-input pl-10 w-80"
+                            class="w-80 bg-slate-100/70 backdrop-blur-sm px-4 py-3 pl-10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
                         >
                     </div>
                 </div>
@@ -317,24 +346,24 @@ const getTypeColor = (type) => {
 
             <!-- Notifications List -->
             <div class="space-y-4">
-                <div v-if="filteredNotifications.length === 0" class="card p-12 text-center">
-                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary-100 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-secondary-400">
+                <div v-if="filteredNotifications.length === 0" class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 p-12 text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
                             <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                         </svg>
                     </div>
-                    <h3 class="text-lg font-medium text-secondary-900 mb-2">No notifications found</h3>
-                    <p class="text-secondary-600">{{ searchQuery ? 'Try adjusting your search terms or filters' : 'You\'re all caught up! No new notifications at this time.' }}</p>
+                    <h3 class="text-lg font-medium text-slate-900 mb-2">No notifications found</h3>
+                    <p class="text-slate-600">{{ searchQuery ? 'Try adjusting your search terms or filters' : 'You\'re all caught up! No new notifications at this time.' }}</p>
                 </div>
 
                 <div 
                     v-for="notification in filteredNotifications" 
                     :key="notification.id"
                     :class="[
-                        'card-hover p-6 cursor-pointer transition-all duration-200',
-                        getPriorityClass(notification.priority),
-                        { 'ring-2 ring-primary-200': !notification.read }
+                        'bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 p-6 cursor-pointer transition-all duration-200 hover:shadow-2xl hover:-translate-y-1',
+                        notification.priority === 'high' ? 'border-l-4 border-l-red-400' : 'border-l-4 border-l-indigo-400',
+                        { 'ring-2 ring-indigo-200': !notification.read }
                     ]"
                     @click="markAsRead(notification)"
                 >
@@ -367,24 +396,21 @@ const getTypeColor = (type) => {
                             <div class="flex items-center justify-between mb-2">
                                 <h3 :class="[
                                     'font-semibold truncate',
-                                    !notification.read ? 'text-secondary-900' : 'text-secondary-700'
+                                    !notification.read ? 'text-slate-900' : 'text-slate-700'
                                 ]">
                                     {{ notification.title }}
                                 </h3>
                                 <div class="flex items-center space-x-3 flex-shrink-0 ml-4">
-                                    <span :class="[
-                                        'px-2 py-1 rounded-full text-xs font-medium capitalize',
-                                        getTypeColor(notification.type).badge
-                                    ]">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium capitalize bg-slate-100 text-slate-700">
                                         {{ notification.type }}
                                     </span>
-                                    <div v-if="!notification.read" class="w-2 h-2 bg-primary-500 rounded-full"></div>
+                                    <div v-if="!notification.read" class="w-2 h-2 bg-indigo-500 rounded-full"></div>
                                 </div>
                             </div>
 
                             <p :class="[
                                 'text-sm mb-3 line-clamp-2',
-                                !notification.read ? 'text-secondary-600' : 'text-secondary-500'
+                                !notification.read ? 'text-slate-600' : 'text-slate-500'
                             ]">
                                 {{ notification.description }}
                             </p>
@@ -392,7 +418,7 @@ const getTypeColor = (type) => {
                             <!-- Additional Info -->
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-4">
-                                    <span class="text-xs text-secondary-500 flex items-center">
+                                    <span class="text-xs text-slate-500 flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
                                             <circle cx="12" cy="12" r="10"/>
                                             <polyline points="12,6 12,12 16,14"/>
@@ -400,19 +426,16 @@ const getTypeColor = (type) => {
                                         {{ notification.time }}
                                     </span>
                                     
-                                    <span v-if="notification.amount" class="text-xs font-semibold text-success-600">
+                                    <span v-if="notification.amount" class="text-xs font-semibold text-green-600">
                                         {{ notification.amount }}
                                     </span>
                                     
-                                    <span v-if="notification.subject" :class="[
-                                        'text-xs px-2 py-1 rounded-full',
-                                        getTypeColor('assignment').badge
-                                    ]">
+                                    <span v-if="notification.subject" class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                                         {{ notification.subject }}
                                     </span>
                                 </div>
 
-                                <div v-if="notification.priority === 'high'" class="flex items-center text-xs text-error-600 font-medium">
+                                <div v-if="notification.priority === 'high'" class="flex items-center text-xs text-red-600 font-medium">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
                                         <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                                     </svg>
@@ -424,7 +447,7 @@ const getTypeColor = (type) => {
                 </div>
             </div>
         </div>
-    </AuthenticatedLayout>
+    </DashboardLayout>
 </template>
 
 <style scoped>

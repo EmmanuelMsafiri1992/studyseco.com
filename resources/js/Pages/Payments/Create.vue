@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     auth: Object,
@@ -109,30 +110,7 @@ const setAccessDuration = (duration) => {
 <template>
     <Head title="Submit Payment" />
     
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
-        <!-- Header -->
-        <header class="h-16 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-6 flex items-center justify-between relative z-50">
-            <div class="flex items-center space-x-4">
-                <Link :href="route('payments.index')" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
-                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </Link>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-800">Submit Payment</h1>
-                    <p class="text-sm text-slate-500">Make payment for system access</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-3">
-                <div class="text-right">
-                    <p class="text-sm font-semibold text-slate-800">{{ user.name }}</p>
-                    <p class="text-xs text-slate-500">{{ user.role }}</p>
-                </div>
-                <img :src="user.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" :alt="user.name" class="h-10 w-10 rounded-xl ring-2 ring-white shadow-md">
-            </div>
-        </header>
-
+    <DashboardLayout title="Submit Payment" subtitle="Make payment for system access">
         <!-- Processing Overlay -->
         <div v-if="showProcessing" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div class="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-200/50 max-w-md w-full mx-4 text-center">
@@ -141,9 +119,6 @@ const setAccessDuration = (duration) => {
                 <p class="text-slate-600">Please wait while we process your payment submission.</p>
             </div>
         </div>
-
-        <!-- Main Content -->
-        <main class="flex-1 p-6 max-w-4xl mx-auto">
             <!-- Pending Payment Warning -->
             <div v-if="hasPendingPayment" class="mb-6 p-6 bg-amber-50 border border-amber-200 rounded-2xl">
                 <div class="flex items-center space-x-3">
@@ -308,6 +283,5 @@ const setAccessDuration = (duration) => {
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+    </DashboardLayout>
 </template>

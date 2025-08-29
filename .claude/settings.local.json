@@ -33,7 +33,12 @@
       "Bash(composer validate:*)",
       "mcp__ide__getDiagnostics",
       "Bash(npm install:*)",
-      "Bash(composer:*)"
+      "Bash(composer:*)",
+      "Read(C:\\Users\\Emmanuel\\Downloads/**)",
+      "Bash(Get-Content C:laragonwwwstudysecostoragelogslaravel.log -Tail 50)",
+      "Bash(php:*)",
+      "Read(C:\\Users\\Emmanuel\\Downloads/**)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": [],

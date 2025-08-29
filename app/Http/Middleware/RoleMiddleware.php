@@ -21,10 +21,16 @@ class RoleMiddleware
             abort(403, 'Access denied. Authentication required.');
         }
         
-        if (!$user->hasRole($role)) {
-            abort(403, 'Access denied. Insufficient permissions.');
+        // Check simple role field first (for compatibility)
+        if ($user->role === $role) {
+            return $next($request);
         }
-
-        return $next($request);
+        
+        // Then check role relationships
+        if (method_exists($user, 'hasRole') && $user->hasRole($role)) {
+            return $next($request);
+        }
+        
+        abort(403, 'Access denied. Insufficient permissions.');
     }
 }

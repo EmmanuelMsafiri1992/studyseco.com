@@ -154,80 +154,164 @@ const lineOptions = ref({
         
         <!-- Quick Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Students -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-slate-500 text-sm font-medium">Total Students</p>
-                        <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.total_students || 1240 }}</p>
-                        <div class="flex items-center mt-2">
-                            <span class="text-emerald-600 text-sm font-semibold">+12%</span>
-                            <span class="text-slate-500 text-xs ml-2">vs last month</span>
+            <!-- Admin Stats -->
+            <template v-if="user.role === 'admin'">
+                <!-- Total Students -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Total Students</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.total_students || 1240 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-emerald-600 text-sm font-semibold">+12%</span>
+                                <span class="text-slate-500 text-xs ml-2">vs last month</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6-12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
                         </div>
                     </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6-12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Active Enrollments -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-slate-500 text-sm font-medium">Active Enrollments</p>
-                        <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.active_enrollments || 856 }}</p>
-                        <div class="flex items-center mt-2">
-                            <span class="text-emerald-600 text-sm font-semibold">+8%</span>
-                            <span class="text-slate-500 text-xs ml-2">vs last month</span>
+                <!-- Active Enrollments -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Active Enrollments</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.active_enrollments || 856 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-emerald-600 text-sm font-semibold">+8%</span>
+                                <span class="text-slate-500 text-xs ml-2">vs last month</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
                         </div>
                     </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Revenue -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-slate-500 text-sm font-medium">Monthly Revenue</p>
-                        <p class="text-3xl font-bold text-slate-800 mt-2">MWK {{ (stats.monthly_revenue || 2840000).toLocaleString() }}</p>
-                        <div class="flex items-center mt-2">
-                            <span class="text-emerald-600 text-sm font-semibold">+15%</span>
-                            <span class="text-slate-500 text-xs ml-2">vs last month</span>
+                <!-- Revenue -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Monthly Revenue</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">MWK {{ (stats.monthly_revenue || 2840000).toLocaleString() }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-emerald-600 text-sm font-semibold">+15%</span>
+                                <span class="text-slate-500 text-xs ml-2">vs last month</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
                         </div>
                     </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Pending Approvals -->
-            <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-slate-500 text-sm font-medium">Pending Approvals</p>
-                        <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.pending_enrollments || 23 }}</p>
-                        <div class="flex items-center mt-2">
-                            <span class="text-amber-600 text-sm font-semibold">Needs attention</span>
+                <!-- Pending Approvals -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Pending Approvals</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.pending_enrollments || 23 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-amber-600 text-sm font-semibold">Needs attention</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
                         </div>
                     </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
+                </div>
+            </template>
+
+            <!-- Student Stats -->
+            <template v-else>
+                <!-- Enrollment Status -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Enrollment Status</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 capitalize">{{ stats.enrollment_status }}</p>
+                            <div class="flex items-center mt-2">
+                                <span :class="stats.enrollment_status === 'approved' ? 'text-emerald-600' : 'text-amber-600'" class="text-sm font-semibold">
+                                    {{ stats.enrollment_status === 'approved' ? '✓ Active' : stats.enrollment_status === 'pending' ? '⏳ Pending' : 'Not Enrolled' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+                <!-- Subjects Enrolled -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Subjects Enrolled</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.subjects_enrolled || 0 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-emerald-600 text-sm font-semibold">{{ stats.subjects_enrolled ? 'Active' : 'None' }}</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access Remaining -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">{{ stats.is_trial ? 'Trial Days Left' : 'Access Days Left' }}</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.is_trial ? stats.trial_days_remaining : stats.access_days_remaining || 0 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-slate-500 text-xs">
+                                    Expires: {{ stats.is_trial ? stats.trial_expires_at : stats.access_expires_at || 'N/A' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Type -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Account Type</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.is_trial ? 'Trial' : 'Premium' }}</p>
+                            <div class="flex items-center mt-2">
+                                <span :class="stats.is_trial ? 'text-blue-600' : 'text-purple-600'" class="text-sm font-semibold">
+                                    {{ stats.is_trial ? '🆓 Free Trial' : '⭐ Full Access' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
 
         <!-- Charts Section -->

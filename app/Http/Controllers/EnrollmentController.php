@@ -28,9 +28,9 @@ class EnrollmentController extends Controller
             'selected_subjects' => 'required|array|min:1',
             'selected_subjects.*' => 'integer|exists:subjects,id',
             'enrollment_type' => 'required|in:trial,paid',
-            'payment_method_id' => 'required_if:enrollment_type,paid|integer|exists:payment_methods,id',
-            'payment_reference' => 'required_if:enrollment_type,paid|string|max:255',
-            'payment_proof' => 'required_if:enrollment_type,paid|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'payment_method_id' => 'required_if:enrollment_type,paid|nullable|integer|exists:payment_methods,id',
+            'payment_reference' => 'required_if:enrollment_type,paid|nullable|string|max:255',
+            'payment_proof' => 'required_if:enrollment_type,paid|nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'terms_accepted' => 'required|accepted'
         ]);
 
@@ -48,9 +48,11 @@ class EnrollmentController extends Controller
         $currency = 'MWK';
         $paymentProofPath = null;
         
+        $paymentMethodKey = null;
         if (!$isTrial) {
             // Get payment method to determine currency and pricing
             $paymentMethod = PaymentMethod::findOrFail($validated['payment_method_id']);
+            $paymentMethodKey = $paymentMethod->code;
             $currency = $paymentMethod->currency;
             
             // Calculate pricing based on region/currency
@@ -91,7 +93,10 @@ class EnrollmentController extends Controller
             'trial_started_at' => $isTrial ? now() : null,
             'trial_expires_at' => $isTrial ? now()->addDays(7) : null,
             'access_expires_at' => $isTrial ? now()->addDays(7) : now()->addDays(120), // 4 months
-            'status' => $isTrial ? 'approved' : 'pending'
+            'status' => $isTrial ? 'approved' : 'pending',
+            'payment_method' => $isTrial ? 'trial' : $paymentMethodKey,
+            'payment_reference' => $isTrial ? 'TRIAL_' . strtoupper(uniqid()) : ($validated['payment_reference'] ?? null),
+            'payment_proof_path' => $paymentProofPath
         ]);
 
         if (!$isTrial) {

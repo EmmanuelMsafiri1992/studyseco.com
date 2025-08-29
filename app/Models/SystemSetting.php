@@ -55,9 +55,11 @@ class SystemSetting extends Model
     // Set value based on type
     public function setValueAttribute($value)
     {
-        if ($this->type === 'json') {
+        $type = $this->attributes['type'] ?? null;
+        
+        if ($type === 'json' && !is_string($value)) {
             $this->attributes['value'] = json_encode($value);
-        } elseif ($this->type === 'boolean') {
+        } elseif ($type === 'boolean') {
             $this->attributes['value'] = (int) $value;
         } else {
             $this->attributes['value'] = $value;

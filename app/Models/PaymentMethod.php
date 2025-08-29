@@ -25,6 +25,11 @@ class PaymentMethod extends Model
         'sort_order' => 'integer',
     ];
 
+    protected $appends = [
+        'icon', 
+        'color'
+    ];
+
     // Scope for active payment methods
     public function scopeActive($query)
     {

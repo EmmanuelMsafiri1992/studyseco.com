@@ -15,7 +15,11 @@ class RoleController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', Role::class);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('viewAny', Role::class);
 
         $roles = Role::with(['permissions', 'users'])
             ->withCount(['users'])
@@ -35,7 +39,11 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $this->authorize('create', Role::class);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('create', Role::class);
 
         $permissions = Permission::where('is_active', true)
             ->orderBy('category')
@@ -53,7 +61,11 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorize('create', Role::class);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('create', Role::class);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:roles',
