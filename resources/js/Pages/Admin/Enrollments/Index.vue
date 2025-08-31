@@ -12,7 +12,8 @@ const showRejectModal = ref(false);
 const enrollmentToReject = ref(null);
 
 const rejectForm = useForm({
-    admin_notes: ''
+    admin_notes: '',
+    rejection_reason: ''
 });
 
 const confirmReject = (enrollment) => {
@@ -21,19 +22,36 @@ const confirmReject = (enrollment) => {
 };
 
 const rejectEnrollment = () => {
+    if (!rejectForm.rejection_reason) {
+        alert('Please provide a rejection reason.');
+        return;
+    }
+    
     if (enrollmentToReject.value) {
         rejectForm.patch(route('admin.enrollments.reject', enrollmentToReject.value.id), {
             onSuccess: () => {
                 showRejectModal.value = false;
                 enrollmentToReject.value = null;
                 rejectForm.reset();
+            },
+            onError: (errors) => {
+                console.error('Error rejecting enrollment:', errors);
+                alert('Failed to reject enrollment. Please try again.');
             }
         });
     }
 };
 
 const approveEnrollment = (enrollment) => {
-    router.patch(route('admin.enrollments.approve', enrollment.id));
+    router.patch(route('admin.enrollments.approve', enrollment.id), {}, {
+        onSuccess: () => {
+            // Page will be refreshed with updated data
+        },
+        onError: (errors) => {
+            console.error('Error approving enrollment:', errors);
+            alert('Failed to approve enrollment. Please try again.');
+        }
+    });
 };
 
 const getStatusBadge = (status) => {
@@ -158,8 +176,8 @@ const getPaymentStatusBadge = (status) => {
                             </td>
                             <td class="px-6 py-4">
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full" 
-                                      :class="enrollment.enrollment_type === 'trial' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
-                                    {{ enrollment.enrollment_type === 'trial' ? 'Free Trial' : 'Paid' }}
+                                      :class="enrollment.is_trial ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
+                                    {{ enrollment.is_trial ? 'Free Trial' : 'Paid' }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -169,8 +187,13 @@ const getPaymentStatusBadge = (status) => {
                                         {{ enrollment.payments[0].status }}
                                     </span>
                                     <div class="text-xs text-slate-500 mt-1">
-                                        {{ enrollment.payments[0].payment_method?.name }}
+                                        {{ enrollment.payments[0].payment_method?.name || 'N/A' }}
                                     </div>
+                                </div>
+                                <div v-else-if="enrollment.is_trial">
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        Trial
+                                    </span>
                                 </div>
                                 <span v-else class="text-sm text-slate-400">No payment</span>
                             </td>
@@ -208,21 +231,27 @@ const getPaymentStatusBadge = (status) => {
             </div>
 
             <!-- Pagination -->
-            <div v-if="enrollments.links" class="px-6 py-4 border-t border-slate-200/50">
+            <div v-if="enrollments.links && enrollments.links.length > 3" class="px-6 py-4 border-t border-slate-200/50">
                 <div class="flex items-center justify-between">
                     <p class="text-sm text-slate-600">
-                        Showing {{ enrollments.from }} to {{ enrollments.to }} of {{ enrollments.total }} results
+                        Showing {{ enrollments.from || 0 }} to {{ enrollments.to || 0 }} of {{ enrollments.total || 0 }} results
                     </p>
                     <div class="flex items-center space-x-2">
-                        <Link v-for="link in enrollments.links" 
-                              :key="link.label"
-                              :href="link.url" 
-                              v-html="link.label"
-                              :class="link.active 
-                                  ? 'px-3 py-2 text-sm bg-indigo-500 text-white rounded-lg' 
-                                  : 'px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150'"
-                              class="transition-colors duration-150">
-                        </Link>
+                        <template v-for="(link, index) in enrollments.links" :key="`link-${index}`">
+                            <component 
+                                :is="link.url ? Link : 'span'"
+                                :href="link.url || undefined"
+                                :class="[
+                                    'px-3 py-2 text-sm rounded-lg transition-colors duration-150',
+                                    link.active 
+                                        ? 'bg-indigo-500 text-white' 
+                                        : link.url 
+                                            ? 'text-slate-600 hover:bg-slate-100' 
+                                            : 'text-slate-400 cursor-not-allowed'
+                                ]"
+                                v-html="link.label">
+                            </component>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -237,15 +266,29 @@ const getPaymentStatusBadge = (status) => {
                 </p>
                 
                 <div class="mb-4">
+                    <label for="rejection_reason" class="block text-sm font-medium text-gray-700 mb-2">
+                        Rejection Reason *
+                    </label>
+                    <textarea 
+                        v-model="rejectForm.rejection_reason"
+                        id="rejection_reason"
+                        rows="3"
+                        class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
+                        placeholder="Please provide a reason for rejection..."
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="mb-4">
                     <label for="admin_notes" class="block text-sm font-medium text-gray-700 mb-2">
-                        Rejection Reason (Optional)
+                        Admin Notes (Optional)
                     </label>
                     <textarea 
                         v-model="rejectForm.admin_notes"
                         id="admin_notes"
-                        rows="3"
+                        rows="2"
                         class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
-                        placeholder="Enter reason for rejection..."
+                        placeholder="Additional notes..."
                     ></textarea>
                 </div>
                 
@@ -255,7 +298,7 @@ const getPaymentStatusBadge = (status) => {
                         Cancel
                     </button>
                     <button @click="rejectEnrollment" 
-                            :disabled="rejectForm.processing"
+                            :disabled="rejectForm.processing || !rejectForm.rejection_reason"
                             class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-2xl hover:bg-red-700 transition-colors disabled:opacity-50">
                         {{ rejectForm.processing ? 'Rejecting...' : 'Reject Enrollment' }}
                     </button>

@@ -117,11 +117,11 @@ onMounted(() => {
                             </div>
                             <div>
                                 <label class="text-gray-400 text-sm">Total Amount:</label>
-                                <p class="text-white font-bold text-lg">MKW {{ parseFloat(enrollment.total_amount).toLocaleString() }}</p>
+                                <p class="text-gray-900 font-bold text-lg">{{ enrollment.currency }} {{ parseFloat(enrollment.total_amount).toLocaleString() }}</p>
                             </div>
                             <div>
                                 <label class="text-gray-400 text-sm">Payment Method:</label>
-                                <p class="text-white font-semibold capitalize">{{ enrollment.payment_method.replace('_', ' ') }}</p>
+                                <p class="text-gray-900 font-semibold capitalize">{{ enrollment.payment_method.replace('_', ' ') }}</p>
                             </div>
                             <div>
                                 <label class="text-gray-400 text-sm">Reference:</label>
@@ -132,35 +132,80 @@ onMounted(() => {
                 </div>
 
                 <!-- Status Information -->
-                <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6 mb-8">
+                <div v-if="enrollment.status === 'approved'" class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 mb-8">
                     <h3 class="text-xl font-bold text-gray-900 mb-3 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-yellow-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-500">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22,4 12,14.01 9,11.01"/>
+                        </svg>
+                        Status: Approved ✅
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        Congratulations! Your enrollment has been approved and your account is ready for access.
+                    </p>
+                    <div class="space-y-2 text-left max-w-2xl mx-auto">
+                        <div class="flex items-center text-sm">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <span class="text-gray-600">✅ Application submitted successfully</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <span class="text-gray-600">✅ Payment verification completed</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <span class="text-gray-600">✅ Account created successfully</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <span class="text-gray-600">✅ Welcome email sent with login credentials</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div v-else-if="enrollment.status === 'pending'" class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-3 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-yellow-500">
                             <circle cx="12" cy="12" r="10"/>
                             <path d="M12 6v6l4 2"/>
                         </svg>
                         Status: Processing
                     </h3>
-                    <p class="text-gray-300 mb-4">
+                    <p class="text-gray-600 mb-4">
                         Your enrollment is currently being reviewed by our admissions team. This typically takes 24-48 hours.
                     </p>
                     <div class="space-y-2 text-left max-w-2xl mx-auto">
                         <div class="flex items-center text-sm">
                             <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                            <span class="text-gray-300">✅ Application submitted successfully</span>
+                            <span class="text-gray-600">✅ Application submitted successfully</span>
                         </div>
                         <div class="flex items-center text-sm">
                             <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3 animate-pulse"></div>
-                            <span class="text-gray-300">⏳ Payment verification in progress</span>
+                            <span class="text-gray-600">⏳ Payment verification in progress</span>
                         </div>
                         <div class="flex items-center text-sm">
-                            <div class="w-3 h-3 bg-gray-500 rounded-full mr-3"></div>
+                            <div class="w-3 h-3 bg-gray-400 rounded-full mr-3"></div>
                             <span class="text-gray-400">⏳ Account creation (pending approval)</span>
                         </div>
                         <div class="flex items-center text-sm">
-                            <div class="w-3 h-3 bg-gray-500 rounded-full mr-3"></div>
+                            <div class="w-3 h-3 bg-gray-400 rounded-full mr-3"></div>
                             <span class="text-gray-400">⏳ Welcome email & login credentials</span>
                         </div>
                     </div>
+                </div>
+                
+                <div v-else-if="enrollment.status === 'rejected'" class="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-3 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        Status: Rejected
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        Unfortunately, your enrollment application was not approved. Please contact support for more information.
+                    </p>
                 </div>
 
                 <!-- What happens next -->

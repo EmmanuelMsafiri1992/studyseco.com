@@ -415,6 +415,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/enrollments/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollments.show');
         Route::patch('/enrollments/{enrollment}/approve', [EnrollmentController::class, 'approve'])->name('enrollments.approve');
         Route::patch('/enrollments/{enrollment}/reject', [EnrollmentController::class, 'reject'])->name('enrollments.reject');
+        Route::get('/enrollments/{enrollment}/payment-proof', [EnrollmentController::class, 'viewPaymentProof'])->name('enrollments.payment-proof');
         
         // Admin extension management
         Route::post('/extensions/{payment}/approve', [\App\Http\Controllers\ExtensionController::class, 'approve'])->name('extensions.approve');

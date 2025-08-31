@@ -9,6 +9,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Notifications\PaymentApproved;
 use App\Notifications\PaymentRejected;
+use App\Notifications\WelcomeEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -157,7 +158,7 @@ class EnrollmentController extends Controller
     // Admin methods
     public function index()
     {
-        $enrollments = Enrollment::with(['payments.paymentMethod'])
+        $enrollments = Enrollment::with(['payments.paymentMethod', 'user'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -176,7 +177,7 @@ class EnrollmentController extends Controller
 
     public function show(Enrollment $enrollment)
     {
-        $enrollment->load('user');
+        $enrollment->load(['user', 'payments.paymentMethod']);
         
         return Inertia::render('Admin/Enrollments/Show', [
             'enrollment' => $enrollment,
@@ -189,7 +190,11 @@ class EnrollmentController extends Controller
         $enrollment->update([
             'status' => 'approved',
             'approved_at' => now(),
-            'approved_by' => auth()->id()
+            'approved_by' => auth()->id(),
+            'is_verified' => true,
+            'email_verified_at' => now(),
+            'phone_verified_at' => now(),
+            'verification_expires_at' => null
         ]);
 
         // Update payment status
@@ -197,27 +202,39 @@ class EnrollmentController extends Controller
 
         // Create user account if doesn't exist
         $user = User::where('email', $enrollment->email)->first();
+        $tempPassword = null;
+        $isNewUser = false;
+        
         if (!$user) {
             $tempPassword = 'StudySeco' . rand(1000, 9999);
             $user = User::create([
                 'name' => $enrollment->name,
                 'email' => $enrollment->email,
                 'password' => bcrypt($tempPassword),
-                'role' => 'student'
+                'role' => 'student',
+                'email_verified_at' => now()
+            ]);
+            $isNewUser = true;
+        } else {
+            // For existing users, generate new temporary password
+            $tempPassword = 'StudySeco' . rand(1000, 9999);
+            $user->update([
+                'password' => bcrypt($tempPassword),
+                'email_verified_at' => now()
             ]);
         }
 
         // Link user to enrollment
         $enrollment->update(['user_id' => $user->id]);
 
-        // Send approval notification
+        // Send welcome email with login credentials
         try {
             // Load subjects relationship before sending notification
             $enrollment->load('subjects');
-            $user->notify(new PaymentApproved($enrollment));
+            $user->notify(new WelcomeEmail($user, $enrollment, $tempPassword));
         } catch (\Exception $e) {
             // Log error but don't fail the approval
-            logger('Failed to send enrollment approval notification: ' . $e->getMessage());
+            logger('Failed to send welcome email: ' . $e->getMessage());
         }
 
         return redirect()->back()->with('message', 'Enrollment approved successfully! Student has been notified.');
@@ -312,6 +329,41 @@ class EnrollmentController extends Controller
             'days_remaining' => max(0, $daysRemaining),
             'access_expires_at' => $enrollment->access_expires_at,
             'can_extend' => $enrollment->status === 'approved'
+        ]);
+    }
+
+    public function viewPaymentProof(Enrollment $enrollment)
+    {
+        $paymentProofPath = null;
+        
+        // First check enrollment's payment proof
+        if ($enrollment->payment_proof_path) {
+            $paymentProofPath = $enrollment->payment_proof_path;
+        } 
+        // Then check if any of the payments has proof
+        elseif ($enrollment->payments()->exists()) {
+            $payment = $enrollment->payments()->whereNotNull('payment_proof_path')->first();
+            if ($payment) {
+                $paymentProofPath = $payment->payment_proof_path;
+            }
+        }
+
+        if (!$paymentProofPath) {
+            abort(404, 'Payment proof not found');
+        }
+
+        $filePath = storage_path('app/public/' . $paymentProofPath);
+        
+        if (!file_exists($filePath)) {
+            abort(404, 'Payment proof file not found');
+        }
+
+        $mimeType = mime_content_type($filePath);
+        $fileName = basename($paymentProofPath);
+
+        return response()->file($filePath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"'
         ]);
     }
 }

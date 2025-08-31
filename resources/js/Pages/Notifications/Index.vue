@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
@@ -127,6 +127,24 @@ const notificationStats = computed(() => {
 });
 
 // Methods
+const handleNotificationClick = (notification) => {
+    // Mark as read
+    notification.read = true;
+    
+    // Handle different notification types
+    if (notification.type === 'enrollment' && notification.id.startsWith('enrollment_')) {
+        const enrollmentId = notification.id.replace('enrollment_', '');
+        router.visit(route('admin.enrollments.show', enrollmentId));
+    } else if (notification.type === 'payment' && notification.id.startsWith('payment_')) {
+        // Could redirect to payments page or enrollment details
+        const paymentId = notification.id.replace('payment_', '');
+        // For now, redirect to enrollments page since that's where admins manage payments
+        router.visit(route('admin.enrollments.index'));
+    } else if (notification.id === 'pending_enrollments') {
+        router.visit(route('admin.enrollments.index'));
+    }
+};
+
 const markAsRead = (notification) => {
     notification.read = true;
 };
@@ -365,7 +383,7 @@ const getTypeColor = (type) => {
                         notification.priority === 'high' ? 'border-l-4 border-l-red-400' : 'border-l-4 border-l-indigo-400',
                         { 'ring-2 ring-indigo-200': !notification.read }
                     ]"
-                    @click="markAsRead(notification)"
+                    @click="handleNotificationClick(notification)"
                 >
                     <div class="flex items-start space-x-4">
                         <!-- Notification Icon/Avatar -->

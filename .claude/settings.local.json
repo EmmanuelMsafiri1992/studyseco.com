@@ -38,7 +38,13 @@
       "Bash(Get-Content C:laragonwwwstudysecostoragelogslaravel.log -Tail 50)",
       "Bash(php:*)",
       "Read(C:\\Users\\Emmanuel\\Downloads/**)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(net start:*)",
+      "Bash(sc query:*)",
+      "Bash(C:laragonbinmysqlmysql-8.0.30-winx64binmysqld.exe --install)",
+      "Bash(powershell:*)",
+      "Bash(Get-Content storagelogslaravel.log -Tail 50)",
+      "Bash(Get-Content storage/logs/laravel.log -Tail 10)"
     ],
     "deny": [],
     "ask": [],
