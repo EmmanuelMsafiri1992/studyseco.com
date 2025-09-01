@@ -36,17 +36,25 @@ class StudentController extends Controller
 
         $students = $query->paginate(12);
 
-        // Add computed properties
+        // Add computed properties and get phone from enrollment if not in user record
         $students->getCollection()->transform(function ($student) {
             $activeEnrollment = $student->enrollments->where('status', 'approved')
                 ->where('access_expires_at', '>', now())
                 ->first();
+            
+            // Get latest enrollment if no active enrollment exists
+            $latestEnrollment = $student->enrollments->sortByDesc('created_at')->first();
             
             $student->is_active = (bool) $activeEnrollment;
             $student->enrollment_status = $activeEnrollment ? 'Active' : 'Inactive';
             $student->subjects_count = $activeEnrollment && $activeEnrollment->selected_subjects 
                 ? count($activeEnrollment->selected_subjects) : 0;
             $student->access_expires_at = $activeEnrollment?->access_expires_at;
+            
+            // Get phone from enrollment if not in user record
+            if (!$student->phone && $latestEnrollment && $latestEnrollment->phone) {
+                $student->phone = $latestEnrollment->phone;
+            }
             
             return $student;
         });

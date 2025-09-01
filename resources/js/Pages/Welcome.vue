@@ -27,10 +27,17 @@ const isNavbarScrolled = ref(false);
 
 // Chat functionality
 const chatMessages = ref([
-    { type: 'bot', message: 'Hello! 👋 Welcome to StudySeco. How can I help you today?', timestamp: new Date() }
+    { id: 'initial-bot', type: 'bot', message: 'Hello! 👋 Welcome to StudySeco. How can I help you today?', timestamp: new Date() }
 ]);
 const newMessage = ref('');
 const isTyping = ref(false);
+
+// Live chat support variables  
+const supportChatId = ref(localStorage.getItem('studyseco_chat_session') || 'b4cd3791-c2a9-4a74-ba0e-7f75e6ee5cf1');
+const chatStatus = ref('disconnected'); // disconnected, waiting, active
+const queuePosition = ref(null);
+const agentName = ref(null);
+const chatPollInterval = ref(null);
 
 // Enrollment form
 const enrollmentForm = useForm({
@@ -285,27 +292,182 @@ const submitEnrollment = () => {
     });
 };
 
-const sendMessage = () => {
+const sendMessage = async () => {
     if (newMessage.value.trim() === '') return;
+    if (chatStatus.value === 'closed') {
+        chatMessages.value.push({
+            id: `error-closed-${Date.now()}`,
+            type: 'system',
+            message: 'This chat session is closed. You cannot send new messages.',
+            timestamp: new Date()
+        });
+        return;
+    }
     
+    const userMessage = newMessage.value.trim();
+    
+    // Add user message to chat immediately
     chatMessages.value.push({
+        id: `user-${Date.now()}`,
         type: 'user',
-        message: newMessage.value,
+        message: userMessage,
         timestamp: new Date()
     });
     
-    const userMessage = newMessage.value;
     newMessage.value = '';
     isTyping.value = true;
     
-    setTimeout(() => {
+    try {
+        if (!supportChatId.value) {
+            // Start new chat session
+            const response = await fetch(`http://127.0.0.1:8000/api/chatbot/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    initial_message: userMessage,
+                    name: 'Guest User',
+                    email: null,
+                    priority: 'normal'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                supportChatId.value = data.session_id;
+                localStorage.setItem('studyseco_chat_session', data.session_id);
+                chatStatus.value = 'waiting';
+                queuePosition.value = data.queue_position;
+                
+                // Add system message
+                chatMessages.value.push({
+                    id: `local-system-${Date.now()}`,
+                    type: 'system',
+                    message: `Thanks for your message! You're #${data.queue_position} in queue. A StudySeco representative will respond soon!`,
+                    timestamp: new Date()
+                });
+                
+                // Start polling for messages
+                startChatPolling();
+            } else {
+                throw new Error(data.message || 'Failed to start chat');
+            }
+        } else {
+            // Send message in existing session
+            const response = await fetch(`http://127.0.0.1:8000/api/chatbot/chat/${supportChatId.value}/message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: userMessage
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                // Handle specific error cases
+                if (data.error && data.error.includes('closed')) {
+                    chatStatus.value = 'closed';
+                    stopChatPolling();
+                    chatMessages.value.push({
+                        id: `system-closed-${Date.now()}`,
+                        type: 'system',
+                        message: 'This chat session has been closed by the support agent.',
+                        timestamp: new Date()
+                    });
+                    return; // Don't throw error, just inform user
+                }
+                throw new Error(data.error || 'Failed to send message');
+            }
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
         chatMessages.value.push({
-            type: 'bot',
-            message: `Thanks for your message: "${userMessage}". A StudySeco representative will respond soon!`,
+            id: `error-${Date.now()}`,
+            type: 'system',
+            message: 'Sorry, there was an error sending your message. Please try again.',
             timestamp: new Date()
         });
+    } finally {
         isTyping.value = false;
-    }, 2000);
+    }
+};
+
+// Start polling for new messages from agents
+const startChatPolling = () => {
+    if (chatPollInterval.value) {
+        clearInterval(chatPollInterval.value);
+    }
+    
+    chatPollInterval.value = setInterval(async () => {
+        if (!supportChatId.value) return;
+        
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/api/chatbot/chat/${supportChatId.value}/messages`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update chat status
+                chatStatus.value = data.chat.status;
+                queuePosition.value = data.chat.queue_position;
+                agentName.value = data.chat.agent_name;
+                
+                // Stop polling if chat is closed
+                if (data.chat.status === 'closed') {
+                    stopChatPolling();
+                    chatMessages.value.push({
+                        id: `system-closed-polling-${Date.now()}`,
+                        type: 'system',
+                        message: 'This chat session has been closed.',
+                        timestamp: new Date()
+                    });
+                    return;
+                }
+                
+                // Add new messages from agents/system
+                data.messages.forEach(message => {
+                    if (message.sender_type === 'agent' || message.sender_type === 'system') {
+                        // Check if message is already in our chat by ID
+                        const exists = chatMessages.value.some(m => 
+                            m.id === message.id || 
+                            (m.message === message.message && m.type === (message.sender_type === 'agent' ? 'agent' : 'system'))
+                        );
+                        
+                        if (!exists) {
+                            chatMessages.value.push({
+                                id: message.id,
+                                type: message.sender_type === 'agent' ? 'agent' : 'system',
+                                message: message.message,
+                                senderName: message.sender_name,
+                                timestamp: new Date(message.created_at)
+                            });
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error polling messages:', error);
+        }
+    }, 3000); // Poll every 3 seconds
+};
+
+// Stop polling when component unmounts
+const stopChatPolling = () => {
+    if (chatPollInterval.value) {
+        clearInterval(chatPollInterval.value);
+        chatPollInterval.value = null;
+    }
 };
 
 const nextSlide = () => {
@@ -321,6 +483,50 @@ const scrollToContact = (e) => {
     const contactElement = document.getElementById('contact');
     if (contactElement) {
         contactElement.scrollIntoView({ behavior: 'smooth' });
+    }
+};
+
+// Initialize existing chat session
+const initializeChat = async () => {
+    if (supportChatId.value) {
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/api/chatbot/chat/${supportChatId.value}/messages`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                chatStatus.value = data.chat.status;
+                queuePosition.value = data.chat.queue_position;
+                agentName.value = data.chat.agent_name;
+                
+                // Restore chat history (only non-user messages)
+                const nonUserMessages = data.messages.filter(msg => msg.sender_type !== 'user');
+                nonUserMessages.forEach(message => {
+                    chatMessages.value.push({
+                        id: message.id,
+                        type: message.sender_type === 'agent' ? 'agent' : 'system',
+                        message: message.message,
+                        senderName: message.sender_name,
+                        timestamp: new Date(message.created_at)
+                    });
+                });
+                
+                // Start polling if chat is still active
+                if (data.chat.status !== 'closed') {
+                    startChatPolling();
+                }
+            } else {
+                // Invalid session, clear it
+                supportChatId.value = null;
+                localStorage.removeItem('studyseco_chat_session');
+            }
+        } catch (error) {
+            console.error('Error initializing chat:', error);
+            supportChatId.value = null;
+            localStorage.removeItem('studyseco_chat_session');
+        }
     }
 };
 
@@ -342,6 +548,15 @@ onMounted(() => {
     
     // Detect user location on mount
     detectUserLocation();
+    
+    // Initialize chat session if exists
+    initializeChat();
+});
+
+// Cleanup on unmount
+import { onUnmounted } from 'vue';
+onUnmounted(() => {
+    stopChatPolling();
 });
 </script>
 
@@ -1076,6 +1291,33 @@ onMounted(() => {
                 </div>
                 
                 <div class="flex-1 p-6 overflow-y-auto space-y-4">
+                    <!-- Chat Status Indicator -->
+                    <div v-if="chatStatus === 'waiting'" class="text-center">
+                        <div class="inline-flex items-center px-3 py-2 bg-amber-100 text-amber-700 rounded-full text-sm">
+                            <svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Queue Position: #{{ queuePosition }} 
+                        </div>
+                    </div>
+                    
+                    <div v-if="chatStatus === 'active' && agentName" class="text-center">
+                        <div class="inline-flex items-center px-3 py-2 bg-green-100 text-green-700 rounded-full text-sm">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            Connected to {{ agentName }}
+                        </div>
+                    </div>
+                    
+                    <div v-if="chatStatus === 'closed'" class="text-center">
+                        <div class="inline-flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-full text-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Chat Closed
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Messages -->
                     <div v-for="message in chatMessages" :key="message.timestamp" :class="[
                         'flex',
                         message.type === 'user' ? 'justify-end' : 'justify-start'
@@ -1084,9 +1326,16 @@ onMounted(() => {
                             'max-w-xs px-4 py-2 rounded-2xl text-sm',
                             message.type === 'user' 
                                 ? 'bg-primary-500 text-white rounded-br-md' 
-                                : 'bg-secondary-100 text-secondary-800 rounded-bl-md'
+                                : message.type === 'agent'
+                                    ? 'bg-green-100 text-green-800 rounded-bl-md border border-green-200'
+                                    : message.type === 'system'
+                                        ? 'bg-amber-50 text-amber-700 rounded-lg border border-amber-200 italic'
+                                        : 'bg-secondary-100 text-secondary-800 rounded-bl-md'
                         ]">
-                            {{ message.message }}
+                            <div v-if="message.type === 'agent' && message.senderName" class="text-xs font-semibold mb-1 text-green-600">
+                                {{ message.senderName }}
+                            </div>
+                            <div>{{ message.message }}</div>
                         </div>
                     </div>
                     
@@ -1102,10 +1351,13 @@ onMounted(() => {
                         <input 
                             v-model="newMessage" 
                             type="text" 
-                            placeholder="Type your message..."
+                            :placeholder="chatStatus === 'closed' ? 'Chat session closed' : 'Type your message...'"
+                            :disabled="chatStatus === 'closed'"
                             class="form-input flex-1"
+                            :class="{ 'opacity-50 cursor-not-allowed': chatStatus === 'closed' }"
                         >
-                        <button type="submit" class="btn-primary">
+                        <button type="submit" class="btn-primary" :disabled="chatStatus === 'closed'"
+                                :class="{ 'opacity-50 cursor-not-allowed': chatStatus === 'closed' }">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"/>
                                 <polygon points="22,2 15,22 11,13 2,9 22,2"/>

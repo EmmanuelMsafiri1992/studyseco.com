@@ -12,13 +12,15 @@ import {
   LinearScale,
   PointElement,
   LineElement,
-  ArcElement
+  ArcElement,
+  Filler
 } from 'chart.js';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
   auth: Object,
   stats: Object,
+  chartData: Object,
 });
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
@@ -32,35 +34,38 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  ArcElement
+  ArcElement,
+  Filler
 );
 
-// Sample data for charts
-const attendanceData = ref({
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+// Real data from database
+const enrollmentTrendData = ref({
+  labels: props.chartData?.enrollment?.labels || ['No Data'],
   datasets: [{
-    label: 'Attendance %',
+    label: 'Monthly Enrollments',
     backgroundColor: 'rgba(99, 102, 241, 0.8)',
-    data: [95, 92, 96, 94, 93, 95]
+    borderColor: 'rgba(99, 102, 241, 1)',
+    borderWidth: 2,
+    data: props.chartData?.enrollment?.data || [0]
   }]
 });
 
-const gradeData = ref({
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+const paymentTrendData = ref({
+  labels: props.chartData?.payment?.labels || ['No Data'],
   datasets: [{
-    label: 'Average Grade',
+    label: 'Revenue (K)',
     borderColor: 'rgb(16, 185, 129)',
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    data: [85, 87, 88, 90, 92, 91],
+    data: props.chartData?.payment?.data || [0],
     fill: true,
     tension: 0.4
   }]
 });
 
-const enrollmentData = ref({
-  labels: ['Approved', 'Pending', 'Rejected'],
+const enrollmentStatusData = ref({
+  labels: props.chartData?.enrollmentStatus?.labels || ['No Data'],
   datasets: [{
-    data: [70, 20, 10],
+    data: props.chartData?.enrollmentStatus?.data || [1],
     backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(239, 68, 68, 0.8)']
   }]
 });
@@ -99,7 +104,9 @@ const chartOptions = {
                     </div>
                 </div>
                 <div class="mt-4">
-                    <span class="text-green-600 text-sm font-semibold">↗ 5.2%</span>
+                    <span :class="stats?.student_growth >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+                        {{ stats?.student_growth >= 0 ? '↗' : '↘' }} {{ Math.abs(stats?.student_growth || 0) }}%
+                    </span>
                     <span class="text-slate-500 text-sm ml-2">from last month</span>
                 </div>
             </div>
@@ -117,7 +124,9 @@ const chartOptions = {
                     </div>
                 </div>
                 <div class="mt-4">
-                    <span class="text-green-600 text-sm font-semibold">↗ 2.1%</span>
+                    <span :class="stats?.teacher_growth >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+                        {{ stats?.teacher_growth >= 0 ? '↗' : '↘' }} {{ Math.abs(stats?.teacher_growth || 0) }}%
+                    </span>
                     <span class="text-slate-500 text-sm ml-2">from last month</span>
                 </div>
             </div>
@@ -135,8 +144,8 @@ const chartOptions = {
                     </div>
                 </div>
                 <div class="mt-4">
-                    <span class="text-red-600 text-sm font-semibold">↘ 1.5%</span>
-                    <span class="text-slate-500 text-sm ml-2">from last month</span>
+                    <span class="text-blue-600 text-sm font-semibold">Active</span>
+                    <span class="text-slate-500 text-sm ml-2">enrollments</span>
                 </div>
             </div>
 
@@ -153,27 +162,27 @@ const chartOptions = {
                     </div>
                 </div>
                 <div class="mt-4">
-                    <span class="text-green-600 text-sm font-semibold">↗ 12.3%</span>
-                    <span class="text-slate-500 text-sm ml-2">from last month</span>
+                    <span class="text-amber-600 text-sm font-semibold">Awaiting</span>
+                    <span class="text-slate-500 text-sm ml-2">approval</span>
                 </div>
             </div>
         </div>
 
         <!-- Charts Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Attendance Chart -->
+            <!-- Monthly Enrollments Chart -->
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
-                <h3 class="text-lg font-semibold text-slate-800 mb-4">Monthly Attendance</h3>
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Monthly Enrollments</h3>
                 <div style="height: 300px;">
-                    <Bar :data="attendanceData" :options="chartOptions" />
+                    <Bar :data="enrollmentTrendData" :options="chartOptions" />
                 </div>
             </div>
 
-            <!-- Grade Trends Chart -->
+            <!-- Revenue Trends Chart -->
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
-                <h3 class="text-lg font-semibold text-slate-800 mb-4">Average Grade Trends</h3>
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Monthly Revenue (Thousands)</h3>
                 <div style="height: 300px;">
-                    <Line :data="gradeData" :options="chartOptions" />
+                    <Line :data="paymentTrendData" :options="chartOptions" />
                 </div>
             </div>
         </div>
@@ -183,7 +192,7 @@ const chartOptions = {
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
                 <h3 class="text-lg font-semibold text-slate-800 mb-4">Enrollment Status</h3>
                 <div style="height: 300px;">
-                    <Doughnut :data="enrollmentData" :options="chartOptions" />
+                    <Doughnut :data="enrollmentStatusData" :options="chartOptions" />
                 </div>
             </div>
 

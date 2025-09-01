@@ -261,6 +261,20 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Community Feed Routes
+    Route::prefix('community')->name('community.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\CommunityController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\CommunityController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\CommunityController::class, 'store'])->name('store');
+        Route::get('/{post}', [\App\Http\Controllers\CommunityController::class, 'show'])->name('show');
+        Route::post('/{post}/react', [\App\Http\Controllers\CommunityController::class, 'toggleReaction'])->name('react');
+        Route::post('/{post}/comment', [\App\Http\Controllers\CommunityController::class, 'storeComment'])->name('comment');
+        Route::post('/{post}/vote', [\App\Http\Controllers\CommunityController::class, 'votePoll'])->name('vote');
+        Route::post('/comment/{comment}/solution', [\App\Http\Controllers\CommunityController::class, 'markSolution'])->name('markSolution');
+        Route::post('/share-resource', [\App\Http\Controllers\CommunityController::class, 'shareResource'])->name('shareResource');
+        Route::get('/resource/{resource}/download', [\App\Http\Controllers\CommunityController::class, 'downloadResource'])->name('downloadResource');
+    });
+
     // Student Extension Routes
     Route::get('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'index'])->name('student.extension');
     Route::post('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'store'])->name('student.extension.store');
@@ -279,11 +293,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/students/{user}/edit', [\App\Http\Controllers\StudentController::class, 'edit'])->name('students.edit');
         Route::put('/students/{user}', [\App\Http\Controllers\StudentController::class, 'update'])->name('students.update');
         Route::delete('/students/{user}', [\App\Http\Controllers\StudentController::class, 'destroy'])->name('students.destroy');
+    });
 
+    // Teacher Management Routes (Admin and Teachers can access)
+    Route::middleware('role:admin,teacher')->group(function () {
         Route::get('/teachers', [\App\Http\Controllers\TeacherController::class, 'index'])->name('teachers.index');
+        Route::get('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'show'])->name('teachers.show');
+    });
+    
+    // Admin-only teacher management operations
+    Route::middleware('role:admin')->group(function () {
         Route::get('/teachers/create', [\App\Http\Controllers\TeacherController::class, 'create'])->name('teachers.create');
         Route::post('/teachers', [\App\Http\Controllers\TeacherController::class, 'store'])->name('teachers.store');
-        Route::get('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'show'])->name('teachers.show');
         Route::get('/teachers/{user}/edit', [\App\Http\Controllers\TeacherController::class, 'edit'])->name('teachers.edit');
         Route::put('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'update'])->name('teachers.update');
         Route::delete('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'destroy'])->name('teachers.destroy');
@@ -370,10 +391,25 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [SystemSettingsController::class, 'update'])->name('update');
     });
 
-    // Complaints Routes - All users can create, admins can manage
-    Route::get('/complaints', [\App\Http\Controllers\ComplaintController::class, 'index'])->name('complaints.index');
-    Route::get('/complaints/create', [\App\Http\Controllers\ComplaintController::class, 'create'])->name('complaints.create');
-    Route::post('/complaints', [\App\Http\Controllers\ComplaintController::class, 'store'])->name('complaints.store');
+    // Support Chat Routes (formerly Complaints) - Live chat system
+    Route::get('/complaints', [\App\Http\Controllers\ComplaintController::class, 'index'])
+         ->middleware('role:admin,teacher')->name('complaints.index');
+    Route::get('/complaints/create', [\App\Http\Controllers\ComplaintController::class, 'create'])
+         ->middleware('role:admin,teacher')->name('complaints.create');
+    Route::post('/complaints', [\App\Http\Controllers\ComplaintController::class, 'store'])
+         ->middleware('role:admin,teacher')->name('complaints.store');
+    
+    // Live Chat Routes
+    Route::get('/complaints/chat/{sessionId}', [\App\Http\Controllers\ComplaintController::class, 'chat'])
+         ->middleware('role:admin,teacher')->name('complaints.chat');
+    Route::post('/complaints/chat/{sessionId}/assign', [\App\Http\Controllers\ComplaintController::class, 'assignChat'])
+         ->middleware('role:admin,teacher')->name('complaints.assign');
+    Route::post('/complaints/chat/{sessionId}/close', [\App\Http\Controllers\ComplaintController::class, 'closeChat'])
+         ->middleware('role:admin,teacher')->name('complaints.close');
+    Route::post('/complaints/chat/{sessionId}/message', [\App\Http\Controllers\ComplaintController::class, 'sendMessage'])
+         ->middleware('role:admin,teacher')->name('complaints.message');
+    
+    // Legacy route redirect
     Route::get('/complaints/{complaint}', [\App\Http\Controllers\ComplaintController::class, 'show'])->name('complaints.show');
 
     // Reports Routes - Admin only
@@ -428,11 +464,15 @@ Route::middleware('auth')->group(function () {
     // Chat Routes
     Route::prefix('chat')->name('chat.')->group(function () {
         Route::get('/', [\App\Http\Controllers\ChatController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\ChatController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\ChatController::class, 'store'])->name('store');
         Route::get('/{chatGroup}', [\App\Http\Controllers\ChatController::class, 'show'])->name('show');
         Route::post('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'storeMessage'])->name('storeMessage');
         Route::get('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('getMessages');
         Route::post('/{chatGroup}/join', [\App\Http\Controllers\ChatController::class, 'join'])->name('join');
         Route::post('/{chatGroup}/leave', [\App\Http\Controllers\ChatController::class, 'leave'])->name('leave');
+        Route::post('/{chatGroup}/add-member', [\App\Http\Controllers\ChatController::class, 'addMember'])->name('addMember');
+        Route::delete('/{chatGroup}/remove-member/{user}', [\App\Http\Controllers\ChatController::class, 'removeMember'])->name('removeMember');
     });
 
     // Library Routes

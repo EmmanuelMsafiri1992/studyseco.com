@@ -281,4 +281,36 @@ class User extends Authenticatable
     {
         return $this->hasMany(Enrollment::class);
     }
+
+    /**
+     * Get community posts created by this user
+     */
+    public function communityPosts(): HasMany
+    {
+        return $this->hasMany(CommunityPost::class);
+    }
+
+    /**
+     * Get post reactions made by this user
+     */
+    public function postReactions(): HasMany
+    {
+        return $this->hasMany(PostReaction::class);
+    }
+
+    /**
+     * Get post comments made by this user
+     */
+    public function postComments(): HasMany
+    {
+        return $this->hasMany(PostComment::class);
+    }
+
+    /**
+     * Get shared resources uploaded by this user
+     */
+    public function sharedResources(): HasMany
+    {
+        return $this->hasMany(SharedResource::class);
+    }
 }

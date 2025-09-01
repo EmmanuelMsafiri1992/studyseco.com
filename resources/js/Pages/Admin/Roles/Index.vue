@@ -78,11 +78,18 @@ const getPriorityBadgeClass = (priority) => {
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <select v-model="selectedStatus" class="bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white appearance-none">
-                        <option value="all">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
+                    <div class="relative">
+                        <select v-model="selectedStatus" class="bg-white/90 backdrop-blur-sm border border-slate-200 px-4 py-3 pr-12 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 appearance-none min-w-[140px] cursor-pointer shadow-sm hover:shadow-md transition-all duration-200">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-700">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
                     <Link :href="route('admin.roles.create')" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                         <div class="flex items-center space-x-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

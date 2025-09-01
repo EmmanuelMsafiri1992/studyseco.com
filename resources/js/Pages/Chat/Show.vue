@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
@@ -17,6 +17,17 @@ const messagesContainer = ref(null);
 const replyingTo = ref(null);
 const isLoadingMessages = ref(false);
 const allMessages = ref(props.messages.data || []);
+const showMemberModal = ref(false);
+const showAddMemberModal = ref(false);
+const availableUsers = ref([]);
+
+const addMemberForm = useForm({
+    user_id: ''
+});
+
+const canManageMembers = computed(() => {
+    return props.userRole === 'admin' || props.userRole === 'moderator';
+});
 
 const scrollToBottom = () => {
     nextTick(() => {
@@ -106,6 +117,50 @@ const isConsecutiveMessage = (currentMessage, previousMessage) => {
     return currentMessage.user_id === previousMessage.user_id && timeDiff < fiveMinutes;
 };
 
+const fetchAvailableUsers = async () => {
+    try {
+        const response = await axios.get('/api/users');
+        availableUsers.value = response.data.filter(u => 
+            !props.chatGroup.users.some(member => member.id === u.id)
+        );
+    } catch (error) {
+        console.error('Error fetching users:', error);
+    }
+};
+
+const addMember = () => {
+    addMemberForm.post(route('chat.addMember', props.chatGroup.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAddMemberModal.value = false;
+            addMemberForm.reset();
+        },
+        onError: (errors) => {
+            console.error('Add member errors:', errors);
+        }
+    });
+};
+
+const removeMember = (member) => {
+    if (confirm(`Are you sure you want to remove ${member.name} from this group?`)) {
+        const form = useForm({});
+        form.delete(route('chat.removeMember', [props.chatGroup.id, member.id]), {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Member removed successfully
+            },
+            onError: (errors) => {
+                console.error('Remove member errors:', errors);
+            }
+        });
+    }
+};
+
+const openAddMemberModal = () => {
+    fetchAvailableUsers();
+    showAddMemberModal.value = true;
+};
+
 onMounted(() => {
     scrollToBottom();
 });
@@ -153,8 +208,22 @@ watch(() => allMessages.value.length, () => {
                     </div>
 
                     <div class="flex items-center space-x-2">
+                        <!-- Members Button -->
+                        <button @click="showMemberModal = true" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200" title="View Members">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm6 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                        
+                        <!-- Add Member Button (Admin/Moderator only) -->
+                        <button v-if="canManageMembers" @click="openAddMemberModal" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200" title="Add Member">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                            </svg>
+                        </button>
+                        
                         <!-- Group Info Button -->
-                        <button class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200">
+                        <button class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-200" title="Group Info">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -316,6 +385,99 @@ watch(() => allMessages.value.length, () => {
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                 </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Members Modal -->
+        <div v-if="showMemberModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                    <div class="absolute inset-0 bg-gray-500 opacity-75" @click="showMemberModal = false"></div>
+                </div>
+
+                <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-bold text-gray-900 mb-4">Group Members</h3>
+                                
+                                <div class="max-h-96 overflow-y-auto">
+                                    <div v-for="member in chatGroup.users" :key="member.id" class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                                        <div class="flex items-center space-x-3">
+                                            <img :src="member.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=6366f1&color=ffffff`" 
+                                                 :alt="member.name" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <div class="font-medium text-gray-900">{{ member.name }}</div>
+                                                <div class="text-sm text-gray-500">{{ member.email }}</div>
+                                                <div v-if="member.pivot.role !== 'member'" class="text-xs font-medium text-indigo-600 capitalize">
+                                                    {{ member.pivot.role }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div v-if="canManageMembers && member.id !== chatGroup.created_by && member.id !== user.id" class="flex items-center space-x-2">
+                                            <button @click="removeMember(member)" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button @click="showMemberModal = false" 
+                                class="w-full inline-flex justify-center rounded-2xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Member Modal -->
+        <div v-if="showAddMemberModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                    <div class="absolute inset-0 bg-gray-500 opacity-75" @click="showAddMemberModal = false"></div>
+                </div>
+
+                <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <form @submit.prevent="addMember">
+                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <div class="sm:flex sm:items-start">
+                                <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                                    <h3 class="text-lg leading-6 font-bold text-gray-900 mb-4">Add Member to Group</h3>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+                                        <select v-model="addMemberForm.user_id" required 
+                                                class="w-full border-gray-300 rounded-2xl focus:ring-indigo-500 focus:border-indigo-500">
+                                            <option value="">Choose a user...</option>
+                                            <option v-for="user in availableUsers" :key="user.id" :value="user.id">
+                                                {{ user.name }} ({{ user.email }})
+                                            </option>
+                                        </select>
+                                        <div v-if="addMemberForm.errors.user_id" class="mt-1 text-sm text-red-600">{{ addMemberForm.errors.user_id }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                            <button type="submit" :disabled="addMemberForm.processing" 
+                                    class="w-full inline-flex justify-center rounded-2xl border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
+                                <span v-if="addMemberForm.processing">Adding...</span>
+                                <span v-else>Add Member</span>
+                            </button>
+                            <button type="button" @click="showAddMemberModal = false" 
+                                    class="mt-3 w-full inline-flex justify-center rounded-2xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                Cancel
                             </button>
                         </div>
                     </form>

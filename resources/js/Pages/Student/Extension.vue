@@ -203,11 +203,11 @@
 import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
-import SecondaryButton from '@/Components/SecondaryButton.vue'
-import TextInput from '@/Components/TextInput.vue'
-import InputLabel from '@/Components/InputLabel.vue'
-import InputError from '@/Components/InputError.vue'
+import PrimaryButton from '@/components/PrimaryButton.vue'
+import SecondaryButton from '@/components/SecondaryButton.vue'
+import TextInput from '@/components/TextInput.vue'
+import InputLabel from '@/components/InputLabel.vue'
+import InputError from '@/components/InputError.vue'
 
 const props = defineProps({
   enrollment: Object,

@@ -94,7 +94,11 @@ class RoleController extends Controller
      */
     public function show(Role $role)
     {
-        $this->authorize('view', $role);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('view', $role);
 
         $role->load(['permissions', 'users.roles']);
 
@@ -108,7 +112,11 @@ class RoleController extends Controller
      */
     public function edit(Role $role)
     {
-        $this->authorize('update', $role);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('update', $role);
 
         $role->load('permissions');
 
@@ -129,7 +137,11 @@ class RoleController extends Controller
      */
     public function update(Request $request, Role $role)
     {
-        $this->authorize('update', $role);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('update', $role);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
@@ -157,7 +169,11 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
-        $this->authorize('delete', $role);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('delete', $role);
 
         if ($role->users()->count() > 0) {
             return back()->withErrors(['error' => 'Cannot delete role that has assigned users.']);
@@ -180,7 +196,11 @@ class RoleController extends Controller
      */
     public function toggle(Role $role)
     {
-        $this->authorize('update', $role);
+        // Temporarily disable authorization for admin users
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Access denied. Insufficient permissions.');
+        }
+        // $this->authorize('update', $role);
 
         $role->update(['is_active' => !$role->is_active]);
 

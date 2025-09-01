@@ -44,7 +44,13 @@
       "Bash(C:laragonbinmysqlmysql-8.0.30-winx64binmysqld.exe --install)",
       "Bash(powershell:*)",
       "Bash(Get-Content storagelogslaravel.log -Tail 50)",
-      "Bash(Get-Content storage/logs/laravel.log -Tail 10)"
+      "Bash(Get-Content storage/logs/laravel.log -Tail 10)",
+      "Bash(rm:*)",
+      "Bash(mysql:*)",
+      "Bash(dir C:laragonwwwstudyseco.comroutes)",
+      "Bash(Get-Content storage/logs/laravel.log -Tail 20)",
+      "Bash(for:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": [],

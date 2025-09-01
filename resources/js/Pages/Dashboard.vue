@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 import { Bar, Line, Doughnut } from 'vue-chartjs';
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement } from 'chart.js';
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Filler } from 'chart.js';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 // Define the component's props and get the user object
@@ -15,7 +15,7 @@ const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_u
 const stats = props.stats || {};
 
 // Register Chart.js components
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement);
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Filler);
 
 // Chart data
 const enrollmentData = ref({

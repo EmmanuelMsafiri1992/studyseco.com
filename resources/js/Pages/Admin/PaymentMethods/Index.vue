@@ -213,15 +213,20 @@ const getTypeBadge = (type) => {
                         Showing {{ paymentMethods.from }} to {{ paymentMethods.to }} of {{ paymentMethods.total }} results
                     </p>
                     <div class="flex items-center space-x-2">
-                        <Link v-for="link in paymentMethods.links" 
-                              :key="link.label"
-                              :href="link.url" 
-                              v-html="link.label"
-                              :class="link.active 
-                                  ? 'px-3 py-2 text-sm bg-indigo-500 text-white rounded-lg' 
-                                  : 'px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150'"
-                              class="transition-colors duration-150">
-                        </Link>
+                        <template v-for="link in paymentMethods.links" :key="link.label">
+                            <Link v-if="link.url" 
+                                  :href="link.url" 
+                                  v-html="link.label"
+                                  :class="link.active 
+                                      ? 'px-3 py-2 text-sm bg-indigo-500 text-white rounded-lg' 
+                                      : 'px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150'"
+                                  class="transition-colors duration-150">
+                            </Link>
+                            <span v-else 
+                                  v-html="link.label"
+                                  class="px-3 py-2 text-sm text-slate-400 rounded-lg cursor-not-allowed">
+                            </span>
+                        </template>
                     </div>
                 </div>
             </div>
