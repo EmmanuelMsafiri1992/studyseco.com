@@ -18,7 +18,7 @@ class LessonController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
-            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:102400', // 100MB max
+            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv,mkv|max:204800', // 200MB max for larger video files
             'order_index' => 'nullable|integer|min:0',
         ]);
 
@@ -61,10 +61,26 @@ class LessonController extends Controller
 
     public function show(Lesson $lesson)
     {
-        $lesson->load(['topic.subject']);
+        $lesson->load([
+            'topic.subject.topics.lessons' => function ($query) {
+                $query->where('is_published', true)->orderBy('order_index');
+            }
+        ]);
+
+        // Get subject with all topics and lessons for navigation
+        $subject = $lesson->topic->subject;
+        $subject->load([
+            'topics' => function ($query) {
+                $query->where('is_active', true)->orderBy('order_index');
+            },
+            'topics.lessons' => function ($query) {
+                $query->where('is_published', true)->orderBy('order_index');
+            }
+        ]);
 
         return Inertia::render('Subjects/SubjectPage/LessonPlayer', [
             'lesson' => $lesson,
+            'subject' => $subject,
         ]);
     }
 
@@ -77,7 +93,7 @@ class LessonController extends Controller
             'duration_minutes' => 'nullable|integer|min:1',
             'order_index' => 'nullable|integer|min:0',
             'is_published' => 'boolean',
-            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:102400',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv,mkv|max:204800', // 200MB max for larger video files
         ]);
 
         if ($request->hasFile('video')) {

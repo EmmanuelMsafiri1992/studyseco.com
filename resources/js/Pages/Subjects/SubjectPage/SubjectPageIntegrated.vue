@@ -4,11 +4,12 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 
 const props = defineProps({
     auth: Object,
-    lesson: Object,
     subject: Object,
 });
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
+
+// Video player refs and state
 const videoPlayer = ref(null);
 const currentTime = ref(0);
 const duration = ref(0);
@@ -18,15 +19,30 @@ const showControls = ref(true);
 const isFullscreen = ref(false);
 const isLoading = ref(true);
 const playbackRate = ref(1);
+const buffered = ref(0);
+
+// Lesson and navigation state
+const selectedLessonId = ref(null);
+const expandedModules = ref(new Set());
 const showSidebar = ref(true);
 const isMobile = ref(false);
-const buffered = ref(0);
-const expandedModules = ref(new Set());
+
+// Computed properties
+const selectedLesson = computed(() => {
+    if (!selectedLessonId.value) return null;
+    
+    for (const topic of props.subject.topics || []) {
+        const lesson = topic.lessons?.find(l => l.id === selectedLessonId.value);
+        if (lesson) return lesson;
+    }
+    return null;
+});
 
 const formattedCurrentTime = computed(() => formatTime(currentTime.value));
 const formattedDuration = computed(() => formatTime(duration.value));
 const progress = computed(() => duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0);
 
+// Utility functions
 const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -38,6 +54,17 @@ const formatTime = (seconds) => {
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
 };
 
+const formatDuration = (minutes) => {
+    if (!minutes) return 'No duration set';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+        return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+};
+
+// Video player functions
 const togglePlay = () => {
     if (videoPlayer.value) {
         if (isPlaying.value) {
@@ -89,6 +116,7 @@ const changePlaybackRate = (rate) => {
     }
 };
 
+// Navigation functions
 const toggleSidebar = () => {
     showSidebar.value = !showSidebar.value;
 };
@@ -112,84 +140,113 @@ const toggleModule = (topicId) => {
     }
 };
 
-const getLessonTypeIcon = (lessonItem) => {
-    if (lessonItem.video_path) return 'video';
-    if (lessonItem.type === 'quiz') return 'quiz';
-    if (lessonItem.type === 'text') return 'text';
+const selectLesson = (lesson) => {
+    selectedLessonId.value = lesson.id;
+    
+    // Reset video player state
+    currentTime.value = 0;
+    duration.value = 0;
+    isPlaying.value = false;
+    isLoading.value = true;
+    
+    // Wait for video element to update
+    nextTick(() => {
+        if (videoPlayer.value && lesson.video_url) {
+            setupVideoEvents();
+        }
+    });
+};
+
+const getLessonTypeIcon = (lesson) => {
+    if (lesson.video_path) return 'video';
+    if (lesson.type === 'quiz') return 'quiz';
+    if (lesson.type === 'text') return 'text';
     return 'document';
 };
 
-const getLessonProgress = (lessonItem) => {
+const getLessonProgress = (lesson) => {
     // This would come from actual progress tracking
-    return lessonItem.id === props.lesson.id ? 100 : Math.random() > 0.5 ? 100 : 0;
+    return lesson.id === selectedLessonId.value ? 100 : Math.random() > 0.5 ? 100 : 0;
+};
+
+const setupVideoEvents = () => {
+    if (!videoPlayer.value) return;
+    
+    videoPlayer.value.addEventListener('loadedmetadata', () => {
+        duration.value = videoPlayer.value.duration;
+        isLoading.value = false;
+    });
+    
+    videoPlayer.value.addEventListener('loadstart', () => {
+        isLoading.value = true;
+    });
+    
+    videoPlayer.value.addEventListener('canplay', () => {
+        isLoading.value = false;
+    });
+    
+    videoPlayer.value.addEventListener('waiting', () => {
+        isLoading.value = true;
+    });
+    
+    videoPlayer.value.addEventListener('playing', () => {
+        isLoading.value = false;
+    });
+    
+    videoPlayer.value.addEventListener('progress', updateBuffered);
+    
+    videoPlayer.value.addEventListener('timeupdate', () => {
+        currentTime.value = videoPlayer.value.currentTime;
+    });
+    
+    videoPlayer.value.addEventListener('play', () => {
+        isPlaying.value = true;
+    });
+    
+    videoPlayer.value.addEventListener('pause', () => {
+        isPlaying.value = false;
+    });
+    
+    videoPlayer.value.addEventListener('ended', () => {
+        isPlaying.value = false;
+    });
+
+    // Auto-hide controls
+    let controlsTimeout;
+    const resetControlsTimeout = () => {
+        clearTimeout(controlsTimeout);
+        showControls.value = true;
+        controlsTimeout = setTimeout(() => {
+            if (isPlaying.value) {
+                showControls.value = false;
+            }
+        }, 3000);
+    };
+
+    videoPlayer.value.addEventListener('mousemove', resetControlsTimeout);
+    videoPlayer.value.addEventListener('click', togglePlay);
 };
 
 onMounted(() => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Expand the current lesson's module
-    if (props.lesson.topic) {
-        expandedModules.value.add(props.lesson.topic.id);
-    }
-    
-    if (videoPlayer.value) {
-        videoPlayer.value.preload = 'metadata';
-        videoPlayer.value.crossOrigin = 'anonymous';
-        
-        videoPlayer.value.addEventListener('loadedmetadata', () => {
-            duration.value = videoPlayer.value.duration;
-            isLoading.value = false;
+    // Expand all modules by default and select first lesson
+    if (props.subject.topics) {
+        props.subject.topics.forEach(topic => {
+            expandedModules.value.add(topic.id);
         });
         
-        videoPlayer.value.addEventListener('loadstart', () => {
-            isLoading.value = true;
-        });
-        
-        videoPlayer.value.addEventListener('canplay', () => {
-            isLoading.value = false;
-        });
-        
-        videoPlayer.value.addEventListener('waiting', () => {
-            isLoading.value = true;
-        });
-        
-        videoPlayer.value.addEventListener('playing', () => {
-            isLoading.value = false;
-        });
-        
-        videoPlayer.value.addEventListener('progress', updateBuffered);
-        
-        videoPlayer.value.addEventListener('timeupdate', () => {
-            currentTime.value = videoPlayer.value.currentTime;
-        });
-        
-        videoPlayer.value.addEventListener('play', () => {
-            isPlaying.value = true;
-        });
-        
-        videoPlayer.value.addEventListener('pause', () => {
-            isPlaying.value = false;
-        });
-        
-        videoPlayer.value.addEventListener('ended', () => {
-            isPlaying.value = false;
-        });
-
-        // Auto-hide controls
-        let controlsTimeout;
-        const resetControlsTimeout = () => {
-            clearTimeout(controlsTimeout);
-            showControls.value = true;
-            controlsTimeout = setTimeout(() => {
-                if (isPlaying.value) {
-                    showControls.value = false;
+        // Select first lesson with video
+        for (const topic of props.subject.topics) {
+            if (topic.lessons) {
+                const firstVideoLesson = topic.lessons.find(lesson => lesson.video_path);
+                if (firstVideoLesson) {
+                    selectLesson(firstVideoLesson);
+                    break;
                 }
-            }, 3000);
-        };
-
-        videoPlayer.value.addEventListener('mousemove', resetControlsTimeout);
-        videoPlayer.value.addEventListener('click', togglePlay);
+            }
+        }
     }
 
     // Keyboard shortcuts
@@ -221,13 +278,13 @@ onMounted(() => {
 </script>
 
 <template>
-    <Head :title="lesson.title" />
+    <Head :title="subject.name" />
     
     <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
         <!-- Header -->
         <header class="h-16 bg-white/90 backdrop-blur-xl border-b border-slate-200/50 px-4 md:px-6 flex items-center justify-between relative z-50">
             <div class="flex items-center space-x-4 flex-1 min-w-0">
-                <Link :href="route('subjects.show', lesson.topic.subject.id)" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200 flex-shrink-0">
+                <Link :href="route('subjects.index')" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200 flex-shrink-0">
                     <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
@@ -238,7 +295,7 @@ onMounted(() => {
                     </svg>
                 </button>
                 <div class="min-w-0 flex-1">
-                    <h1 class="text-sm md:text-lg font-bold text-slate-800 truncate">{{ subject?.name || lesson.topic.subject.name }}</h1>
+                    <h1 class="text-sm md:text-lg font-bold text-slate-800 truncate">{{ subject.name }}</h1>
                 </div>
             </div>
             
@@ -275,7 +332,9 @@ onMounted(() => {
                 <div class="p-4 border-b border-slate-200/50">
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-slate-600">Progress</span>
-                        <span class="text-slate-800 font-medium">3/25 lessons</span>
+                        <span class="text-slate-800 font-medium">
+                            {{ subject.topics?.reduce((acc, topic) => acc + (topic.lessons?.length || 0), 0) || 0 }} lessons
+                        </span>
                     </div>
                     <div class="mt-2 bg-slate-200 rounded-full h-2">
                         <div class="bg-indigo-500 h-2 rounded-full" style="width: 12%"></div>
@@ -298,7 +357,7 @@ onMounted(() => {
                                         </div>
                                         <div>
                                             <h3 class="text-slate-800 font-medium">{{ topic.name }}</h3>
-                                            <p class="text-xs text-slate-500">0/{{ topic.lessons?.length || 0 }} lessons</p>
+                                            <p class="text-xs text-slate-500">{{ topic.lessons?.length || 0 }} lessons</p>
                                         </div>
                                     </div>
                                     <svg 
@@ -318,12 +377,12 @@ onMounted(() => {
                                 v-if="expandedModules.has(topic.id)" 
                                 class="bg-slate-50"
                             >
-                                <template v-for="topicLesson in (topic.lessons || [])" :key="topicLesson.id">
-                                    <Link 
-                                        :href="route('lessons.show', topicLesson.id)"
+                                <template v-for="lesson in (topic.lessons || [])" :key="lesson.id">
+                                    <button 
+                                        @click="selectLesson(lesson)"
                                         :class="[
-                                            'block py-3 px-6 pl-12 border-l-4 transition-all duration-200 hover:bg-slate-100',
-                                            topicLesson.id === lesson.id 
+                                            'w-full text-left py-3 px-6 pl-12 border-l-4 transition-all duration-200 hover:bg-slate-100',
+                                            lesson.id === selectedLessonId 
                                                 ? 'border-indigo-500 bg-slate-100' 
                                                 : 'border-transparent'
                                         ]"
@@ -331,12 +390,12 @@ onMounted(() => {
                                         <div class="flex items-center space-x-3">
                                             <!-- Lesson Icon -->
                                             <div class="flex-shrink-0">
-                                                <div v-if="getLessonTypeIcon(topicLesson) === 'video'" class="w-5 h-5 text-indigo-500">
+                                                <div v-if="getLessonTypeIcon(lesson) === 'video'" class="w-5 h-5 text-indigo-500">
                                                     <svg fill="currentColor" viewBox="0 0 24 24">
                                                         <path d="M8 5v14l11-7z"/>
                                                     </svg>
                                                 </div>
-                                                <div v-else-if="getLessonTypeIcon(topicLesson) === 'quiz'" class="w-5 h-5 text-green-500">
+                                                <div v-else-if="getLessonTypeIcon(lesson) === 'quiz'" class="w-5 h-5 text-green-500">
                                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                     </svg>
@@ -354,30 +413,30 @@ onMounted(() => {
                                                     <div class="min-w-0 flex-1">
                                                         <p :class="[
                                                             'text-sm font-medium truncate',
-                                                            topicLesson.id === lesson.id ? 'text-indigo-600' : 'text-slate-800'
+                                                            lesson.id === selectedLessonId ? 'text-indigo-600' : 'text-slate-800'
                                                         ]">
-                                                            {{ topicLesson.title }}
+                                                            {{ lesson.title }}
                                                         </p>
                                                         <div class="flex items-center space-x-2 mt-1">
-                                                            <span v-if="getLessonTypeIcon(topicLesson) === 'video'" class="text-xs text-slate-500">
+                                                            <span v-if="getLessonTypeIcon(lesson) === 'video'" class="text-xs text-slate-500">
                                                                 MULTIMEDIA
                                                             </span>
-                                                            <span v-else-if="getLessonTypeIcon(topicLesson) === 'quiz'" class="text-xs text-slate-500">
+                                                            <span v-else-if="getLessonTypeIcon(lesson) === 'quiz'" class="text-xs text-slate-500">
                                                                 QUIZ - 10 QUESTIONS
                                                             </span>
                                                             <span v-else class="text-xs text-slate-500">
                                                                 TEXT
                                                             </span>
                                                             <span class="text-xs text-slate-400">•</span>
-                                                            <span v-if="topicLesson.duration_minutes" class="text-xs text-slate-500">
-                                                                {{ topicLesson.formatted_duration }}
+                                                            <span v-if="lesson.duration_minutes" class="text-xs text-slate-500">
+                                                                {{ formatDuration(lesson.duration_minutes) }}
                                                             </span>
                                                         </div>
                                                     </div>
 
                                                     <!-- Completion Status -->
                                                     <div class="flex-shrink-0 ml-2">
-                                                        <div v-if="getLessonProgress(topicLesson) === 100" class="w-5 h-5 text-green-500">
+                                                        <div v-if="getLessonProgress(lesson) === 100" class="w-5 h-5 text-green-500">
                                                             <svg fill="currentColor" viewBox="0 0 20 20">
                                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                                                             </svg>
@@ -387,7 +446,7 @@ onMounted(() => {
                                                 </div>
                                             </div>
                                         </div>
-                                    </Link>
+                                    </button>
                                 </template>
                             </div>
                         </div>
@@ -398,38 +457,39 @@ onMounted(() => {
             <!-- Main Content Area -->
             <div class="flex-1 flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
                 <!-- Lesson Header -->
-                <div class="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 p-4">
+                <div v-if="selectedLesson" class="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="text-xl font-bold text-slate-800">{{ lesson.title }}</h1>
-                            <p class="text-sm text-slate-600 mt-1">{{ lesson.topic.name }}</p>
+                            <h1 class="text-xl font-bold text-slate-800">{{ selectedLesson.title }}</h1>
+                            <p class="text-sm text-slate-600 mt-1">{{ selectedLesson.topic?.name || 'Lesson Content' }}</p>
                         </div>
                         <div class="flex items-center space-x-3">
                             <div class="text-right">
-                                <p class="text-sm text-slate-600">Lesson {{ lesson.order_index + 1 || 1 }}</p>
+                                <p class="text-sm text-slate-600">Lesson {{ selectedLesson.order_index + 1 || 1 }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Video Player -->
-                <div class="flex-1 bg-black relative">
+                <div class="flex-1 bg-black relative" v-if="selectedLesson">
                     <div class="w-full h-full flex items-center justify-center">
                         <video 
-                            v-if="lesson.video_url"
+                            v-if="selectedLesson.video_url"
                             ref="videoPlayer"
-                            :src="lesson.video_url"
+                            :src="selectedLesson.video_url"
                             class="w-full h-full object-contain"
-                            :poster="lesson.thumbnail_url"
+                            :poster="selectedLesson.thumbnail_url"
                             playsinline
                             preload="metadata"
                             controlslist="nodownload"
                             disablepictureinpicture="false"
                             webkit-playsinline
+                            :key="selectedLesson.id"
                         >
-                            <source :src="lesson.video_url" type="video/mp4">
-                            <source :src="lesson.video_url" type="video/webm">
-                            <source :src="lesson.video_url" type="video/x-matroska">
+                            <source :src="selectedLesson.video_url" type="video/mp4">
+                            <source :src="selectedLesson.video_url" type="video/webm">
+                            <source :src="selectedLesson.video_url" type="video/x-matroska">
                             Your browser does not support the video tag.
                         </video>
 
@@ -460,8 +520,8 @@ onMounted(() => {
                                         <div class="h-full bg-white/30 rounded-full transition-all duration-200" :style="{ width: buffered + '%' }"></div>
                                     </div>
                                     <div class="absolute top-0 w-full h-1 cursor-pointer" @click="setCurrentTime">
-                                        <div class="h-full bg-blue-500 rounded-full transition-all duration-200 relative" :style="{ width: progress + '%' }">
-                                            <div class="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-md"></div>
+                                        <div class="h-full bg-indigo-500 rounded-full transition-all duration-200 relative" :style="{ width: progress + '%' }">
+                                            <div class="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-indigo-500 rounded-full shadow-md"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -497,7 +557,7 @@ onMounted(() => {
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m-2.829-2.829a2.5 2.5 0 010-3.536M6 10H4a1 1 0 00-1 1v2a1 1 0 001 1h2l4 4V6l-4 4z"></path>
                                         </svg>
-                                        <input type="range" min="0" max="100" :value="volume * 100" @input="changeVolume" class="w-16 accent-blue-500">
+                                        <input type="range" min="0" max="100" :value="volume * 100" @input="changeVolume" class="w-16 accent-indigo-500">
                                     </div>
 
                                     <!-- Time Display -->
@@ -536,7 +596,7 @@ onMounted(() => {
                         </div>
 
                         <!-- No Video State -->
-                        <div v-if="!lesson.video_url" class="absolute inset-0 flex items-center justify-center bg-black">
+                        <div v-if="!selectedLesson.video_url" class="absolute inset-0 flex items-center justify-center bg-black">
                             <div class="text-center text-white px-4">
                                 <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -548,12 +608,28 @@ onMounted(() => {
                     </div>
                 </div>
 
+                <!-- Welcome State -->
+                <div v-else class="flex-1 flex items-center justify-center">
+                    <div class="text-center max-w-md px-4">
+                        <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 8h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">Welcome to {{ subject.name }}</h2>
+                        <p class="text-slate-600 mb-6">Select a lesson from the left sidebar to start learning.</p>
+                        <div class="text-sm text-slate-500">
+                            <p>{{ subject.topics?.length || 0 }} modules • {{ subject.topics?.reduce((acc, topic) => acc + (topic.lessons?.length || 0), 0) || 0 }} lessons</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Bottom Action Bar -->
-                <div class="bg-white/80 backdrop-blur-xl border-t border-slate-200/50 p-4">
+                <div v-if="selectedLesson" class="bg-white/80 backdrop-blur-xl border-t border-slate-200/50 p-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4">
                             <!-- Lesson Notes -->
-                            <div v-if="lesson.notes" class="text-sm text-slate-600">
+                            <div v-if="selectedLesson.notes" class="text-sm text-slate-600">
                                 <button class="flex items-center space-x-2 hover:text-slate-800 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>

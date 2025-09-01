@@ -288,7 +288,7 @@ const cancelAddLesson = () => {
                             <label class="block text-sm font-medium text-slate-700 mb-2">Video File</label>
                             <input id="lesson-video" type="file" @change="handleVideoSelect" accept="video/*"
                                    class="w-full bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200">
-                            <p class="text-xs text-slate-500 mt-1">MP4, MOV, AVI, WMV up to 100MB</p>
+                            <p class="text-xs text-slate-500 mt-1">MP4, MOV, AVI, WMV, MKV up to 200MB</p>
                         </div>
 
                         <div>

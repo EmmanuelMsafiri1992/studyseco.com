@@ -74,9 +74,9 @@ class Resource extends Model
         // If no specific permissions set, allow all authenticated users
         if (empty($permissions)) return true;
 
-        // Check user roles
-        $userRoles = $user->roles()->pluck('slug')->toArray();
-        if (array_intersect($userRoles, $permissions['roles'] ?? [])) {
+        // Check user role (simple role field instead of relationships)
+        $userRole = $user->role ?? 'guest';
+        if (in_array($userRole, $permissions['roles'] ?? [])) {
             return true;
         }
 

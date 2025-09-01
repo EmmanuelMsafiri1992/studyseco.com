@@ -50,7 +50,9 @@
       "Bash(dir C:laragonwwwstudyseco.comroutes)",
       "Bash(Get-Content storage/logs/laravel.log -Tail 20)",
       "Bash(for:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(copy:*)",
+      "Bash(Get-Content \"C:\\laragon\\www\\studyseco\\storage\\logs\\laravel.log\" -Tail 10)"
     ],
     "deny": [],
     "ask": [],

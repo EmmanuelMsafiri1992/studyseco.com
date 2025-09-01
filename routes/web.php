@@ -267,6 +267,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/create', [\App\Http\Controllers\CommunityController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\CommunityController::class, 'store'])->name('store');
         Route::get('/{post}', [\App\Http\Controllers\CommunityController::class, 'show'])->name('show');
+        Route::get('/{post}/edit', [\App\Http\Controllers\CommunityController::class, 'edit'])->name('edit');
+        Route::patch('/{post}', [\App\Http\Controllers\CommunityController::class, 'update'])->name('update');
+        Route::delete('/{post}', [\App\Http\Controllers\CommunityController::class, 'destroy'])->name('destroy');
         Route::post('/{post}/react', [\App\Http\Controllers\CommunityController::class, 'toggleReaction'])->name('react');
         Route::post('/{post}/comment', [\App\Http\Controllers\CommunityController::class, 'storeComment'])->name('comment');
         Route::post('/{post}/vote', [\App\Http\Controllers\CommunityController::class, 'votePoll'])->name('vote');
@@ -483,6 +486,27 @@ Route::middleware('auth')->group(function () {
         Route::get('/search', [\App\Http\Controllers\LibraryController::class, 'search'])->name('search');
         Route::get('/{resource}', [\App\Http\Controllers\LibraryController::class, 'show'])->name('show');
         Route::get('/{resource}/stream', [\App\Http\Controllers\LibraryController::class, 'stream'])->name('stream');
+    });
+    
+    // Admin Library Management Routes
+    Route::middleware('role:admin')->prefix('admin/library')->name('admin.library.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LibraryController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\LibraryController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\LibraryController::class, 'store'])->name('store');
+        Route::get('/{resource}', [\App\Http\Controllers\Admin\LibraryController::class, 'show'])->name('show');
+        Route::get('/{resource}/edit', [\App\Http\Controllers\Admin\LibraryController::class, 'edit'])->name('edit');
+        Route::put('/{resource}', [\App\Http\Controllers\Admin\LibraryController::class, 'update'])->name('update');
+        Route::delete('/{resource}', [\App\Http\Controllers\Admin\LibraryController::class, 'destroy'])->name('destroy');
+        Route::patch('/{resource}/toggle', [\App\Http\Controllers\Admin\LibraryController::class, 'toggle'])->name('toggle');
+        
+        // Bulk operations
+        Route::post('/bulk-upload', [\App\Http\Controllers\Admin\LibraryController::class, 'bulkUpload'])->name('bulk-upload');
+        Route::patch('/bulk-action', [\App\Http\Controllers\Admin\LibraryController::class, 'bulkAction'])->name('bulk-action');
+        
+        // Categories and metadata
+        Route::get('/categories/manage', [\App\Http\Controllers\Admin\LibraryController::class, 'manageCategories'])->name('categories.manage');
+        Route::post('/categories', [\App\Http\Controllers\Admin\LibraryController::class, 'storeCategory'])->name('categories.store');
+        Route::delete('/categories/{category}', [\App\Http\Controllers\Admin\LibraryController::class, 'destroyCategory'])->name('categories.destroy');
     });
 
     // Achievement Routes

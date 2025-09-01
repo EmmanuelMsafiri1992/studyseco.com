@@ -13,7 +13,7 @@ class RoleMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, $role): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
         $user = $request->user();
         
@@ -21,14 +21,22 @@ class RoleMiddleware
             abort(403, 'Access denied. Authentication required.');
         }
         
-        // Check simple role field first (for compatibility)
-        if ($user->role === $role) {
+        // If no roles specified, just check if user is authenticated
+        if (empty($roles)) {
             return $next($request);
         }
         
-        // Then check role relationships
-        if (method_exists($user, 'hasRole') && $user->hasRole($role)) {
-            return $next($request);
+        // Check if user has any of the required roles
+        foreach ($roles as $role) {
+            // Check simple role field first (for compatibility)
+            if ($user->role === $role) {
+                return $next($request);
+            }
+            
+            // Then check role relationships if method exists
+            if (method_exists($user, 'hasRole') && $user->hasRole($role)) {
+                return $next($request);
+            }
         }
         
         abort(403, 'Access denied. Insufficient permissions.');

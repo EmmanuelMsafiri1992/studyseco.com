@@ -47,11 +47,19 @@ class CommunityController extends Controller
             $postIds = $posts->pluck('id');
             $userReactions = PostReaction::where('user_id', $user->id)
                 ->whereIn('community_post_id', $postIds)
-                ->pluck('type', 'community_post_id');
+                ->get()
+                ->groupBy('community_post_id');
 
             $posts->getCollection()->transform(function ($post) use ($userReactions) {
-                $post->user_has_liked = isset($userReactions[$post->id]) && $userReactions[$post->id] === 'like';
-                $post->user_has_helpful = isset($userReactions[$post->id]) && $userReactions[$post->id] === 'helpful';
+                $reactions = $userReactions->get($post->id, collect());
+                $reactionTypes = $reactions->pluck('type')->toArray();
+                
+                $post->user_has_liked = in_array('like', $reactionTypes);
+                $post->user_has_helpful = in_array('helpful', $reactionTypes);
+                $post->user_has_love = in_array('love', $reactionTypes);
+                $post->user_has_funny = in_array('funny', $reactionTypes);
+                $post->user_has_solved = in_array('solved', $reactionTypes);
+                $post->user_reactions = $reactionTypes;
                 
                 // Truncate content for feed view
                 if (strlen($post->content) > 300) {
@@ -156,8 +164,29 @@ class CommunityController extends Controller
         ]);
 
         $user = auth()->user();
-        $post->user_has_liked = $user ? $post->hasReaction($user, 'like') : false;
-        $post->user_has_helpful = $user ? $post->hasReaction($user, 'helpful') : false;
+        
+        if ($user) {
+            // Get all user reactions for this post
+            $userReactions = PostReaction::where('user_id', $user->id)
+                ->where('community_post_id', $post->id)
+                ->pluck('type')
+                ->toArray();
+            
+            $post->user_has_liked = in_array('like', $userReactions);
+            $post->user_has_helpful = in_array('helpful', $userReactions);
+            $post->user_has_love = in_array('love', $userReactions);
+            $post->user_has_funny = in_array('funny', $userReactions);
+            $post->user_has_solved = in_array('solved', $userReactions);
+            $post->user_reactions = $userReactions;
+        } else {
+            $post->user_has_liked = false;
+            $post->user_has_helpful = false;
+            $post->user_has_love = false;
+            $post->user_has_funny = false;
+            $post->user_has_solved = false;
+            $post->user_reactions = [];
+        }
+        
         $post->can_mark_solution = $user && ($user->id === $post->user_id || $user->role === 'admin');
 
         return Inertia::render('Community/Show', [
@@ -177,33 +206,50 @@ class CommunityController extends Controller
         $userId = auth()->id();
         $type = $validated['type'];
 
-        // Check if reaction exists
-        $reaction = PostReaction::where([
+        // Remove any existing reaction of this type from this user for this post
+        $existingReaction = PostReaction::where([
             'user_id' => $userId,
             'community_post_id' => $post->id,
             'type' => $type
         ])->first();
 
-        if ($reaction) {
+        $hasReaction = false;
+        
+        if ($existingReaction) {
             // Remove reaction
-            $reaction->delete();
-            $post->decrement('likes_count');
+            $existingReaction->delete();
             $hasReaction = false;
         } else {
-            // Add reaction
+            // Add new reaction
             PostReaction::create([
                 'user_id' => $userId,
                 'community_post_id' => $post->id,
                 'type' => $type
             ]);
-            $post->increment('likes_count');
             $hasReaction = true;
         }
 
+        // Recalculate total likes count (all reaction types)
+        $totalReactions = PostReaction::where('community_post_id', $post->id)->count();
+        $post->update(['likes_count' => $totalReactions]);
+        
+        // Get current user's reactions for this post
+        $userReactions = PostReaction::where('user_id', $userId)
+            ->where('community_post_id', $post->id)
+            ->pluck('type')
+            ->toArray();
+
         return response()->json([
             'success' => true,
-            'likes_count' => $post->likes_count,
-            'user_has_liked' => $hasReaction
+            'type' => $type,
+            'has_reaction' => $hasReaction,
+            'likes_count' => $totalReactions,
+            'user_has_liked' => in_array('like', $userReactions),
+            'user_has_love' => in_array('love', $userReactions),
+            'user_has_helpful' => in_array('helpful', $userReactions),
+            'user_has_funny' => in_array('funny', $userReactions),
+            'user_has_solved' => in_array('solved', $userReactions),
+            'user_reactions' => $userReactions
         ]);
     }
 
@@ -244,10 +290,8 @@ class CommunityController extends Controller
         $comment->load('user');
         $post->increment('comments_count');
 
-        return response()->json([
-            'success' => true,
-            'comment' => $comment
-        ]);
+        // Return back to the post with a success message
+        return back()->with('success', 'Comment posted successfully!');
     }
 
     /**
@@ -268,7 +312,7 @@ class CommunityController extends Controller
         // Mark this as solution
         $comment->markAsSolution();
 
-        return response()->json(['success' => true]);
+        return back()->with('success', 'Comment marked as solution!');
     }
 
     /**
@@ -361,5 +405,72 @@ class CommunityController extends Controller
         $resource->incrementDownloads();
 
         return Storage::disk('public')->download($resource->file_path, $resource->title);
+    }
+
+    /**
+     * Show the form for editing a post.
+     */
+    public function edit(CommunityPost $post)
+    {
+        // Check if user can edit this post
+        if (auth()->user()->id !== $post->user_id && auth()->user()->role !== 'admin') {
+            abort(403, 'You can only edit your own posts.');
+        }
+
+        $subjects = Subject::select('id', 'name')->get();
+        
+        return Inertia::render('Community/Edit', [
+            'post' => $post->load('subject'),
+            'subjects' => $subjects
+        ]);
+    }
+
+    /**
+     * Update a community post.
+     */
+    public function update(Request $request, CommunityPost $post)
+    {
+        // Check if user can edit this post
+        if (auth()->user()->id !== $post->user_id && auth()->user()->role !== 'admin') {
+            abort(403, 'You can only edit your own posts.');
+        }
+
+        $validated = $request->validate([
+            'type' => 'required|in:post,question,resource,announcement',
+            'title' => 'nullable|string|max:255',
+            'content' => 'required|string|max:5000',
+            'subject_id' => 'nullable|exists:subjects,id',
+            'priority' => 'in:low,medium,high,urgent',
+            'is_anonymous' => 'boolean',
+            'tags' => 'array',
+            'poll_options' => 'array|max:10',
+            'poll_expires_at' => 'nullable|date|after:now',
+        ]);
+
+        $post->update($validated);
+
+        return redirect()->route('community.show', $post)
+            ->with('success', 'Post updated successfully!');
+    }
+
+    /**
+     * Delete a community post.
+     */
+    public function destroy(CommunityPost $post)
+    {
+        // Check if user can delete this post
+        if (auth()->user()->id !== $post->user_id && auth()->user()->role !== 'admin') {
+            abort(403, 'You can only delete your own posts.');
+        }
+
+        // Delete associated comments and reactions
+        $post->comments()->delete();
+        $post->reactions()->delete();
+        
+        // Delete the post
+        $post->delete();
+
+        return redirect()->route('community.index')
+            ->with('success', 'Post deleted successfully!');
     }
 }

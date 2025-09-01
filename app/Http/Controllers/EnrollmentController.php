@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Notifications\PaymentApproved;
 use App\Notifications\PaymentRejected;
 use App\Notifications\WelcomeEmail;
+use App\Notifications\TrialWelcomeEmail;
+use App\Notifications\EnrollmentPending;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -125,8 +127,25 @@ class EnrollmentController extends Controller
                 'email_verified_at' => now()
             ]);
             
+            // Link user to enrollment
+            $enrollment->update(['user_id' => $user->id]);
+            
             // Send welcome email with login details
-            // Mail::to($user->email)->send(new TrialWelcomeMail($user, $tempPassword));
+            try {
+                $user->notify(new TrialWelcomeEmail($user, $enrollment, $tempPassword));
+            } catch (\Exception $e) {
+                // Log error but don't fail the enrollment
+                logger('Failed to send trial welcome email: ' . $e->getMessage());
+            }
+        } else {
+            // For paid enrollments, send pending notification
+            try {
+                \Illuminate\Support\Facades\Notification::route('mail', $enrollment->email)
+                    ->notify(new EnrollmentPending($enrollment));
+            } catch (\Exception $e) {
+                // Log error but don't fail the enrollment
+                logger('Failed to send enrollment pending email: ' . $e->getMessage());
+            }
         }
 
         // Redirect to verification if verification is required, otherwise to success page
@@ -210,6 +229,7 @@ class EnrollmentController extends Controller
             $user = User::create([
                 'name' => $enrollment->name,
                 'email' => $enrollment->email,
+                'phone' => $enrollment->phone,
                 'password' => bcrypt($tempPassword),
                 'role' => 'student',
                 'email_verified_at' => now()

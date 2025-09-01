@@ -27,6 +27,11 @@ class Lesson extends Model
         'is_published' => 'boolean',
     ];
 
+    protected $appends = [
+        'video_url',
+        'formatted_duration',
+    ];
+
     public function topic(): BelongsTo
     {
         return $this->belongsTo(Topic::class);

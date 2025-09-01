@@ -12,26 +12,15 @@ const props = defineProps({
 });
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest' };
-const showCreateModal = ref(false);
 const selectedPost = ref(null);
-
-const createForm = useForm({
-    type: 'post',
-    title: '',
-    content: '',
-    subject_id: '',
-    priority: 'medium',
-    is_anonymous: false,
-    tags: [],
-    poll_options: [],
-    poll_expires_at: '',
-    attachments: []
-});
+const showDeleteModal = ref(null);
 
 const commentForm = useForm({
     content: '',
     parent_id: null
 });
+
+const deleteForm = useForm({});
 
 const showComments = ref({});
 
@@ -73,48 +62,138 @@ const formatTime = (date) => {
 const toggleReaction = async (post, type = 'like') => {
     try {
         const response = await axios.post(route('community.react', post.id), { type });
-        post.likes_count = response.data.likes_count;
-        post.user_has_liked = !post.user_has_liked;
+        
+        // Update the post data with the server response
+        if (response.data.success) {
+            // Update reaction counts
+            post.likes_count = response.data.likes_count;
+            
+            // Update all reaction states
+            post.user_has_liked = response.data.user_has_liked;
+            post.user_has_love = response.data.user_has_love;
+            post.user_has_helpful = response.data.user_has_helpful;
+            post.user_has_funny = response.data.user_has_funny;
+            post.user_has_solved = response.data.user_has_solved;
+            post.user_reactions = response.data.user_reactions;
+            
+            // Show visual feedback
+            showReactionFeedback(post.id, type, response.data.has_reaction);
+        }
     } catch (error) {
         console.error('Error toggling reaction:', error);
+        showErrorToast('Failed to react to post. Please try again.');
     }
 };
 
+// Visual feedback for reactions
+const showReactionFeedback = (postId, type, hasReacted) => {
+    const typeEmojis = {
+        like: '❤️',
+        love: '💖',
+        helpful: '💯',
+        funny: '😂',
+        solved: '✅'
+    };
+    
+    const emoji = typeEmojis[type] || '👍';
+    const message = hasReacted 
+        ? `${emoji} You reacted with ${type}!` 
+        : `${type} reaction removed`;
+    
+    showToast(message, hasReacted ? 'success' : 'info');
+};
+
+// Toast notification system
+const showToast = (message, type = 'success') => {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    toast.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 2000);
+};
+
+const showErrorToast = (message) => {
+    showToast(message, 'error');
+};
+
 const submitComment = async (post) => {
-    try {
-        commentForm.post(route('community.comment', post.id), {
-            onSuccess: (response) => {
-                commentForm.reset();
-                post.comments_count++;
-            }
-        });
-    } catch (error) {
-        console.error('Error posting comment:', error);
-    }
+    commentForm.post(route('community.comment', post.id), {
+        onSuccess: () => {
+            commentForm.reset();
+            // Comments count will be updated automatically when page refreshes
+        },
+        onError: (errors) => {
+            console.error('Error posting comment:', errors);
+        }
+    });
 };
 
 const toggleComments = (postId) => {
     showComments.value[postId] = !showComments.value[postId];
 };
 
-const addPollOption = () => {
-    createForm.poll_options.push('');
-};
 
-const removePollOption = (index) => {
-    createForm.poll_options.splice(index, 1);
-};
-
-const createPost = () => {
-    createForm.post(route('community.store'), {
+const confirmDelete = (postId) => {
+    deleteForm.delete(route('community.destroy', postId), {
         onSuccess: () => {
-            showCreateModal.value = false;
-            createForm.reset();
-        },
-        onError: (errors) => {
-            console.error('Create post errors:', errors);
+            showDeleteModal.value = null;
         }
     });
+};
+
+// Share post functionality
+const sharePost = async (post) => {
+    const postUrl = route('community.show', post.id);
+    const shareTitle = post.title || 'Check out this post from our community!';
+    const shareText = `${shareTitle}\n\n${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}`;
+    
+    if (navigator.share) {
+        // Use native sharing API if available (mobile)
+        try {
+            await navigator.share({
+                title: shareTitle,
+                text: shareText,
+                url: window.location.origin + postUrl
+            });
+        } catch (err) {
+            console.log('Error sharing:', err);
+            fallbackShare(postUrl);
+        }
+    } else {
+        // Fallback to copying to clipboard
+        fallbackShare(postUrl);
+    }
+};
+
+const fallbackShare = async (postUrl) => {
+    try {
+        const fullUrl = window.location.origin + postUrl;
+        await navigator.clipboard.writeText(fullUrl);
+        showShareToast('Link copied to clipboard!');
+    } catch (err) {
+        // If clipboard API fails, show a prompt
+        const fullUrl = window.location.origin + postUrl;
+        prompt('Copy this link:', fullUrl);
+    }
+};
+
+const showShareToast = (message) => {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-2xl shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
 };
 </script>
 
@@ -175,7 +254,7 @@ const createPost = () => {
                     </div>
 
                     <!-- Create Post Button -->
-                    <button @click="showCreateModal = true" 
+                    <Link :href="route('community.create')" 
                             class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                         <div class="flex items-center space-x-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +262,7 @@ const createPost = () => {
                             </svg>
                             <span>Create Post</span>
                         </div>
-                    </button>
+                    </Link>
                 </div>
             </div>
 
@@ -225,10 +304,17 @@ const createPost = () => {
                                 </div>
                             </div>
                             
-                            <div class="text-slate-400">
-                                <button class="p-2 hover:bg-slate-100 rounded-lg">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                            <div v-if="user.id === post.user_id || user.role === 'admin'" class="flex items-center space-x-2">
+                                <Link :href="route('community.edit', post.id)" 
+                                      class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </Link>
+                                <button @click="showDeleteModal = post.id" 
+                                        class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                     </svg>
                                 </button>
                             </div>
@@ -269,14 +355,36 @@ const createPost = () => {
                     <div class="px-6 py-4 border-t border-slate-200/50 bg-slate-50/50">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-6">
-                                <button @click="toggleReaction(post)" 
-                                        :class="['flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-200', 
-                                                post.user_has_liked ? 'bg-red-100 text-red-600' : 'text-slate-500 hover:bg-slate-100']">
-                                    <svg class="w-5 h-5" :class="post.user_has_liked ? 'fill-current' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <!-- Like Button -->
+                                <button @click="toggleReaction(post, 'like')" 
+                                        :class="['flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105', 
+                                                post.user_has_liked ? 'bg-red-100 text-red-600 shadow-md' : 'text-slate-500 hover:bg-red-50 hover:text-red-500']">
+                                    <svg class="w-5 h-5 transition-all duration-200" 
+                                         :class="post.user_has_liked ? 'fill-current scale-110' : ''" 
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                                     </svg>
-                                    <span class="text-sm font-medium">{{ post.likes_count }}</span>
+                                    <span class="text-sm font-medium">{{ post.likes_count || 0 }}</span>
                                 </button>
+                                
+                                <!-- Additional Reaction Buttons -->
+                                <div class="flex items-center space-x-1">
+                                    <button @click="toggleReaction(post, 'helpful')" 
+                                            :class="['p-2 rounded-lg transition-all duration-200 hover:scale-110 transform', 
+                                                    post.user_has_helpful ? 'bg-yellow-100 text-yellow-600 scale-110' : 'text-slate-400 hover:bg-yellow-50 hover:text-yellow-500']">
+                                        💯
+                                    </button>
+                                    <button @click="toggleReaction(post, 'funny')" 
+                                            :class="['p-2 rounded-lg transition-all duration-200 hover:scale-110 transform', 
+                                                    post.user_has_funny ? 'bg-blue-100 text-blue-600 scale-110' : 'text-slate-400 hover:bg-blue-50 hover:text-blue-500']">
+                                        😂
+                                    </button>
+                                    <button @click="toggleReaction(post, 'love')" 
+                                            :class="['p-2 rounded-lg transition-all duration-200 hover:scale-110 transform', 
+                                                    post.user_has_love ? 'bg-pink-100 text-pink-600 scale-110' : 'text-slate-400 hover:bg-pink-50 hover:text-pink-500']">
+                                        💖
+                                    </button>
+                                </div>
 
                                 <button @click="toggleComments(post.id)" class="flex items-center space-x-2 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-all duration-200">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,7 +393,7 @@ const createPost = () => {
                                     <span class="text-sm font-medium">{{ post.comments_count }}</span>
                                 </button>
 
-                                <button class="flex items-center space-x-2 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-all duration-200">
+                                <button @click="sharePost(post)" class="flex items-center space-x-2 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-all duration-200">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
                                     </svg>
@@ -304,14 +412,28 @@ const createPost = () => {
 
                         <!-- Comments Section -->
                         <div v-if="showComments[post.id]" class="mt-4 pt-4 border-t border-slate-200">
-                            <!-- Comment Form -->
+                            <!-- Enhanced Comment Form -->
                             <form @submit.prevent="submitComment(post)" class="mb-4">
                                 <div class="flex space-x-3">
                                     <img :src="user.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=6366f1&color=ffffff`" 
                                          :alt="user.name" class="w-8 h-8 rounded-full flex-shrink-0">
-                                    <div class="flex-1">
-                                        <input v-model="commentForm.content" type="text" placeholder="Write a comment..." 
-                                               class="w-full px-4 py-2 bg-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200">
+                                    <div class="flex-1 space-y-2">
+                                        <div class="relative">
+                                            <input v-model="commentForm.content" type="text" placeholder="Write a comment..." 
+                                                   class="w-full px-4 py-2 pr-20 bg-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200">
+                                            <!-- Quick Emoji Buttons -->
+                                            <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                                                <button type="button" @click="commentForm.content += ' 👍'" class="text-slate-400 hover:text-indigo-500 text-sm p-1 rounded hover:bg-indigo-50 transition-all duration-200">👍</button>
+                                                <button type="button" @click="commentForm.content += ' ❤️'" class="text-slate-400 hover:text-red-500 text-sm p-1 rounded hover:bg-red-50 transition-all duration-200">❤️</button>
+                                                <button type="button" @click="commentForm.content += ' 😊'" class="text-slate-400 hover:text-yellow-500 text-sm p-1 rounded hover:bg-yellow-50 transition-all duration-200">😊</button>
+                                            </div>
+                                        </div>
+                                        <!-- View full post link -->
+                                        <div class="flex justify-between items-center">
+                                            <Link :href="route('community.show', post.id)" class="text-xs text-indigo-600 hover:text-indigo-800 transition-colors duration-200">
+                                                💬 View full discussion with attachments & reactions
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             </form>
@@ -343,122 +465,52 @@ const createPost = () => {
                     </div>
                     <h3 class="text-lg font-semibold text-slate-800 mb-2">No posts yet</h3>
                     <p class="text-slate-500 mb-6">Be the first to start a conversation in the community!</p>
-                    <button @click="showCreateModal = true" 
+                    <Link :href="route('community.create')" 
                             class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                         Create First Post
-                    </button>
+                    </Link>
                 </div>
             </div>
         </div>
 
-        <!-- Create Post Modal -->
-        <div v-if="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+
+        <!-- Delete Confirmation Modal -->
+        <div v-if="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                    <div class="absolute inset-0 bg-gray-500 opacity-75" @click="showCreateModal = false"></div>
+                    <div class="absolute inset-0 bg-gray-500 opacity-75" @click="showDeleteModal = null"></div>
                 </div>
 
-                <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                    <form @submit.prevent="createPost">
-                        <div class="bg-white px-6 pt-6 pb-4">
-                            <h3 class="text-xl font-bold text-gray-900 mb-6">Create New Post</h3>
-                            
-                            <div class="space-y-4">
-                                <!-- Post Type -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Post Type</label>
-                                    <select v-model="createForm.type" class="w-full border-gray-300 rounded-2xl focus:ring-indigo-500 focus:border-indigo-500">
-                                        <option value="post">General Post</option>
-                                        <option value="question">Question</option>
-                                        <option value="resource">Resource Share</option>
-                                        <option value="announcement">Announcement</option>
-                                    </select>
-                                </div>
-
-                                <!-- Title (optional) -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Title (Optional)</label>
-                                    <input v-model="createForm.title" type="text" 
-                                           class="w-full border-gray-300 rounded-2xl focus:ring-indigo-500 focus:border-indigo-500" 
-                                           placeholder="Give your post a title...">
-                                </div>
-
-                                <!-- Content -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Content*</label>
-                                    <textarea v-model="createForm.content" rows="5" required
-                                              class="w-full border-gray-300 rounded-2xl focus:ring-indigo-500 focus:border-indigo-500 resize-none" 
-                                              placeholder="What's on your mind? Share your thoughts, ask a question, or help others..."></textarea>
-                                </div>
-
-                                <!-- Subject -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Related Subject (Optional)</label>
-                                    <select v-model="createForm.subject_id" class="w-full border-gray-300 rounded-2xl focus:ring-indigo-500 focus:border-indigo-500">
-                                        <option value="">Select a subject...</option>
-                                        <option v-for="subject in subjects" :key="subject.id" :value="subject.id">
-                                            {{ subject.name }}
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <!-- Priority -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                                        <select v-model="createForm.priority" class="w-full border-gray-300 rounded-2xl focus:ring-indigo-500 focus:border-indigo-500">
-                                            <option value="low">Low</option>
-                                            <option value="medium">Medium</option>
-                                            <option value="high">High</option>
-                                            <option value="urgent">Urgent</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Anonymous -->
-                                    <div class="flex items-center pt-6">
-                                        <input v-model="createForm.is_anonymous" type="checkbox" id="anonymous" 
-                                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                        <label for="anonymous" class="ml-2 block text-sm text-gray-700">
-                                            Post anonymously
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- Poll Options (if applicable) -->
-                                <div v-if="createForm.type === 'question'">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Poll Options (Optional)</label>
-                                    <div class="space-y-2">
-                                        <div v-for="(option, index) in createForm.poll_options" :key="index" class="flex items-center space-x-2">
-                                            <input v-model="createForm.poll_options[index]" type="text" 
-                                                   class="flex-1 border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" 
-                                                   :placeholder="`Option ${index + 1}`">
-                                            <button type="button" @click="removePollOption(index)" class="text-red-500 hover:text-red-700">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        <button type="button" @click="addPollOption" v-if="createForm.poll_options.length < 10"
-                                                class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                                            + Add Poll Option
-                                        </button>
-                                    </div>
+                <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white px-6 pt-6 pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900">Delete Post</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500">
+                                        Are you sure you want to delete this post? This action cannot be undone and all comments and reactions will also be deleted.
+                                    </p>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse">
-                            <button type="submit" :disabled="createForm.processing" 
-                                    class="w-full inline-flex justify-center rounded-2xl border border-transparent shadow-sm px-6 py-3 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
-                                <span v-if="createForm.processing">Creating...</span>
-                                <span v-else>Create Post</span>
-                            </button>
-                            <button type="button" @click="showCreateModal = false" 
-                                    class="mt-3 w-full inline-flex justify-center rounded-2xl border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
+                    </div>
+                    
+                    <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse">
+                        <button type="button" @click="confirmDelete(showDeleteModal)" :disabled="deleteForm.processing"
+                                class="w-full inline-flex justify-center rounded-2xl border border-transparent shadow-sm px-6 py-3 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
+                            <span v-if="deleteForm.processing">Deleting...</span>
+                            <span v-else>Delete Post</span>
+                        </button>
+                        <button type="button" @click="showDeleteModal = null" 
+                                class="mt-3 w-full inline-flex justify-center rounded-2xl border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
