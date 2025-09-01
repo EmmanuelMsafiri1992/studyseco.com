@@ -18,37 +18,61 @@ class CommunityController extends Controller
      */
     public function index(Request $request)
     {
-        $filter = $request->get('filter', 'all'); // all, questions, resources, announcements
+        $filter = $request->get('filter', 'all');
         $subject = $request->get('subject');
-        $sort = $request->get('sort', 'recent'); // recent, trending, popular, solved
+        $sort = $request->get('sort', 'recent');
+        $user = auth()->user();
 
-        $posts = CommunityPost::with(['user', 'subject', 'reactions', 'comments.user', 'sharedResources'])
-            ->when($filter !== 'all', fn($query) => $query->ofType($filter))
-            ->when($subject, fn($query) => $query->bySubject($subject))
+        // Optimized query with minimal relations
+        $posts = CommunityPost::select([
+                'id', 'user_id', 'type', 'title', 'content', 'subject_id', 'priority',
+                'is_anonymous', 'is_solved', 'is_featured', 'is_pinned', 'tags',
+                'likes_count', 'comments_count', 'views_count', 'shares_count',
+                'poll_options', 'poll_votes', 'created_at'
+            ])
+            ->with([
+                'user:id,name,email,profile_photo_url', 
+                'subject:id,name'
+            ])
+            ->when($filter !== 'all', fn($query) => $query->where('type', $filter))
+            ->when($subject, fn($query) => $query->where('subject_id', $subject))
             ->when($sort === 'trending', fn($query) => $query->trending())
             ->when($sort === 'popular', fn($query) => $query->orderBy('likes_count', 'desc'))
             ->when($sort === 'solved', fn($query) => $query->where('is_solved', true))
-            ->when($sort === 'recent', fn($query) => $query->orderBy('created_at', 'desc'))
-            ->paginate(20);
+            ->when($sort === 'recent', fn($query) => $query->latest())
+            ->paginate(15); // Reduced from 20 to 15
 
-        // Add user interaction data
-        $user = auth()->user();
-        $posts->getCollection()->transform(function ($post) use ($user) {
-            $post->user_has_liked = $user ? $post->hasReaction($user, 'like') : false;
-            $post->user_has_helpful = $user ? $post->hasReaction($user, 'helpful') : false;
-            return $post;
+        // Batch check user reactions to avoid N+1 queries
+        if ($user) {
+            $postIds = $posts->pluck('id');
+            $userReactions = PostReaction::where('user_id', $user->id)
+                ->whereIn('community_post_id', $postIds)
+                ->pluck('type', 'community_post_id');
+
+            $posts->getCollection()->transform(function ($post) use ($userReactions) {
+                $post->user_has_liked = isset($userReactions[$post->id]) && $userReactions[$post->id] === 'like';
+                $post->user_has_helpful = isset($userReactions[$post->id]) && $userReactions[$post->id] === 'helpful';
+                
+                // Truncate content for feed view
+                if (strlen($post->content) > 300) {
+                    $post->content_preview = substr($post->content, 0, 300) . '...';
+                } else {
+                    $post->content_preview = $post->content;
+                }
+                
+                return $post;
+            });
+        }
+
+        // Cache subjects for 1 hour
+        $subjects = cache()->remember('active_subjects', 3600, function () {
+            return Subject::select('id', 'name')->where('is_active', true)->get();
         });
-
-        $subjects = Subject::where('is_active', true)->get();
         
         return Inertia::render('Community/Index', [
             'posts' => $posts,
             'subjects' => $subjects,
-            'filters' => [
-                'filter' => $filter,
-                'subject' => $subject,
-                'sort' => $sort
-            ]
+            'filters' => compact('filter', 'subject', 'sort')
         ]);
     }
 
@@ -150,11 +174,36 @@ class CommunityController extends Controller
             'type' => 'required|in:like,love,helpful,solved,funny'
         ]);
 
-        $post->toggleReaction(auth()->user(), $validated['type']);
+        $userId = auth()->id();
+        $type = $validated['type'];
+
+        // Check if reaction exists
+        $reaction = PostReaction::where([
+            'user_id' => $userId,
+            'community_post_id' => $post->id,
+            'type' => $type
+        ])->first();
+
+        if ($reaction) {
+            // Remove reaction
+            $reaction->delete();
+            $post->decrement('likes_count');
+            $hasReaction = false;
+        } else {
+            // Add reaction
+            PostReaction::create([
+                'user_id' => $userId,
+                'community_post_id' => $post->id,
+                'type' => $type
+            ]);
+            $post->increment('likes_count');
+            $hasReaction = true;
+        }
 
         return response()->json([
             'success' => true,
-            'likes_count' => $post->fresh()->likes_count
+            'likes_count' => $post->likes_count,
+            'user_has_liked' => $hasReaction
         ]);
     }
 
