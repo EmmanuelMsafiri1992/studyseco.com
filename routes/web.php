@@ -240,11 +240,25 @@ Route::get('/dashboard', function () {
             $data['enrolled_subjects'] = $enrollment ? $enrollment->subjects : collect([]);
             $data['access_remaining'] = $enrollment ? $enrollment->access_days_remaining : 0;
             $data['access_expired'] = $enrollment ? $enrollment->is_access_expired : true;
+            
+            // Add stats object for students with enrollment status
+            $data['stats'] = [
+                'enrollment_status' => $enrollment ? ($enrollment->is_trial ? 'trial' : $enrollment->status) : 'not_enrolled',
+                'total_subjects' => $enrollment ? $enrollment->subjects->count() : 0,
+                'access_remaining_days' => $enrollment ? $enrollment->access_days_remaining : 0,
+                'is_trial' => $enrollment ? $enrollment->is_trial : false,
+            ];
         } catch (Exception $e) {
             $data['enrollment'] = null;
             $data['enrolled_subjects'] = collect([]);
             $data['access_remaining'] = 0;
             $data['access_expired'] = true;
+            $data['stats'] = [
+                'enrollment_status' => 'not_enrolled',
+                'total_subjects' => 0,
+                'access_remaining_days' => 0,
+                'is_trial' => false,
+            ];
         }
     } elseif ($user->role === 'teacher') {
         // Get teacher-specific data

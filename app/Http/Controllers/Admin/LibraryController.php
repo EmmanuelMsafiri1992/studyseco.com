@@ -110,7 +110,7 @@ class LibraryController extends Controller
             'grade_level' => 'nullable|integer|min:1|max:12',
             'exam_board' => 'nullable|string|max:50',
             'year' => 'nullable|integer|min:2000|max:' . (date('Y') + 1),
-            'file' => 'nullable|file|max:102400', // 100MB max
+            'file' => 'nullable|file|max:1048576', // 1GB max
             'thumbnail' => 'nullable|image|max:2048', // 2MB max for images
             'access_permissions' => 'nullable|array',
             'is_protected' => 'boolean',
@@ -213,7 +213,7 @@ class LibraryController extends Controller
             'grade_level' => 'nullable|integer|min:1|max:12',
             'exam_board' => 'nullable|string|max:50',
             'year' => 'nullable|integer|min:2000|max:' . (date('Y') + 1),
-            'file' => 'nullable|file|max:102400', // 100MB max
+            'file' => 'nullable|file|max:1048576', // 1GB max
             'thumbnail' => 'nullable|image|max:2048',
             'access_permissions' => 'nullable|array',
             'is_protected' => 'boolean',
@@ -290,7 +290,7 @@ class LibraryController extends Controller
     public function bulkUpload(Request $request)
     {
         $request->validate([
-            'files.*' => 'required|file|max:102400',
+            'files.*' => 'required|file|max:1048576',
             'subject_id' => 'nullable|exists:subjects,id',
             'type' => 'required|in:book,past_paper,document,video,audio,presentation',
             'category' => 'nullable|string|max:100',

@@ -14,8 +14,10 @@ class PaymentConfigurationSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create default payment methods
-        PaymentMethod::create([
+        // Skip payment methods if they already exist
+        if (PaymentMethod::count() == 0) {
+            // Create default payment methods
+            PaymentMethod::create([
             'name' => 'TNM Mpamba',
             'code' => 'tnm_mpamba',
             'type' => 'mobile_money',
@@ -61,8 +63,10 @@ class PaymentConfigurationSeeder extends Seeder
             'is_active' => true,
             'sort_order' => 3,
         ]);
+        }
 
-        // Create default access durations
+        // Create default access durations if they don't exist
+        if (AccessDuration::count() == 0) {
         AccessDuration::create([
             'name' => '1 Week Access',
             'description' => 'Perfect for trying out our platform',
@@ -107,5 +111,6 @@ class PaymentConfigurationSeeder extends Seeder
             'is_active' => true,
             'sort_order' => 5,
         ]);
+        }
     }
 }

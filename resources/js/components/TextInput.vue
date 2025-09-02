@@ -10,7 +10,10 @@ const input = ref(null);
 
 onMounted(() => {
     if (input.value.hasAttribute('autofocus')) {
-        input.value.focus();
+        // Add a small delay to prevent autofocus conflicts
+        setTimeout(() => {
+            input.value.focus();
+        }, 100);
     }
 });
 

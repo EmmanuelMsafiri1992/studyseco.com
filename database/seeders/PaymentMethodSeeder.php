@@ -12,8 +12,11 @@ class PaymentMethodSeeder extends Seeder
      */
     public function run(): void
     {
-        // Clear existing records
-        \App\Models\PaymentMethod::query()->delete();
+        // Skip if payment methods already exist
+        if (\App\Models\PaymentMethod::count() > 0) {
+            $this->command->info('Payment methods already exist. Skipping.');
+            return;
+        }
         
         $paymentMethods = [
             // Malawi payment methods

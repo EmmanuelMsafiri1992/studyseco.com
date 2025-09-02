@@ -241,8 +241,8 @@ const lineOptions = ref({
                             <p class="text-slate-500 text-sm font-medium">Enrollment Status</p>
                             <p class="text-3xl font-bold text-slate-800 mt-2 capitalize">{{ stats.enrollment_status }}</p>
                             <div class="flex items-center mt-2">
-                                <span :class="stats.enrollment_status === 'approved' ? 'text-emerald-600' : 'text-amber-600'" class="text-sm font-semibold">
-                                    {{ stats.enrollment_status === 'approved' ? '✓ Active' : stats.enrollment_status === 'pending' ? '⏳ Pending' : 'Not Enrolled' }}
+                                <span :class="stats.enrollment_status === 'approved' || stats.enrollment_status === 'trial' ? 'text-emerald-600' : stats.enrollment_status === 'pending' ? 'text-amber-600' : 'text-red-600'" class="text-sm font-semibold">
+                                    {{ stats.enrollment_status === 'approved' ? '✓ Active' : stats.enrollment_status === 'trial' ? '✓ Free Access' : stats.enrollment_status === 'pending' ? '⏳ Pending' : 'Not Enrolled' }}
                                 </span>
                             </div>
                         </div>

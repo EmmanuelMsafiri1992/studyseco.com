@@ -21,6 +21,7 @@ public function run()
         PaymentConfigurationSeeder::class,
         SiteContentSeeder::class,
         StudentStoriesSeeder::class,
+        LibrarySeeder::class,
     ]);
 }
 }

@@ -33,7 +33,7 @@ const newMessage = ref('');
 const isTyping = ref(false);
 
 // Live chat support variables  
-const supportChatId = ref(localStorage.getItem('studyseco_chat_session') || 'b4cd3791-c2a9-4a74-ba0e-7f75e6ee5cf1');
+const supportChatId = ref(localStorage.getItem('studyseco_chat_session') || null);
 const chatStatus = ref('disconnected'); // disconnected, waiting, active
 const queuePosition = ref(null);
 const agentName = ref(null);

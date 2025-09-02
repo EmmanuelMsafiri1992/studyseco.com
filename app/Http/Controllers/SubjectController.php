@@ -12,26 +12,49 @@ class SubjectController extends Controller
 {
     public function index()
     {
-        $subjects = Subject::with(['topics.lessons'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(function ($subject) {
-                return [
-                    'id' => $subject->id,
-                    'name' => $subject->name,
-                    'code' => $subject->code,
-                    'description' => $subject->description,
-                    'department' => $subject->department,
-                    'grade_level' => $subject->grade_level,
-                    'credits' => $subject->credits,
-                    'teacher_name' => $subject->teacher_name,
-                    'cover_image' => $subject->cover_image,
-                    'topic_count' => $subject->topics->count(),
-                    'lesson_count' => $subject->lesson_count,
-                    'total_duration' => $subject->total_duration,
-                ];
-            });
+        $user = auth()->user();
+        
+        // For admins and teachers, show all subjects
+        if (in_array($user->role, ['admin', 'teacher'])) {
+            $subjects = Subject::with(['topics.lessons'])
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+        } else {
+            // For students, show only enrolled subjects
+            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
+                ->where('status', 'approved')
+                ->first();
+                
+            if (!$enrollment || !$enrollment->selected_subjects) {
+                // No enrollment or no selected subjects - show empty array
+                $subjects = collect([]);
+            } else {
+                // Show only selected subjects
+                $subjects = Subject::with(['topics.lessons'])
+                    ->where('is_active', true)
+                    ->whereIn('id', $enrollment->selected_subjects)
+                    ->orderBy('name')
+                    ->get();
+            }
+        }
+
+        $subjects = $subjects->map(function ($subject) {
+            return [
+                'id' => $subject->id,
+                'name' => $subject->name,
+                'code' => $subject->code,
+                'description' => $subject->description,
+                'department' => $subject->department,
+                'grade_level' => $subject->grade_level,
+                'credits' => $subject->credits,
+                'teacher_name' => $subject->teacher_name,
+                'cover_image' => $subject->cover_image,
+                'topic_count' => $subject->topics->count(),
+                'lesson_count' => $subject->lesson_count,
+                'total_duration' => $subject->total_duration,
+            ];
+        });
 
         return Inertia::render('Subjects/Index', [
             'subjects' => $subjects,
@@ -67,6 +90,19 @@ class SubjectController extends Controller
 
     public function show(Subject $subject)
     {
+        $user = auth()->user();
+        
+        // Check if user has access to this subject
+        if (!in_array($user->role, ['admin', 'teacher'])) {
+            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
+                ->where('status', 'approved')
+                ->first();
+                
+            if (!$enrollment || !$enrollment->selected_subjects || !in_array($subject->id, $enrollment->selected_subjects)) {
+                abort(403, 'You do not have access to this subject. Please check your enrollment.');
+            }
+        }
+
         $subject->load([
             'topics' => function ($query) {
                 $query->where('is_active', true)->orderBy('order_index');

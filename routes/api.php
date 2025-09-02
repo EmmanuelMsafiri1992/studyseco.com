@@ -24,6 +24,15 @@ Route::prefix('chatbot')->name('api.chatbot.')->group(function () {
     Route::post('/chat/{sessionId}/end', [ChatbotController::class, 'endChat'])->name('end');
 });
 
+// Chunked upload routes
+Route::middleware('auth')->prefix('upload')->name('api.upload.')->group(function () {
+    Route::post('/initiate', [App\Http\Controllers\ChunkedUploadController::class, 'initiate'])->name('initiate');
+    Route::post('/{uploadId}/chunk', [App\Http\Controllers\ChunkedUploadController::class, 'uploadChunk'])->name('chunk');
+    Route::post('/{uploadId}/finalize', [App\Http\Controllers\ChunkedUploadController::class, 'finalize'])->name('finalize');
+    Route::get('/{uploadId}/status', [App\Http\Controllers\ChunkedUploadController::class, 'status'])->name('status');
+    Route::delete('/{uploadId}/cancel', [App\Http\Controllers\ChunkedUploadController::class, 'cancel'])->name('cancel');
+});
+
 // User API routes for chat functionality
 Route::middleware('auth')->group(function () {
     Route::get('/users', function () {

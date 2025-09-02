@@ -52,7 +52,9 @@
       "Bash(for:*)",
       "Bash(done)",
       "Bash(copy:*)",
-      "Bash(Get-Content \"C:\\laragon\\www\\studyseco\\storage\\logs\\laravel.log\" -Tail 10)"
+      "Bash(Get-Content \"C:\\laragon\\www\\studyseco\\storage\\logs\\laravel.log\" -Tail 10)",
+      "Bash(dir temp_backup)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": [],

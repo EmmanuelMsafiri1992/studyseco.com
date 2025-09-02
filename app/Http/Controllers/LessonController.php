@@ -18,7 +18,10 @@ class LessonController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
-            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv,mkv|max:204800', // 200MB max for larger video files
+            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv,mkv|max:1048576', // 1GB max for regular uploads
+            'video_path' => 'nullable|string', // For chunked uploads
+            'video_filename' => 'nullable|string', // For chunked uploads
+            'duration_minutes' => 'nullable|integer|min:1', // For chunked uploads
             'order_index' => 'nullable|integer|min:0',
         ]);
 
@@ -28,6 +31,7 @@ class LessonController extends Controller
 
         $lesson = new Lesson($validated);
 
+        // Handle traditional file upload
         if ($request->hasFile('video')) {
             $video = $request->file('video');
             $videoPath = $video->store('lessons/videos', 'public');
@@ -47,6 +51,15 @@ class LessonController extends Controller
                 }
             } catch (\Exception $e) {
                 // Continue without duration if there's an error
+            }
+        }
+        // Handle chunked upload (video already processed and stored)
+        elseif ($request->has('video_path')) {
+            $lesson->video_path = $validated['video_path'];
+            $lesson->video_filename = $validated['video_filename'] ?? 'uploaded_video.mp4';
+            
+            if (isset($validated['duration_minutes'])) {
+                $lesson->duration_minutes = $validated['duration_minutes'];
             }
         }
 
@@ -93,7 +106,7 @@ class LessonController extends Controller
             'duration_minutes' => 'nullable|integer|min:1',
             'order_index' => 'nullable|integer|min:0',
             'is_published' => 'boolean',
-            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv,mkv|max:204800', // 200MB max for larger video files
+            'video' => 'nullable|file|mimes:mp4,mov,avi,wmv,mkv|max:1048576', // 1GB max for larger video files
         ]);
 
         if ($request->hasFile('video')) {

@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import TopicSidebar from './TopicSidebar.vue';
 import LessonCard from './LessonCard.vue';
+import ChunkedVideoUpload from '@/components/ChunkedVideoUpload.vue';
 
 const props = defineProps({
     auth: Object,
@@ -24,8 +25,12 @@ const newLesson = ref({
     title: '',
     description: '',
     notes: '',
-    video: null,
+    videoData: null, // Will contain the chunked upload result
 });
+
+const isUploading = ref(false);
+const uploadProgress = ref(0);
+const showChunkedUpload = ref(false);
 
 const selectedTopic = computed(() => {
     return props.subject.topics.find(topic => topic.id === selectedTopicId.value);
@@ -61,22 +66,27 @@ const addTopic = async () => {
 };
 
 const addLesson = async () => {
+    if (isUploading.value) return;
+    
     try {
+        isUploading.value = true;
+        
         const formData = new FormData();
         formData.append('topic_id', selectedTopicId.value);
         formData.append('title', newLesson.value.title);
         formData.append('description', newLesson.value.description);
         formData.append('notes', newLesson.value.notes);
         
-        if (newLesson.value.video) {
-            formData.append('video', newLesson.value.video);
+        // If we have chunked video data, use that
+        if (newLesson.value.videoData) {
+            formData.append('video_path', newLesson.value.videoData.filePath);
+            formData.append('video_filename', newLesson.value.videoData.fileName || 'uploaded_video.mp4');
+            if (newLesson.value.videoData.duration) {
+                formData.append('duration_minutes', newLesson.value.videoData.duration);
+            }
         }
 
-        const response = await axios.post(route('lessons.store'), formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
+        const response = await axios.post(route('lessons.store'), formData);
 
         if (response.data.success) {
             // Add the new lesson to the selected topic
@@ -87,21 +97,32 @@ const addLesson = async () => {
             }
             
             // Reset form
-            newLesson.value = { title: '', description: '', notes: '', video: null };
+            newLesson.value = { title: '', description: '', notes: '', videoData: null };
             showAddLessonForm.value = false;
-            
-            // Reset file input
-            const fileInput = document.querySelector('#lesson-video');
-            if (fileInput) fileInput.value = '';
+            showChunkedUpload.value = false;
         }
     } catch (error) {
         console.error('Error adding lesson:', error);
         alert('Error adding lesson. Please try again.');
+    } finally {
+        isUploading.value = false;
+        uploadProgress.value = 0;
     }
 };
 
-const handleVideoSelect = (event) => {
-    newLesson.value.video = event.target.files[0];
+const handleVideoUploadSuccess = (uploadResult) => {
+    newLesson.value.videoData = uploadResult;
+    showChunkedUpload.value = false;
+};
+
+const handleVideoUploadError = (error) => {
+    console.error('Video upload error:', error);
+    alert('Video upload failed. Please try again.');
+};
+
+const removeVideo = () => {
+    newLesson.value.videoData = null;
+    showChunkedUpload.value = false;
 };
 
 const cancelAddTopic = () => {
@@ -110,12 +131,9 @@ const cancelAddTopic = () => {
 };
 
 const cancelAddLesson = () => {
-    newLesson.value = { title: '', description: '', notes: '', video: null };
+    newLesson.value = { title: '', description: '', notes: '', videoData: null };
     showAddLessonForm.value = false;
-    
-    // Reset file input
-    const fileInput = document.querySelector('#lesson-video');
-    if (fileInput) fileInput.value = '';
+    showChunkedUpload.value = false;
 };
 </script>
 
@@ -286,9 +304,55 @@ const cancelAddLesson = () => {
 
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-2">Video File</label>
-                            <input id="lesson-video" type="file" @change="handleVideoSelect" accept="video/*"
-                                   class="w-full bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200">
-                            <p class="text-xs text-slate-500 mt-1">MP4, MOV, AVI, WMV, MKV up to 200MB</p>
+                            
+                            <!-- Video Upload Interface -->
+                            <div v-if="!newLesson.videoData && !showChunkedUpload" class="space-y-3">
+                                <button @click="showChunkedUpload = true" type="button"
+                                        class="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-dashed border-blue-300 rounded-2xl p-6 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 transition-all duration-200">
+                                    <div class="text-center">
+                                        <svg class="mx-auto h-12 w-12 text-blue-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                        <p class="mt-2 text-sm font-medium text-slate-700">Upload Video File</p>
+                                        <p class="text-xs text-slate-500">Fast chunked upload with compression</p>
+                                        <p class="text-xs text-slate-400 mt-1">MP4, MOV, AVI, WMV, MKV up to 1GB</p>
+                                    </div>
+                                </button>
+                            </div>
+                            
+                            <!-- Chunked Upload Component -->
+                            <ChunkedVideoUpload
+                                v-if="showChunkedUpload"
+                                @upload-success="handleVideoUploadSuccess"
+                                @upload-error="handleVideoUploadError"
+                                @cancel="showChunkedUpload = false"
+                                class="mt-3"
+                            />
+                            
+                            <!-- Video Selected State -->
+                            <div v-if="newLesson.videoData" class="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-green-800">Video uploaded successfully!</p>
+                                            <p class="text-xs text-green-600">
+                                                {{ newLesson.videoData.fileName }}
+                                                <span v-if="newLesson.videoData.duration" class="ml-2">• {{ newLesson.videoData.duration }} min</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button @click="removeVideo" type="button" class="text-green-600 hover:text-green-800">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -304,9 +368,16 @@ const cancelAddLesson = () => {
                                 class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-all duration-200">
                             Cancel
                         </button>
-                        <button type="submit"
-                                class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                            Add Lesson
+                        <button type="submit" :disabled="isUploading"
+                                class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span v-if="!isUploading">Add Lesson</span>
+                            <span v-else class="flex items-center space-x-2">
+                                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+                                    <path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Uploading... {{ uploadProgress }}%</span>
+                            </span>
                         </button>
                     </div>
                 </form>

@@ -290,7 +290,7 @@ const getTypeIcon = (type) => {
                                 accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.mp3,.jpg,.jpeg,.png"
                                 class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
-                            <p class="text-sm text-slate-500 mt-1">Max size: 100MB. Supported formats: PDF, DOC, PPT, MP4, MP3, images</p>
+                            <p class="text-sm text-slate-500 mt-1">Max size: 1GB. Supported formats: PDF, DOC, PPT, MP4, MP3, images</p>
                             <div v-if="form.errors.file" class="text-red-600 text-sm mt-1">{{ form.errors.file }}</div>
                             
                             <div v-if="filePreview" class="mt-4">
