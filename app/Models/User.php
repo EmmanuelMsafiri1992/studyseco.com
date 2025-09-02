@@ -313,4 +313,31 @@ class User extends Authenticatable
     {
         return $this->hasMany(SharedResource::class);
     }
+
+    /**
+     * Get school selections made by this student
+     */
+    public function schoolSelections(): HasMany
+    {
+        return $this->hasMany(StudentSchoolSelection::class);
+    }
+
+    /**
+     * Check if student has made required number of school selections (minimum 5)
+     */
+    public function hasRequiredSchoolSelections(): bool
+    {
+        return $this->schoolSelections()->count() >= 5;
+    }
+
+    /**
+     * Get student's confirmed school assignment
+     */
+    public function confirmedSchool()
+    {
+        return $this->schoolSelections()
+            ->where('status', 'confirmed')
+            ->with('secondarySchool')
+            ->first();
+    }
 }

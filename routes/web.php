@@ -162,6 +162,18 @@ Route::get('/dashboard', function () {
     if ($user->role === 'admin') {
         // Get real statistics for admin dashboard
         try {
+            // Calculate real revenue data
+            $monthlyRevenue = \App\Models\EnrollmentPayment::where('status', 'verified')
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('amount');
+                
+            $totalRevenue = \App\Models\EnrollmentPayment::where('status', 'verified')
+                ->sum('amount');
+                
+            $pendingPayments = \App\Models\EnrollmentPayment::where('status', 'pending')
+                ->sum('amount');
+            
             $data['stats'] = [
                 'total_students' => \App\Models\User::where('role', 'student')->count(),
                 'total_teachers' => \App\Models\User::where('role', 'teacher')->count(),
@@ -172,9 +184,13 @@ Route::get('/dashboard', function () {
                     ->whereDate('access_expires_at', '>', now())->count(),
                 'expired_enrollments' => \App\Models\Enrollment::where('status', 'approved')
                     ->whereDate('access_expires_at', '<=', now())->count(),
+                'monthly_revenue' => $monthlyRevenue,
+                'total_revenue' => $totalRevenue,
+                'pending_revenue' => $pendingPayments,
+                'pending_payments_count' => \App\Models\EnrollmentPayment::where('status', 'pending')->count(),
             ];
             
-            // Recent enrollments for activity feed
+            // Recent enrollments for activity feed (admin sees all)
             $data['recent_enrollments'] = \App\Models\Enrollment::with('user')
                 ->orderBy('created_at', 'desc')
                 ->limit(5)
@@ -182,14 +198,16 @@ Route::get('/dashboard', function () {
                 ->map(function ($enrollment) {
                     return [
                         'id' => $enrollment->id,
-                        'student_name' => $enrollment->user->name,
+                        'student_name' => $enrollment->user ? $enrollment->user->name : $enrollment->name,
                         'email' => $enrollment->email,
                         'status' => $enrollment->status,
                         'created_at' => $enrollment->created_at->diffForHumans(),
+                        'type' => 'enrollment',
+                        'description' => 'New enrollment for ' . count($enrollment->selected_subjects ?: []) . ' subjects'
                     ];
                 });
                 
-            // Recent payments for activity feed
+            // Recent payments for activity feed (admin sees all)
             $data['recent_payments'] = \App\Models\EnrollmentPayment::with('enrollment.user')
                 ->orderBy('created_at', 'desc')
                 ->limit(5)
@@ -197,11 +215,13 @@ Route::get('/dashboard', function () {
                 ->map(function ($payment) {
                     return [
                         'id' => $payment->id,
-                        'student_name' => $payment->enrollment->user->name,
+                        'student_name' => $payment->enrollment->user ? $payment->enrollment->user->name : $payment->enrollment->name,
                         'amount' => $payment->amount,
                         'currency' => $payment->currency,
                         'status' => $payment->status,
                         'created_at' => $payment->created_at->diffForHumans(),
+                        'type' => 'payment',
+                        'description' => 'Payment of ' . $payment->currency . ' ' . number_format($payment->amount, 2)
                     ];
                 });
                 
@@ -235,7 +255,7 @@ Route::get('/dashboard', function () {
     } elseif ($user->role === 'student') {
         // Get student-specific data
         try {
-            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)->with('subjects')->first();
+            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->with('subjects')->first();
             $data['enrollment'] = $enrollment;
             $data['enrolled_subjects'] = $enrollment ? $enrollment->subjects : collect([]);
             $data['access_remaining'] = $enrollment ? $enrollment->access_days_remaining : 0;
@@ -244,15 +264,54 @@ Route::get('/dashboard', function () {
             // Add stats object for students with enrollment status
             $data['stats'] = [
                 'enrollment_status' => $enrollment ? ($enrollment->is_trial ? 'trial' : $enrollment->status) : 'not_enrolled',
-                'total_subjects' => $enrollment ? $enrollment->subjects->count() : 0,
+                'total_subjects' => $enrollment ? count($enrollment->selected_subjects ?: []) : 0,
                 'access_remaining_days' => $enrollment ? $enrollment->access_days_remaining : 0,
                 'is_trial' => $enrollment ? $enrollment->is_trial : false,
             ];
+            
+            // Student-specific recent activities (only their own data)
+            $data['recent_activities'] = collect();
+            
+            if ($enrollment) {
+                // Student's own enrollment activity
+                $data['recent_activities']->push([
+                    'id' => 'enrollment_' . $enrollment->id,
+                    'type' => 'enrollment',
+                    'title' => 'Course Enrollment',
+                    'description' => 'Enrolled in ' . count($enrollment->selected_subjects ?: []) . ' subjects',
+                    'created_at' => $enrollment->created_at->diffForHumans(),
+                    'status' => $enrollment->status
+                ]);
+                
+                // Student's own payment activities
+                $studentPayments = \App\Models\EnrollmentPayment::where('enrollment_id', $enrollment->id)
+                    ->orderBy('created_at', 'desc')
+                    ->limit(3)
+                    ->get();
+                    
+                foreach ($studentPayments as $payment) {
+                    $data['recent_activities']->push([
+                        'id' => 'payment_' . $payment->id,
+                        'type' => 'payment',
+                        'title' => 'Payment ' . ucfirst($payment->status),
+                        'description' => 'Payment of ' . $payment->currency . ' ' . number_format($payment->amount, 2),
+                        'created_at' => $payment->created_at->diffForHumans(),
+                        'status' => $payment->status,
+                        'amount' => $payment->amount,
+                        'currency' => $payment->currency
+                    ]);
+                }
+            }
+            
+            // Sort activities by date
+            $data['recent_activities'] = $data['recent_activities']->sortByDesc('created_at')->take(5);
+            
         } catch (Exception $e) {
             $data['enrollment'] = null;
             $data['enrolled_subjects'] = collect([]);
             $data['access_remaining'] = 0;
             $data['access_expired'] = true;
+            $data['recent_activities'] = collect([]);
             $data['stats'] = [
                 'enrollment_status' => 'not_enrolled',
                 'total_subjects' => 0,
@@ -263,11 +322,62 @@ Route::get('/dashboard', function () {
     } elseif ($user->role === 'teacher') {
         // Get teacher-specific data
         try {
+            // Get assigned students (students assigned to this teacher)
+            $assignedEnrollments = \App\Models\Enrollment::where('assigned_tutor_id', $user->id)
+                ->with('user')
+                ->where('status', 'approved')
+                ->get();
+                
+            $data['assigned_students'] = $assignedEnrollments->map(function ($enrollment) {
+                return [
+                    'id' => $enrollment->user ? $enrollment->user->id : null,
+                    'name' => $enrollment->user ? $enrollment->user->name : $enrollment->name,
+                    'email' => $enrollment->email,
+                    'enrollment_id' => $enrollment->id,
+                    'subjects_count' => count($enrollment->selected_subjects ?: []),
+                    'access_expires_at' => $enrollment->access_expires_at,
+                    'is_trial' => $enrollment->is_trial,
+                    'status' => $enrollment->status,
+                    'tutor_assigned_at' => $enrollment->tutor_assigned_at
+                ];
+            });
+            
             $data['teacher_subjects'] = \App\Models\Subject::where('is_active', true)->limit(5)->get();
-            $data['student_count'] = \App\Models\User::where('role', 'student')->count();
+            $data['student_count'] = $assignedEnrollments->count();
+            
+            // Teacher stats
+            $data['stats'] = [
+                'assigned_students' => $assignedEnrollments->count(),
+                'active_students' => $assignedEnrollments->where('access_expires_at', '>', now())->count(),
+                'trial_students' => $assignedEnrollments->where('is_trial', true)->count(),
+                'subjects_teaching' => $data['teacher_subjects']->count()
+            ];
+            
+            // Recent student activities for teacher dashboard
+            $data['recent_activities'] = collect();
+            
+            foreach ($assignedEnrollments->take(5) as $enrollment) {
+                $data['recent_activities']->push([
+                    'id' => 'assignment_' . $enrollment->id,
+                    'type' => 'assignment',
+                    'title' => 'Student Assigned',
+                    'description' => ($enrollment->user ? $enrollment->user->name : $enrollment->name) . ' was assigned to you',
+                    'created_at' => $enrollment->tutor_assigned_at ? \Carbon\Carbon::parse($enrollment->tutor_assigned_at)->diffForHumans() : $enrollment->created_at->diffForHumans(),
+                    'student_name' => $enrollment->user ? $enrollment->user->name : $enrollment->name
+                ]);
+            }
+            
         } catch (Exception $e) {
+            $data['assigned_students'] = collect([]);
             $data['teacher_subjects'] = collect([]);
             $data['student_count'] = 0;
+            $data['recent_activities'] = collect([]);
+            $data['stats'] = [
+                'assigned_students' => 0,
+                'active_students' => 0,
+                'trial_students' => 0,
+                'subjects_teaching' => 0
+            ];
         }
     }
     
@@ -528,6 +638,54 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [\App\Http\Controllers\AchievementController::class, 'index'])->name('index');
         Route::get('/leaderboard', [\App\Http\Controllers\AchievementController::class, 'leaderboard'])->name('leaderboard');
         Route::get('/{achievement}', [\App\Http\Controllers\AchievementController::class, 'show'])->name('show');
+    });
+
+    // School Selection Routes (Students only)
+    Route::prefix('school-selections')->name('school-selections.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SchoolSelectionController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\SchoolSelectionController::class, 'store'])->name('store');
+        Route::put('/{selection}', [\App\Http\Controllers\SchoolSelectionController::class, 'update'])->name('update');
+        Route::delete('/{selection}', [\App\Http\Controllers\SchoolSelectionController::class, 'destroy'])->name('destroy');
+    });
+
+    // Admin School Selection Management
+    Route::middleware('role:admin')->prefix('admin/school-selections')->name('admin.school-selections.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SchoolSelectionController::class, 'adminIndex'])->name('index');
+        Route::patch('/{selection}', [\App\Http\Controllers\SchoolSelectionController::class, 'adminUpdate'])->name('update');
+    });
+
+    // Teacher Routes
+    Route::middleware('role:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+        Route::get('/students', function () {
+            $user = auth()->user();
+            $assignedEnrollments = \App\Models\Enrollment::where('assigned_tutor_id', $user->id)
+                ->with('user')
+                ->where('status', 'approved')
+                ->get();
+                
+            $assignedStudents = $assignedEnrollments->map(function ($enrollment) {
+                return [
+                    'id' => $enrollment->user ? $enrollment->user->id : null,
+                    'name' => $enrollment->user ? $enrollment->user->name : $enrollment->name,
+                    'email' => $enrollment->email,
+                    'enrollment_id' => $enrollment->id,
+                    'subjects_count' => count($enrollment->selected_subjects ?: []),
+                    'access_expires_at' => $enrollment->access_expires_at,
+                    'is_trial' => $enrollment->is_trial,
+                    'status' => $enrollment->status,
+                    'tutor_assigned_at' => $enrollment->tutor_assigned_at
+                ];
+            });
+
+            return Inertia::render('Teacher/Students/Index', [
+                'assignedStudents' => $assignedStudents,
+                'stats' => [
+                    'assigned_students' => $assignedEnrollments->count(),
+                    'active_students' => $assignedEnrollments->where('access_expires_at', '>', now())->count(),
+                    'trial_students' => $assignedEnrollments->where('is_trial', true)->count(),
+                ]
+            ]);
+        })->name('students.index');
     });
 });
 

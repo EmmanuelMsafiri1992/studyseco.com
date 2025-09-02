@@ -131,17 +131,81 @@ const handleNotificationClick = (notification) => {
     // Mark as read
     notification.read = true;
     
-    // Handle different notification types
-    if (notification.type === 'enrollment' && notification.id.startsWith('enrollment_')) {
-        const enrollmentId = notification.id.replace('enrollment_', '');
-        router.visit(route('admin.enrollments.show', enrollmentId));
-    } else if (notification.type === 'payment' && notification.id.startsWith('payment_')) {
-        // Could redirect to payments page or enrollment details
-        const paymentId = notification.id.replace('payment_', '');
-        // For now, redirect to enrollments page since that's where admins manage payments
-        router.visit(route('admin.enrollments.index'));
-    } else if (notification.id === 'pending_enrollments') {
-        router.visit(route('admin.enrollments.index'));
+    // Mark as read on server if it's a real notification
+    if (notification.id && !notification.id.toString().includes('_')) {
+        router.post(route('notifications.read', notification.id));
+    }
+    
+    // Handle different notification types based on user role and notification type
+    const userRole = user.role;
+    
+    try {
+        if (notification.type === 'enrollment') {
+            if (userRole === 'admin') {
+                if (notification.id.startsWith('enrollment_')) {
+                    const enrollmentId = notification.id.replace('enrollment_', '');
+                    router.visit(route('admin.enrollments.show', enrollmentId));
+                } else {
+                    router.visit(route('admin.enrollments.index'));
+                }
+            } else {
+                // For students, go to dashboard
+                router.visit(route('dashboard'));
+            }
+        } else if (notification.type === 'payment') {
+            if (userRole === 'admin') {
+                if (notification.id.startsWith('payment_')) {
+                    // Go to payments management page
+                    router.visit(route('payments.index'));
+                } else {
+                    router.visit(route('admin.enrollments.index'));
+                }
+            } else {
+                // For students, go to payments page
+                router.visit(route('payments.create'));
+            }
+        } else if (notification.type === 'alert') {
+            if (notification.id === 'pending_enrollments') {
+                router.visit(route('admin.enrollments.index'));
+            } else if (notification.id === 'trial_expiry') {
+                router.visit(route('student.extension'));
+            } else {
+                router.visit(route('dashboard'));
+            }
+        } else if (notification.type === 'assignment') {
+            // Navigate to subjects or specific assignment page
+            router.visit(route('subjects.index'));
+        } else if (notification.type === 'system') {
+            // Navigate to settings or dashboard
+            if (userRole === 'admin') {
+                router.visit(route('admin.system-settings.index'));
+            } else {
+                router.visit(route('dashboard'));
+            }
+        } else if (notification.type === 'message') {
+            // Navigate to chat or support
+            router.visit(route('chat.index'));
+        } else if (notification.type === 'welcome') {
+            // Navigate to dashboard for new users
+            router.visit(route('dashboard'));
+        } else if (notification.type === 'warning') {
+            // Navigate to extension page for trial warnings
+            if (notification.id === 'trial_expiry') {
+                router.visit(route('student.extension'));
+            } else {
+                router.visit(route('dashboard'));
+            }
+        } else if (notification.type === 'account') {
+            // Navigate to account settings
+            router.visit(route('profile.edit'));
+        } else {
+            // Default: navigate to dashboard
+            router.visit(route('dashboard'));
+        }
+    } catch (error) {
+        console.error('Navigation error:', error);
+        // Fallback to dashboard
+        router.visit(route('dashboard'));
     }
 };
 

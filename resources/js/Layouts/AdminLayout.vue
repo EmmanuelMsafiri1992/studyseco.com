@@ -69,6 +69,16 @@ const user = page.props.auth?.user || { name: 'Admin', role: 'admin', profile_ph
                     Settings
                 </Link>
                 
+                <Link :href="route('admin.school-selections.index')" 
+                      :class="route().current('admin.school-selections.*') ? 'nav-link-active' : 'nav-link text-secondary-600'"
+                      class="transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                        <path d="M8 2v4l-6 6h12l-6-6V2z"/>
+                        <path d="M8 22v-2c0-1.1-.9-2-2-2s-2 .9-2 2v2h4z"/>
+                    </svg>
+                    Schools
+                </Link>
+                
                 <Link :href="route('admin.site-content.index')" 
                       :class="route().current('admin.site-content.*') ? 'nav-link-active' : 'nav-link text-secondary-600'"
                       class="transition-all duration-200">
@@ -148,6 +158,16 @@ const user = page.props.auth?.user || { name: 'Admin', role: 'admin', profile_ph
                     <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
                 </svg>
                 Settings
+            </Link>
+            
+            <Link :href="route('admin.school-selections.index')" 
+                  :class="route().current('admin.school-selections.*') ? 'nav-link-active' : 'nav-link text-secondary-600'"
+                  class="flex items-center w-full">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="M8 2v4l-6 6h12l-6-6V2z"/>
+                    <path d="M8 22v-2c0-1.1-.9-2-2-2s-2 .9-2 2v2h4z"/>
+                </svg>
+                Schools
             </Link>
             
             <Link :href="route('admin.site-content.index')" 

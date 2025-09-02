@@ -6,6 +6,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 const props = defineProps({
     auth: Object,
     payments: Object,
+    stats: Object,
 });
 
 const user = props.auth?.user || { name: 'Guest', role: 'admin', profile_photo_url: null };
@@ -54,7 +55,15 @@ const viewScreenshot = (screenshotUrl) => {
 };
 
 const submitVerification = () => {
+    const action = verificationForm.status;
+    const data = {
+        action: action,
+        notes: verificationForm.admin_notes,
+        rejection_reason: action === 'reject' ? verificationForm.rejection_reason : null
+    };
+
     verificationForm.post(route('payments.verify', selectedPayment.value.id), {
+        data: data,
         onSuccess: () => {
             closeVerificationModal();
         },

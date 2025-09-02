@@ -11,6 +11,8 @@ class AchievementController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+        
         $query = Achievement::with(['user', 'awardedBy'])
             ->where('is_public', true)
             ->orderByDesc('is_featured')
@@ -42,15 +44,8 @@ class AchievementController extends Controller
 
         $achievements = $query->paginate(12);
 
-        // Get statistics
-        $stats = [
-            'total_achievements' => Achievement::where('is_public', true)->count(),
-            'featured_achievements' => Achievement::where('is_public', true)->where('is_featured', true)->count(),
-            'total_points' => Achievement::where('is_public', true)->sum('points'),
-            'recent_achievements' => Achievement::where('is_public', true)
-                ->where('achieved_date', '>=', now()->subDays(7))
-                ->count()
-        ];
+        // Get role-based statistics
+        $stats = $this->getRoleBasedStats($user);
 
         // Get achievement types for filtering
         $types = Achievement::distinct()->pluck('type');
@@ -61,8 +56,77 @@ class AchievementController extends Controller
             'stats' => $stats,
             'types' => $types,
             'levels' => $levels,
-            'filters' => $request->only(['type', 'level', 'search'])
+            'filters' => $request->only(['type', 'level', 'search']),
+            'userRole' => $user ? $user->role : null,
+            'personalAchievements' => $user ? $this->getPersonalAchievements($user) : null
         ]);
+    }
+
+    private function getRoleBasedStats($user)
+    {
+        $baseStats = [
+            'total_achievements' => Achievement::where('is_public', true)->count(),
+            'featured_achievements' => Achievement::where('is_public', true)->where('is_featured', true)->count(),
+            'total_points' => Achievement::where('is_public', true)->sum('points'),
+            'recent_achievements' => Achievement::where('is_public', true)
+                ->where('achieved_date', '>=', now()->subDays(7))
+                ->count()
+        ];
+
+        if (!$user) {
+            return $baseStats;
+        }
+
+        if ($user->role === 'student') {
+            // Students see their completed subjects and personal achievements
+            $baseStats['my_achievements'] = Achievement::where('user_id', $user->id)->count();
+            $baseStats['my_points'] = Achievement::where('user_id', $user->id)->sum('points');
+            $baseStats['subjects_completed'] = $this->getCompletedSubjectsCount($user);
+            $baseStats['completion_percentage'] = $this->getCompletionPercentage($user);
+        } elseif ($user->role === 'teacher') {
+            // Teachers see total support completed and students they've helped
+            $baseStats['students_supported'] = User::whereHas('achievements', function ($query) use ($user) {
+                $query->where('awarded_by', $user->id);
+            })->count();
+            $baseStats['total_support_completed'] = Achievement::where('awarded_by', $user->id)->count();
+            $baseStats['support_points_awarded'] = Achievement::where('awarded_by', $user->id)->sum('points');
+        } elseif (in_array($user->role, ['admin', 'super_admin'])) {
+            // Admins see total support completed and system-wide metrics
+            $baseStats['total_support_completed'] = Achievement::count();
+            $baseStats['total_users'] = User::count();
+            $baseStats['active_teachers'] = User::where('role', 'teacher')->count();
+            $baseStats['active_students'] = User::where('role', 'student')->count();
+        }
+
+        return $baseStats;
+    }
+
+    private function getPersonalAchievements($user)
+    {
+        return Achievement::where('user_id', $user->id)
+            ->with(['awardedBy'])
+            ->orderByDesc('achieved_date')
+            ->limit(5)
+            ->get();
+    }
+
+    private function getCompletedSubjectsCount($user)
+    {
+        // Get completed subjects from enrollments and lessons
+        return \DB::table('enrollments')
+            ->join('subjects', 'enrollments.subject_id', '=', 'subjects.id')
+            ->where('enrollments.user_id', $user->id)
+            ->where('enrollments.status', 'approved')
+            ->distinct()
+            ->count('subjects.id');
+    }
+
+    private function getCompletionPercentage($user)
+    {
+        $totalSubjects = \DB::table('subjects')->count();
+        $completedSubjects = $this->getCompletedSubjectsCount($user);
+        
+        return $totalSubjects > 0 ? round(($completedSubjects / $totalSubjects) * 100, 2) : 0;
     }
 
     public function show(Achievement $achievement)

@@ -238,6 +238,12 @@ const submitEnrollment = () => {
         return;
     }
     
+    // Validate terms and conditions for all enrollment types
+    if (!enrollmentForm.terms_accepted) {
+        alert('Please accept the terms and conditions to continue');
+        return;
+    }
+    
     // Validate required fields for paid enrollment on step 3
     if (enrollmentForm.enrollment_type === 'paid' && enrollmentStep.value === 3) {
         if (!enrollmentForm.payment_method_id) {
@@ -250,10 +256,6 @@ const submitEnrollment = () => {
         }
         if (!enrollmentForm.payment_proof) {
             alert('Please upload your payment proof');
-            return;
-        }
-        if (!enrollmentForm.terms_accepted) {
-            alert('Please accept the terms of service');
             return;
         }
     }
@@ -595,13 +597,14 @@ onUnmounted(() => {
 
                 <!-- CTA Buttons -->
                 <div class="flex items-center space-x-4" v-if="canLogin">
-                    <Link
-                        v-if="$page.props.auth.user"
-                        :href="route('dashboard')"
-                        class="btn-primary"
-                    >
-                        Dashboard
-                    </Link>
+                    <template v-if="$page.props.auth.user">
+                        <Link :href="route('dashboard')" class="btn-secondary">
+                            Dashboard
+                        </Link>
+                        <button @click="toggleEnrollmentModal" class="btn-primary">
+                            Extend/Enroll
+                        </button>
+                    </template>
                     <template v-else>
                         <Link :href="route('login')" class="btn-secondary">
                             Sign In
@@ -640,13 +643,13 @@ onUnmounted(() => {
                     </p>
                     
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
-                        <button @click="toggleEnrollmentModal" class="btn-primary btn-lg">
+                        <button @click="toggleEnrollmentModal" class="btn-primary btn-lg text-base sm:text-lg py-4 px-6">
                             Start Learning Today
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
                                 <path d="M5 12h14m-7-7 7 7-7 7"/>
                             </svg>
                         </button>
-                        <button @click="showLibraryModal = true" class="btn-secondary btn-lg">
+                        <button @click="showLibraryModal = true" class="btn-secondary btn-lg text-base sm:text-lg py-4 px-6">
                             Explore Resources
                         </button>
                     </div>
@@ -723,6 +726,245 @@ onUnmounted(() => {
                     </div>
                     <div class="mt-3 text-xs text-secondary-500">
                         {{ subject.grade_level || 'Form 1-4' }} • Click to learn more
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comprehensive How It Works Guide -->
+    <section id="how-it-works" class="section-padding bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+        <div class="container-custom">
+            <div class="text-center mb-16">
+                <h2 class="heading-lg text-secondary-900 mb-4">How StudySeco Works</h2>
+                <p class="text-xl text-secondary-600 max-w-3xl mx-auto">
+                    Your complete guide to excelling in Malawian secondary education through our innovative online platform
+                </p>
+            </div>
+
+            <!-- Step-by-Step Process -->
+            <div class="grid lg:grid-cols-2 gap-12 items-center mb-20">
+                <div>
+                    <h3 class="text-3xl font-bold text-secondary-900 mb-6">Your Learning Journey</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold flex-shrink-0 mt-1">1</div>
+                            <div>
+                                <h4 class="font-semibold text-secondary-900 mb-2">Enroll & Choose Subjects</h4>
+                                <p class="text-secondary-600">Select from our comprehensive Malawi curriculum-aligned subjects including Mathematics, English, Sciences, and more.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold flex-shrink-0 mt-1">2</div>
+                            <div>
+                                <h4 class="font-semibold text-secondary-900 mb-2">Learn 100% Online</h4>
+                                <p class="text-secondary-600">Access interactive lessons, videos, assignments, and practice tests from anywhere with internet connection.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold flex-shrink-0 mt-1">3</div>
+                            <div>
+                                <h4 class="font-semibold text-secondary-900 mb-2">Track Your Progress</h4>
+                                <p class="text-secondary-600">Monitor your learning journey with detailed analytics, achievements, and personalized feedback from certified teachers.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold flex-shrink-0 mt-1">4</div>
+                            <div>
+                                <h4 class="font-semibold text-secondary-900 mb-2">Choose Exam Centers</h4>
+                                <p class="text-secondary-600">Select up to 5 preferred examination centers from our approved Malawian institutions for your physical exams.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <div class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 text-white mb-6">
+                        <h4 class="text-xl font-bold mb-3">🎓 Student Success Features</h4>
+                        <ul class="space-y-2 text-blue-100">
+                            <li class="flex items-center"><span class="mr-2">✓</span> Interactive video lessons</li>
+                            <li class="flex items-center"><span class="mr-2">✓</span> Live teacher support</li>
+                            <li class="flex items-center"><span class="mr-2">✓</span> Practice examinations</li>
+                            <li class="flex items-center"><span class="mr-2">✓</span> Progress tracking</li>
+                            <li class="flex items-center"><span class="mr-2">✓</span> Mobile learning app</li>
+                            <li class="flex items-center"><span class="mr-2">✓</span> Certificate upon completion</li>
+                        </ul>
+                    </div>
+                    <div class="text-center">
+                        <button @click="toggleEnrollmentModal" class="btn bg-gradient-to-r from-blue-600 to-blue-700 text-white btn-lg w-full">
+                            Start Your Journey Today
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exam Centers Information -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-16">
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-bold text-secondary-900 mb-6">📍 Flexible Exam Center Selection</h3>
+                        <div class="space-y-4 mb-6">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+                                <p class="text-secondary-700">Choose from <strong>50+ approved examination centers</strong> across Malawi</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+                                <p class="text-secondary-700">Select up to <strong>5 preferred centers</strong> during registration</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+                                <p class="text-secondary-700">Receive confirmation <strong>30 days before exam dates</strong></p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                            <h4 class="font-semibold text-amber-800 mb-2">🌍 International Students</h4>
+                            <p class="text-amber-700 text-sm">
+                                Students abroad must select an exam center and <strong>arrive at least 2 weeks before exam dates</strong> 
+                                for registration verification and orientation.
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-secondary-900 mb-4">Approved Exam Centers Include:</h4>
+                        <div class="grid grid-cols-1 gap-2 text-sm">
+                            <div class="bg-secondary-50 rounded-lg p-3">
+                                <h5 class="font-medium text-secondary-800">Community Day Secondary Schools</h5>
+                                <p class="text-secondary-600">Open to external candidates for examinations</p>
+                            </div>
+                            <div class="bg-secondary-50 rounded-lg p-3">
+                                <h5 class="font-medium text-secondary-800">Government Secondary Schools</h5>
+                                <p class="text-secondary-600">Full government institutions accepting open students</p>
+                            </div>
+                            <div class="bg-secondary-50 rounded-lg p-3">
+                                <h5 class="font-medium text-secondary-800">Registered Night Schools</h5>
+                                <p class="text-secondary-600">Specialized centers for adult and open education</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Malawian Secondary Schools List -->
+            <div class="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl p-8">
+                <div class="text-center mb-8">
+                    <h3 class="text-3xl font-bold text-secondary-900 mb-4">🏫 Approved Examination Centers</h3>
+                    <p class="text-secondary-700 max-w-2xl mx-auto">
+                        StudySeco partners with these accredited Malawian institutions to provide examination services for open students
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Northern Region -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h4 class="font-bold text-blue-800 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-blue-600 rounded-full mr-2"></span>
+                            Northern Region
+                        </h4>
+                        <ul class="space-y-2 text-sm text-secondary-700">
+                            <li>• Mzuzu Secondary School</li>
+                            <li>• Ekwendeni Secondary School</li>
+                            <li>• Embangweni Secondary School</li>
+                            <li>• Rumphi Secondary School</li>
+                            <li>• Karonga Secondary School</li>
+                            <li>• Chitipa Secondary School</li>
+                        </ul>
+                    </div>
+
+                    <!-- Central Region -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h4 class="font-bold text-green-800 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-green-600 rounded-full mr-2"></span>
+                            Central Region
+                        </h4>
+                        <ul class="space-y-2 text-sm text-secondary-700">
+                            <li>• Lilongwe Secondary School</li>
+                            <li>• Kasungu Secondary School</li>
+                            <li>• Dowa Secondary School</li>
+                            <li>• Salima Secondary School</li>
+                            <li>• Nkhotakota Secondary School</li>
+                            <li>• Dedza Secondary School</li>
+                            <li>• Ntcheu Secondary School</li>
+                            <li>• Mchinji Secondary School</li>
+                        </ul>
+                    </div>
+
+                    <!-- Southern Region -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h4 class="font-bold text-purple-800 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-purple-600 rounded-full mr-2"></span>
+                            Southern Region
+                        </h4>
+                        <ul class="space-y-2 text-sm text-secondary-700">
+                            <li>• Blantyre Secondary School</li>
+                            <li>• Zomba Secondary School</li>
+                            <li>• Chiradzulu Secondary School</li>
+                            <li>• Nsanje Secondary School</li>
+                            <li>• Chikwawa Secondary School</li>
+                            <li>• Thyolo Secondary School</li>
+                            <li>• Machinga Secondary School</li>
+                            <li>• Mangochi Secondary School</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <div class="bg-white rounded-lg p-6 max-w-2xl mx-auto">
+                        <h5 class="font-semibold text-secondary-900 mb-3">📋 Exam Center Selection Process</h5>
+                        <div class="grid md:grid-cols-3 gap-4 text-sm">
+                            <div class="text-center">
+                                <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-xs font-bold">1</div>
+                                <p class="text-secondary-700">Choose 5 preferred centers during enrollment</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-xs font-bold">2</div>
+                                <p class="text-secondary-700">Receive confirmation 30 days before exams</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-xs font-bold">3</div>
+                                <p class="text-secondary-700">Attend physical exams at assigned center</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Innovation Section -->
+            <div class="mt-16 text-center">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                <line x1="8" y1="21" x2="16" y2="21"/>
+                                <line x1="12" y1="17" x2="12" y2="21"/>
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-bold text-secondary-900 mb-3">Interactive Learning</h4>
+                        <p class="text-secondary-600">Engaging multimedia content, simulations, and interactive exercises make learning enjoyable and effective.</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-bold text-secondary-900 mb-3">Student-Focused</h4>
+                        <p class="text-secondary-600">Personalized learning paths, achievement tracking, and 24/7 support ensure every student succeeds.</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <h4 class="text-xl font-bold text-secondary-900 mb-3">Global Community</h4>
+                        <p class="text-secondary-600">Connect with students worldwide while maintaining focus on Malawian curriculum and cultural context.</p>
                     </div>
                 </div>
             </div>
@@ -1145,7 +1387,7 @@ onUnmounted(() => {
                     <!-- Payment Method Selection -->
                     <div>
                         <label class="form-label">Payment Method *</label>
-                        <div class="grid md:grid-cols-2 gap-4 mt-3">
+                        <div class="mt-3">
                             <div v-if="availablePaymentMethods.length > 0" class="space-y-3">
                                 <div 
                                     v-for="method in availablePaymentMethods" 
@@ -1154,13 +1396,13 @@ onUnmounted(() => {
                                     @click="enrollmentForm.payment_method_id = method.id.toString()"
                                 >
                                     <div class="flex items-center">
-                                        <input type="radio" v-model="enrollmentForm.payment_method_id" :value="method.id.toString()" class="mr-3">
-                                        <div class="flex items-center space-x-3">
-                                            <span class="text-2xl">{{ method.icon }}</span>
-                                            <div>
-                                                <h5 class="font-semibold">{{ method.name }}</h5>
-                                                <p class="text-sm text-secondary-600">{{ method.type }} - {{ method.currency }}</p>
-                                                <div v-if="method.instructions" class="text-xs text-secondary-500 mt-1">
+                                        <input type="radio" v-model="enrollmentForm.payment_method_id" :value="method.id.toString()" class="mr-3 flex-shrink-0">
+                                        <div class="flex items-center space-x-3 min-w-0">
+                                            <span class="text-2xl flex-shrink-0">{{ method.icon }}</span>
+                                            <div class="min-w-0">
+                                                <h5 class="font-semibold text-sm sm:text-base">{{ method.name }}</h5>
+                                                <p class="text-xs sm:text-sm text-secondary-600">{{ method.type }} - {{ method.currency }}</p>
+                                                <div v-if="method.instructions" class="text-xs text-secondary-500 mt-1 break-words">
                                                     {{ method.instructions }}
                                                 </div>
                                             </div>
@@ -1238,29 +1480,43 @@ onUnmounted(() => {
                                 and 
                                 <a href="#" class="text-primary-600 hover:text-primary-700 underline">Privacy Policy</a>.
                             </p>
-                            <p v-if="enrollmentForm.enrollment_type === 'trial'" class="text-green-600">
-                                ✓ I understand my <strong>7-day free trial</strong> begins immediately upon email/phone verification.
-                            </p>
-                            <p v-else class="text-blue-600">
-                                ✓ I understand my <strong>4-month access</strong> begins after payment verification and account creation.
-                            </p>
+                            <div class="space-y-2 text-xs">
+                                <p v-if="enrollmentForm.enrollment_type === 'trial'" class="text-green-600">
+                                    ✓ I understand my <strong>7-day free trial</strong> begins immediately upon email/phone verification.
+                                </p>
+                                <p v-else class="text-blue-600">
+                                    ✓ I understand my <strong>4-month access</strong> begins after payment verification and account creation.
+                                </p>
+                                <div class="bg-amber-50 p-3 rounded border border-amber-200">
+                                    <p class="font-medium text-amber-800 mb-2">📋 Cancellation Policy:</p>
+                                    <ul class="text-amber-700 space-y-1">
+                                        <li>• <strong>14-day cooling period:</strong> Cancel within 14 days for full refund via same payment method</li>
+                                        <li>• <strong>Refund processing:</strong> 24-48 hours after cancellation approval</li>
+                                        <li>• <strong>No pausing:</strong> Course access cannot be paused once started</li>
+                                        <li>• <strong>Material policy:</strong> Resources are for personal use only, not downloadable or shareable outside the platform</li>
+                                    </ul>
+                                </div>
+                                <p class="text-gray-600">
+                                    <strong>Data Usage:</strong> Approximately 2-3GB monthly for optimal learning experience
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Action Buttons -->
-                <div class="flex gap-4 pt-6">
+                <div class="flex flex-col sm:flex-row gap-4 pt-6">
                     <button type="button" @click="enrollmentStep > 1 ? prevEnrollmentStep() : (showEnrollmentModal = false)" 
-                            class="btn-secondary flex-1 py-3 text-lg">
+                            class="btn-secondary flex-1 py-3 text-base sm:text-lg font-medium">
                         {{ enrollmentStep > 1 ? '← Previous' : 'Cancel' }}
                     </button>
                     
                     <button v-if="enrollmentStep < 2 || (enrollmentStep < 3 && enrollmentForm.enrollment_type === 'paid')"
-                            type="button" @click="nextEnrollmentStep" class="btn-primary flex-1 py-3 text-lg font-semibold">
+                            type="button" @click="nextEnrollmentStep" class="btn-primary flex-1 py-3 text-base sm:text-lg font-semibold">
                         Continue →
                     </button>
                     
-                    <button v-else type="submit" :disabled="enrollmentForm.processing" class="btn-primary flex-1 py-3 text-lg font-semibold">
+                    <button v-else type="submit" :disabled="enrollmentForm.processing" class="btn-primary flex-1 py-3 text-base sm:text-lg font-semibold">
                         <span v-if="enrollmentForm.processing">
                             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

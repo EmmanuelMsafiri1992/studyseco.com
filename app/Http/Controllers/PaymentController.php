@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payment;
+use App\Models\EnrollmentPayment;
 use App\Models\PaymentMethod;
 use App\Models\AccessDuration;
+use App\Models\Enrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -22,24 +23,37 @@ class PaymentController extends Controller
 
         // Admin sees all payments for verification
         if ($user->role === 'admin') {
-            $payments = Payment::with(['user', 'verifiedBy'])
+            $payments = EnrollmentPayment::with(['enrollment.user'])
                 ->latest()
                 ->paginate(20);
 
+            // Calculate stats
+            $stats = [
+                'total_payments' => EnrollmentPayment::count(),
+                'pending_payments' => EnrollmentPayment::where('status', 'pending')->count(),
+                'verified_payments' => EnrollmentPayment::where('status', 'verified')->count(),
+                'rejected_payments' => EnrollmentPayment::where('status', 'rejected')->count(),
+                'total_revenue' => EnrollmentPayment::where('status', 'verified')->sum('amount'),
+                'pending_revenue' => EnrollmentPayment::where('status', 'pending')->sum('amount'),
+            ];
+
             return Inertia::render('Payments/Admin/Index', [
-                'payments' => $payments
+                'payments' => $payments,
+                'stats' => $stats
             ]);
         }
 
         // Students see their own payment history
-        $payments = Payment::where('user_id', $user->id)
-            ->latest()
-            ->paginate(10);
+        $enrollment = Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->first();
+        $payments = collect([]);
+        
+        if ($enrollment) {
+            $payments = EnrollmentPayment::where('enrollment_id', $enrollment->id)
+                ->latest()
+                ->paginate(10);
+        }
 
-        $hasValidAccess = Payment::where('user_id', $user->id)
-            ->approved()
-            ->where('access_expires_at', '>', Carbon::now())
-            ->exists();
+        $hasValidAccess = $enrollment && $enrollment->access_expires_at && $enrollment->access_expires_at->greaterThan(Carbon::now());
 
         // Get stats for sidebar (if admin)
         $stats = [];
@@ -190,6 +204,52 @@ class PaymentController extends Controller
     }
 
     /**
+     * Verify/Approve a payment (admin only)
+     */
+    public function verify(Request $request, EnrollmentPayment $payment)
+    {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Only administrators can verify payments.');
+        }
+
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'notes' => 'nullable|string|max:500',
+            'rejection_reason' => 'required_if:action,reject|string|max:500'
+        ]);
+
+        if ($request->action === 'approve') {
+            $payment->update([
+                'status' => 'verified',
+                'verified_at' => now(),
+                'verified_by' => auth()->id(),
+                'admin_notes' => $request->notes
+            ]);
+
+            // Update enrollment access
+            $enrollment = $payment->enrollment;
+            if ($enrollment) {
+                $enrollment->update([
+                    'status' => 'approved',
+                    'approved_at' => now(),
+                    'approved_by' => auth()->id()
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Payment verified and access granted successfully.');
+        } else {
+            $payment->update([
+                'status' => 'rejected',
+                'verified_at' => now(),
+                'verified_by' => auth()->id(),
+                'admin_notes' => $request->rejection_reason
+            ]);
+
+            return redirect()->back()->with('success', 'Payment rejected successfully.');
+        }
+    }
+
+    /**
      * Get payment statistics for admin dashboard
      */
     public function statistics()
@@ -199,10 +259,11 @@ class PaymentController extends Controller
         }
 
         $stats = [
-            'pending_count' => Payment::pending()->count(),
-            'approved_today' => Payment::approved()->whereDate('verified_at', today())->count(),
-            'total_revenue' => Payment::approved()->sum('amount'),
-            'active_subscriptions' => Payment::approved()
+            'pending_count' => EnrollmentPayment::where('status', 'pending')->count(),
+            'approved_today' => EnrollmentPayment::where('status', 'verified')->whereDate('verified_at', today())->count(),
+            'total_revenue' => EnrollmentPayment::where('status', 'verified')->sum('amount'),
+            'pending_revenue' => EnrollmentPayment::where('status', 'pending')->sum('amount'),
+            'active_subscriptions' => Enrollment::where('status', 'approved')
                 ->where('access_expires_at', '>', Carbon::now())
                 ->count()
         ];
@@ -216,17 +277,15 @@ class PaymentController extends Controller
     public function checkAccess()
     {
         $user = auth()->user();
+        $enrollment = Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->first();
         
-        $validPayment = Payment::where('user_id', $user->id)
-            ->approved()
-            ->where('access_expires_at', '>', Carbon::now())
-            ->latest('access_expires_at')
-            ->first();
+        $hasAccess = $enrollment && $enrollment->access_expires_at && $enrollment->access_expires_at->greaterThan(Carbon::now());
 
         return response()->json([
-            'hasAccess' => (bool) $validPayment,
-            'expiresAt' => $validPayment?->access_expires_at,
-            'daysRemaining' => $validPayment?->days_remaining
+            'hasAccess' => $hasAccess,
+            'expiresAt' => $enrollment?->access_expires_at,
+            'daysRemaining' => $enrollment?->access_days_remaining ?? 0,
+            'isTrialExpired' => $enrollment?->is_trial_expired ?? false
         ]);
     }
 }
