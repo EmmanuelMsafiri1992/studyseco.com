@@ -1046,6 +1046,153 @@ onUnmounted(() => {
         </div>
     </section>
 
+    <!-- Malawian Secondary Schools Section -->
+    <section class="section-padding bg-white">
+        <div class="container-custom">
+            <div class="text-center max-w-4xl mx-auto mb-16">
+                <h2 class="heading-lg text-secondary-900 mb-6">
+                    Approved Examination Centers in 
+                    <span class="text-gradient">Malawi</span>
+                </h2>
+                <p class="text-xl text-secondary-600 mb-8 leading-relaxed">
+                    After completing your online studies, choose from our network of approved secondary schools across Malawi where you can sit for your final examinations. We work with community day secondary schools, full government schools, and night schools that welcome external candidates.
+                </p>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-amber-800">Important Information</h3>
+                    </div>
+                    <div class="text-amber-700 space-y-2">
+                        <p>🏫 <strong>Study Online:</strong> Complete 100% of your coursework through our digital platform</p>
+                        <p>📝 <strong>Choose 5 Centers:</strong> Select at least 5 preferred examination centers to ensure placement</p>
+                        <p>✈️ <strong>International Students:</strong> Arrive at least 2 weeks before examination dates</p>
+                        <p>🎓 <strong>Final Exams:</strong> Physical attendance required only for final examinations</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schools Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Community Day Secondary Schools -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-blue-800">Community Day Secondary Schools</h3>
+                    </div>
+                    <div class="space-y-2 text-blue-700">
+                        <p>• Chitipa Community Day Secondary School</p>
+                        <p>• Karonga Community Day Secondary School</p>
+                        <p>• Mzuzu Community Day Secondary School</p>
+                        <p>• Kasungu Community Day Secondary School</p>
+                        <p>• Lilongwe Community Day Secondary School</p>
+                        <p>• Dedza Community Day Secondary School</p>
+                        <p>• Balaka Community Day Secondary School</p>
+                        <p>• Zomba Community Day Secondary School</p>
+                        <p>• Chiradzulu Community Day Secondary School</p>
+                        <p>• Blantyre Community Day Secondary School</p>
+                        <p>• Chiromo Community Day Secondary School</p>
+                        <p>• Nsanje Community Day Secondary School</p>
+                    </div>
+                </div>
+
+                <!-- Government Secondary Schools -->
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M9 7l3-3 3 3M4 10h16v11H4V10z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-green-800">Government Secondary Schools</h3>
+                    </div>
+                    <div class="space-y-2 text-green-700">
+                        <p>• Mzuzu Government Secondary School</p>
+                        <p>• Kasungu Government Secondary School</p>
+                        <p>• Lilongwe Government Secondary School</p>
+                        <p>• Dowa Government Secondary School</p>
+                        <p>• Salima Government Secondary School</p>
+                        <p>• Dedza Government Secondary School</p>
+                        <p>• Ntcheu Government Secondary School</p>
+                        <p>• Balaka Government Secondary School</p>
+                        <p>• Machinga Government Secondary School</p>
+                        <p>• Zomba Government Secondary School</p>
+                        <p>• Blantyre Government Secondary School</p>
+                        <p>• Chikwawa Government Secondary School</p>
+                    </div>
+                </div>
+
+                <!-- Night Schools -->
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-purple-800">Night Schools</h3>
+                    </div>
+                    <div class="space-y-2 text-purple-700">
+                        <p>• Lilongwe Night School</p>
+                        <p>• Blantyre Night School</p>
+                        <p>• Mzuzu Night School</p>
+                        <p>• Zomba Night School</p>
+                        <p>• Kasungu Night School</p>
+                        <p>• Mangochi Night School</p>
+                        <p>• Karonga Night School</p>
+                        <p>• Dedza Night School</p>
+                        <p>• Salima Night School</p>
+                        <p>• Balaka Night School</p>
+                        <p>• Nsanje Night School</p>
+                        <p>• Chitipa Night School</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selection Process -->
+            <div class="mt-16 bg-gradient-to-r from-gray-50 to-white rounded-2xl p-8 border border-gray-200">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">How Center Selection Works</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white font-bold text-lg">1</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Complete Studies</h4>
+                        <p class="text-gray-600 text-sm">Finish all coursework online through our platform</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white font-bold text-lg">2</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Choose 5 Centers</h4>
+                        <p class="text-gray-600 text-sm">Select your preferred examination centers</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white font-bold text-lg">3</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Get Confirmation</h4>
+                        <p class="text-gray-600 text-sm">We secure your spot at available centers</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-white font-bold text-lg">4</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Sit Exams</h4>
+                        <p class="text-gray-600 text-sm">Take your final exams at the assigned center</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="section-padding bg-gradient-to-br from-primary-600 to-accent-600 text-white">
         <div class="container-custom text-center">

@@ -134,9 +134,9 @@ const setAccessDuration = (duration) => {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 <!-- Payment Form -->
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-200/50">
+                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-6 lg:p-8 shadow-xl border border-slate-200/50">
                     <h2 class="text-2xl font-bold text-slate-800 mb-6">Payment Details</h2>
                     
                     <form @submit.prevent="submit">
@@ -169,10 +169,10 @@ const setAccessDuration = (duration) => {
                                 <div v-for="method in paymentMethods" :key="method.key"
                                      @click="form.payment_method = method.key"
                                      :class="[
-                                         'p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex items-center space-x-4',
+                                         'p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex items-center space-x-3 sm:space-x-4 touch-manipulation active:scale-95',
                                          form.payment_method === method.key 
-                                            ? 'border-indigo-500 bg-indigo-50' 
-                                            : 'border-slate-200 hover:border-slate-300'
+                                            ? 'border-indigo-500 bg-indigo-50 shadow-md' 
+                                            : 'border-slate-200 hover:border-slate-300 hover:shadow-sm active:bg-slate-50'
                                      ]">
                                     <div :class="[
                                         'w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl bg-gradient-to-r',
@@ -239,11 +239,11 @@ const setAccessDuration = (duration) => {
                         <!-- Submit Button -->
                         <div class="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
                             <Link :href="route('payments.index')" 
-                                  class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold transition-all duration-200">
+                                  class="px-4 sm:px-6 py-3 sm:py-3 text-sm sm:text-base bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold transition-all duration-200 text-center">
                                 Cancel
                             </Link>
                             <button type="submit" :disabled="form.processing || !form.payment_method || hasPendingPayment"
-                                    class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                                    class="px-4 sm:px-6 py-3 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none active:scale-95">
                                 <span v-if="form.processing">Submitting...</span>
                                 <span v-else>Submit Payment</span>
                             </button>
@@ -252,7 +252,7 @@ const setAccessDuration = (duration) => {
                 </div>
 
                 <!-- Payment Instructions -->
-                <div v-if="getSelectedMethod" class="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-200/50">
+                <div v-if="getSelectedMethod" class="bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-6 lg:p-8 shadow-xl border border-slate-200/50">
                     <div class="flex items-center space-x-3 mb-6">
                         <div :class="[
                             'w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl bg-gradient-to-r',

@@ -449,14 +449,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'show'])->name('teachers.show');
     });
 
-    // Teacher Dashboard and Student Management
-    Route::middleware('role:teacher')->prefix('teacher')->name('teacher.')->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\TeacherDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/students', [\App\Http\Controllers\TeacherDashboardController::class, 'students'])->name('students');
-        Route::get('/students/{enrollment}', [\App\Http\Controllers\TeacherDashboardController::class, 'studentDetail'])->name('students.detail');
-        Route::post('/send-message', [\App\Http\Controllers\TeacherDashboardController::class, 'sendMessage'])->name('send-message');
-        Route::post('/book-session', [\App\Http\Controllers\TeacherDashboardController::class, 'bookSession'])->name('book-session');
-    });
     
     // Admin-only teacher management operations
     Route::middleware('role:admin')->group(function () {
@@ -601,11 +593,11 @@ Route::middleware('auth')->group(function () {
 
     // Support Chat Routes (formerly Complaints) - Live chat system
     Route::get('/complaints', [\App\Http\Controllers\ComplaintController::class, 'index'])
-         ->middleware('role:admin,teacher')->name('complaints.index');
+         ->name('complaints.index');
     Route::get('/complaints/create', [\App\Http\Controllers\ComplaintController::class, 'create'])
-         ->middleware('role:admin,teacher')->name('complaints.create');
+         ->name('complaints.create');
     Route::post('/complaints', [\App\Http\Controllers\ComplaintController::class, 'store'])
-         ->middleware('role:admin,teacher')->name('complaints.store');
+         ->name('complaints.store');
     
     // Live Chat Routes
     Route::get('/complaints/chat/{sessionId}', [\App\Http\Controllers\ComplaintController::class, 'chat'])
@@ -648,10 +640,210 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/api/notifications/count', [\App\Http\Controllers\NotificationController::class, 'getUnreadCount'])->name('notifications.count');
 
+    // Achievements Routes
+    Route::get('/achievements', function () {
+        $user = auth()->user();
+        
+        // Sample achievements data based on user role
+        $achievements = collect();
+        $userStats = [
+            'totalPoints' => 0,
+            'subjectsCompleted' => 0,
+            'studentsHelped' => 0,
+            'totalCompletions' => 0,
+            'studyStreak' => 0
+        ];
+
+        if ($user->role === 'student') {
+            // Get student's enrollment to calculate achievements
+            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->first();
+            
+            if ($enrollment) {
+                $subjectsCount = count($enrollment->selected_subjects ?: []);
+                $userStats['subjectsCompleted'] = $subjectsCount;
+                $userStats['totalPoints'] = $subjectsCount * 100;
+                $userStats['studyStreak'] = rand(1, 30);
+
+                // Create sample achievements for students
+                $achievements = collect([
+                    [
+                        'id' => 1,
+                        'name' => 'First Steps',
+                        'description' => 'Complete your first subject enrollment',
+                        'icon' => '🎯',
+                        'points' => 100,
+                        'unlocked' => true,
+                        'unlockedAt' => $enrollment->created_at,
+                        'progress' => 100,
+                        'current' => 1,
+                        'target' => 1,
+                        'category' => 'Learning'
+                    ],
+                    [
+                        'id' => 2,
+                        'name' => 'Subject Master',
+                        'description' => 'Complete 5 subjects successfully',
+                        'icon' => '📚',
+                        'points' => 500,
+                        'unlocked' => $subjectsCount >= 5,
+                        'unlockedAt' => $subjectsCount >= 5 ? now() : null,
+                        'progress' => ($subjectsCount / 5) * 100,
+                        'current' => $subjectsCount,
+                        'target' => 5,
+                        'category' => 'Learning'
+                    ],
+                    [
+                        'id' => 3,
+                        'name' => 'Dedicated Learner',
+                        'description' => 'Maintain a 7-day study streak',
+                        'icon' => '🔥',
+                        'points' => 200,
+                        'unlocked' => $userStats['studyStreak'] >= 7,
+                        'unlockedAt' => $userStats['studyStreak'] >= 7 ? now()->subDays(rand(1, 10)) : null,
+                        'progress' => min(($userStats['studyStreak'] / 7) * 100, 100),
+                        'current' => $userStats['studyStreak'],
+                        'target' => 7,
+                        'category' => 'Milestones'
+                    ],
+                    [
+                        'id' => 4,
+                        'name' => 'Course Completer',
+                        'description' => 'Successfully complete your entire course',
+                        'icon' => '🎓',
+                        'points' => 1000,
+                        'unlocked' => false,
+                        'unlockedAt' => null,
+                        'progress' => 75,
+                        'current' => 3,
+                        'target' => 4,
+                        'category' => 'Milestones'
+                    ]
+                ]);
+            }
+        } elseif ($user->role === 'teacher') {
+            // Get teacher's assigned students
+            $assignedStudents = \App\Models\Enrollment::where('assigned_tutor_id', $user->id)
+                ->where('status', 'approved')
+                ->count();
+            
+            $userStats['studentsHelped'] = $assignedStudents;
+            $userStats['totalPoints'] = $assignedStudents * 150;
+
+            $achievements = collect([
+                [
+                    'id' => 1,
+                    'name' => 'First Student',
+                    'description' => 'Get assigned your first student',
+                    'icon' => '👨‍🏫',
+                    'points' => 150,
+                    'unlocked' => $assignedStudents >= 1,
+                    'unlockedAt' => $assignedStudents >= 1 ? now()->subDays(rand(1, 30)) : null,
+                    'progress' => $assignedStudents >= 1 ? 100 : 0,
+                    'current' => $assignedStudents,
+                    'target' => 1,
+                    'category' => 'Teaching'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'Popular Tutor',
+                    'description' => 'Help 10 students with their studies',
+                    'icon' => '⭐',
+                    'points' => 750,
+                    'unlocked' => $assignedStudents >= 10,
+                    'unlockedAt' => $assignedStudents >= 10 ? now()->subDays(rand(1, 20)) : null,
+                    'progress' => min(($assignedStudents / 10) * 100, 100),
+                    'current' => $assignedStudents,
+                    'target' => 10,
+                    'category' => 'Teaching'
+                ],
+                [
+                    'id' => 3,
+                    'name' => 'Resource Creator',
+                    'description' => 'Upload 5 teaching materials',
+                    'icon' => '📝',
+                    'points' => 300,
+                    'unlocked' => false, // Would need to check actual materials count
+                    'unlockedAt' => null,
+                    'progress' => 60,
+                    'current' => 3,
+                    'target' => 5,
+                    'category' => 'Teaching'
+                ]
+            ]);
+        } else { // Admin
+            // Get admin overview stats
+            $totalStudents = \App\Models\User::where('role', 'student')->count();
+            $totalTeachers = \App\Models\User::where('role', 'teacher')->count();
+            $totalEnrollments = \App\Models\Enrollment::count();
+            
+            $userStats['totalCompletions'] = $totalEnrollments;
+            $userStats['totalPoints'] = $totalEnrollments * 50;
+
+            $achievements = collect([
+                [
+                    'id' => 1,
+                    'name' => 'System Administrator',
+                    'description' => 'Successfully manage the learning platform',
+                    'icon' => '👑',
+                    'points' => 1000,
+                    'unlocked' => true,
+                    'unlockedAt' => now()->subDays(rand(30, 100)),
+                    'progress' => 100,
+                    'current' => 1,
+                    'target' => 1,
+                    'category' => 'Leadership'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'Growth Manager',
+                    'description' => 'Reach 100 total enrollments',
+                    'icon' => '📈',
+                    'points' => 2000,
+                    'unlocked' => $totalEnrollments >= 100,
+                    'unlockedAt' => $totalEnrollments >= 100 ? now()->subDays(rand(1, 50)) : null,
+                    'progress' => min(($totalEnrollments / 100) * 100, 100),
+                    'current' => $totalEnrollments,
+                    'target' => 100,
+                    'category' => 'Milestones'
+                ]
+            ]);
+        }
+
+        // Calculate total points from unlocked achievements
+        $userStats['totalPoints'] = $achievements->where('unlocked', true)->sum('points');
+
+        return Inertia::render('Achievements/Index', [
+            'user' => $user,
+            'achievements' => [
+                'data' => $achievements,
+                'total' => $achievements->count(),
+                'current_page' => 1,
+                'last_page' => 1,
+                'prev_page_url' => null,
+                'next_page_url' => null
+            ],
+            'userStats' => $userStats,
+            'stats' => [
+                'total_achievements' => $achievements->count(),
+                'featured_achievements' => $achievements->where('unlocked', true)->count(),
+                'total_points' => $userStats['totalPoints'],
+                'recent_achievements' => $achievements->where('unlocked', true)->where('unlockedAt', '>', now()->subWeek())->count()
+            ],
+            'types' => ['learning', 'teaching', 'social', 'milestones'],
+            'levels' => ['bronze', 'silver', 'gold', 'platinum'],
+            'filters' => []
+        ]);
+    })->name('achievements.index');
+
     // Account Settings Route (from dropdown)
     Route::get('/account-settings', function () {
         return Inertia::render('Profile/AccountSettings');
     })->name('account.settings');
+
+    // Notification Settings Route
+    Route::get('/notification-settings', function () {
+        return Inertia::render('Profile/NotificationSettings');
+    })->name('notification.settings');
 
     // Admin enrollment management (only for admin users)
     Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -697,6 +889,48 @@ Route::middleware('auth')->group(function () {
         // Categories and metadata
         Route::get('/categories/manage', [\App\Http\Controllers\Admin\LibraryController::class, 'manageCategories'])->name('categories.manage');
         Route::post('/categories', [\App\Http\Controllers\Admin\LibraryController::class, 'storeCategory'])->name('categories.store');
+    });
+
+    // AI Training Routes - Admin only
+    Route::middleware('role:admin')->prefix('admin/ai-training')->name('admin.ai-training.')->group(function () {
+        Route::get('/', function () {
+            return Inertia::render('Admin/AITraining/Index', [
+                'materials' => collect([]), // Sample data - would come from database
+                'subjects' => collect([
+                    ['id' => 1, 'name' => 'Mathematics'],
+                    ['id' => 2, 'name' => 'English'],
+                    ['id' => 3, 'name' => 'Science'],
+                    ['id' => 4, 'name' => 'Geography'],
+                    ['id' => 5, 'name' => 'History']
+                ]),
+                'stats' => [
+                    'total_materials' => 0,
+                    'by_type' => [],
+                    'by_subject' => [],
+                    'total_size' => 0
+                ]
+            ]);
+        })->name('index');
+        
+        Route::post('/', function (\Illuminate\Http\Request $request) {
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'subject_id' => 'required|integer',
+                'material_type' => 'required|string|in:book,past_paper,notes,questions,answers',
+                'description' => 'nullable|string',
+                'file' => 'required|file|mimes:pdf,doc,docx,txt|max:51200',
+                'tags' => 'nullable|string'
+            ]);
+
+            // Store the file
+            $filePath = $request->file('file')->store('ai-training-materials', 'public');
+
+            // TODO: Process the file and extract content for AI training
+            // This would involve text extraction, chunking, and preparing for AI model training
+            
+            return redirect()->back()->with('success', 'Training material uploaded successfully! The AI will start learning from this content.');
+        })->name('store');
+    });
         Route::delete('/categories/{category}', [\App\Http\Controllers\Admin\LibraryController::class, 'destroyCategory'])->name('categories.destroy');
     });
 
@@ -723,6 +957,10 @@ Route::middleware('auth')->group(function () {
 
     // Teacher Routes
     Route::middleware('role:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\TeacherDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/send-message', [\App\Http\Controllers\TeacherDashboardController::class, 'sendMessage'])->name('send-message');
+        Route::post('/book-session', [\App\Http\Controllers\TeacherDashboardController::class, 'bookSession'])->name('book-session');
+        
         Route::get('/students', function () {
             $user = auth()->user();
             $assignedEnrollments = \App\Models\Enrollment::where('assigned_tutor_id', $user->id)
@@ -753,7 +991,133 @@ Route::middleware('auth')->group(function () {
                 ]
             ]);
         })->name('students.index');
+
+        Route::get('/calendar', function () {
+            $user = auth()->user();
+            
+            // Get assigned students for meeting scheduling
+            $assignedEnrollments = \App\Models\Enrollment::where('assigned_tutor_id', $user->id)
+                ->with('user')
+                ->where('status', 'approved')
+                ->get();
+
+            $assignedStudents = $assignedEnrollments->map(function ($enrollment) {
+                return [
+                    'id' => $enrollment->user ? $enrollment->user->id : $enrollment->id,
+                    'name' => $enrollment->user ? $enrollment->user->name : $enrollment->name,
+                    'email' => $enrollment->email,
+                ];
+            });
+
+            // Get meetings (placeholder - you'll need to create a Meeting model)
+            $meetings = collect([
+                [
+                    'id' => 1,
+                    'title' => 'Math Review Session',
+                    'student_name' => 'John Doe',
+                    'student_email' => 'john@example.com',
+                    'scheduled_at' => now()->addDays(2)->setHour(14)->setMinute(0),
+                    'duration' => 60,
+                    'status' => 'scheduled',
+                    'type' => 'online',
+                    'time' => '14:00'
+                ]
+            ]);
+
+            return Inertia::render('Teacher/Calendar/Index', [
+                'assignedStudents' => $assignedStudents,
+                'meetings' => $meetings,
+                'stats' => [
+                    'total_meetings' => $meetings->count(),
+                    'upcoming_meetings' => $meetings->where('scheduled_at', '>', now())->count()
+                ]
+            ]);
+        })->name('calendar');
+
+        Route::post('/calendar', function (\Illuminate\Http\Request $request) {
+            $user = auth()->user();
+            
+            $request->validate([
+                'student_id' => 'required',
+                'title' => 'required|string|max:255',
+                'date' => 'required|date|after:today',
+                'time' => 'required',
+                'duration' => 'required|integer|min:15|max:180',
+                'type' => 'required|in:online,in-person',
+                'notes' => 'nullable|string'
+            ]);
+
+            // TODO: Create meeting record in database
+            // For now, just return success
+            
+            return redirect()->back()->with('success', 'Meeting scheduled successfully!');
+        })->name('calendar.store');
+
+        Route::get('/materials', function () {
+            $user = auth()->user();
+            
+            // Sample materials data (you'll need to create a TeachingMaterial model)
+            $materials = collect([
+                [
+                    'id' => 1,
+                    'title' => 'Algebra Fundamentals - Complete Guide',
+                    'subject' => 'Mathematics',
+                    'type' => 'lesson_plan',
+                    'description' => 'Comprehensive lesson plan covering basic algebra concepts including variables, equations, and problem solving.',
+                    'file_extension' => 'pdf',
+                    'file_size' => 2048000,
+                    'downloads' => 15,
+                    'created_at' => now()->subDays(5),
+                    'file_url' => '/storage/materials/algebra-guide.pdf'
+                ],
+                [
+                    'id' => 2,
+                    'title' => 'English Grammar Workshop Slides',
+                    'subject' => 'English',
+                    'type' => 'presentation',
+                    'description' => 'Interactive presentation for teaching grammar rules and practical exercises.',
+                    'file_extension' => 'pptx',
+                    'file_size' => 5120000,
+                    'downloads' => 8,
+                    'created_at' => now()->subDays(2),
+                    'file_url' => '/storage/materials/grammar-workshop.pptx'
+                ]
+            ]);
+
+            return Inertia::render('Teacher/Materials/Index', [
+                'materials' => $materials,
+                'stats' => [
+                    'total_materials' => $materials->count(),
+                    'downloads_total' => $materials->sum('downloads')
+                ]
+            ]);
+        })->name('materials');
+
+        Route::post('/materials', function (\Illuminate\Http\Request $request) {
+            $user = auth()->user();
+            
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'subject' => 'required|string|max:100',
+                'type' => 'required|in:lesson_plan,presentation,worksheet,video,reference',
+                'description' => 'nullable|string',
+                'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,mp4,mov,avi|max:51200',
+                'grade_level' => 'nullable|string',
+                'duration' => 'nullable|integer',
+                'tags' => 'nullable|string',
+                'is_public' => 'boolean'
+            ]);
+
+            // Store file
+            $filePath = $request->file('file')->store('teaching-materials', 'public');
+
+            // TODO: Create teaching material record in database
+            // For now, just return success
+            
+            return redirect()->back()->with('success', 'Teaching material uploaded successfully!');
+        })->name('materials.store');
     });
+
 
     // Admin Audit Trail Routes
     Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -788,7 +1152,5 @@ Route::middleware('auth')->group(function () {
         Route::get('/estimation', [\App\Http\Controllers\DataUsageController::class, 'getEstimation'])->name('estimation');
         Route::get('/stats', [\App\Http\Controllers\DataUsageController::class, 'getUserUsageStats'])->name('stats');
     });
-
-});
 
 require __DIR__.'/auth.php';

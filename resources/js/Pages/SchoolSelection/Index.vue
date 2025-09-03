@@ -1,8 +1,8 @@
 <template>
-    <div class="min-h-screen bg-gray-50">
-        <Head title="School Selection for Exams" />
-        
-        <div class="max-w-6xl mx-auto px-4 py-8">
+    <Head title="School Selection" />
+    
+    <DashboardLayout title="School Selection" subtitle="Choose schools for your exam centers">
+        <div class="max-w-6xl mx-auto">
             <!-- Header -->
             <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 mb-2">Select Schools for Exam Centers</h1>
@@ -219,13 +219,14 @@
                 </div>
             </div>
         </div>
-    </div>
+    </DashboardLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import { router } from '@inertiajs/vue3'
+import DashboardLayout from '@/Layouts/DashboardLayout.vue'
 
 const props = defineProps({
     schools: Array,

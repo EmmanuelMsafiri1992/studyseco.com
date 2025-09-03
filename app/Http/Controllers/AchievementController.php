@@ -112,13 +112,16 @@ class AchievementController extends Controller
 
     private function getCompletedSubjectsCount($user)
     {
-        // Get completed subjects from enrollments and lessons
-        return \DB::table('enrollments')
-            ->join('subjects', 'enrollments.subject_id', '=', 'subjects.id')
-            ->where('enrollments.user_id', $user->id)
-            ->where('enrollments.status', 'approved')
-            ->distinct()
-            ->count('subjects.id');
+        // Get completed subjects from enrollments
+        $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->first();
+            
+        if (!$enrollment || !$enrollment->selected_subjects) {
+            return 0;
+        }
+        
+        return count($enrollment->selected_subjects);
     }
 
     private function getCompletionPercentage($user)

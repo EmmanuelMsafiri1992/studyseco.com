@@ -17,7 +17,7 @@ class ExtensionController extends Controller
         $enrollment = $user->enrollments()->with('payments')->first();
         
         if (!$enrollment) {
-            return redirect()->route('welcome')->with('error', 'No active enrollment found.');
+            return redirect()->route('dashboard')->with('error', 'You need to enroll in a course first before you can extend access. Please contact support if you need assistance with enrollment.');
         }
         
         // Calculate extension pricing based on user's currency

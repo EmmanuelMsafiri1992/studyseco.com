@@ -241,6 +241,94 @@
                         </div>
                     </div>
 
+                    <!-- Currency Conversion Settings -->
+                    <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 p-6">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Currency Conversion</h2>
+                        <p class="text-sm text-gray-600 mb-6">Configure exchange rates and supported currencies for international payments</p>
+                        
+                        <div class="space-y-6">
+                            <!-- Base Currency -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Base Currency
+                                </label>
+                                <select 
+                                    v-model="formData.base_currency"
+                                    class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
+                                >
+                                    <option value="MWK">MWK - Malawian Kwacha</option>
+                                    <option value="USD">USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="ZAR">ZAR - South African Rand</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">The primary currency for all transactions</p>
+                            </div>
+
+                            <!-- Exchange Rates -->
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Exchange Rates (per 1 {{ formData.base_currency || 'MWK' }})</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div v-for="currency in supportedCurrencies" :key="currency.code">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            {{ currency.code }} - {{ currency.name }}
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            step="0.000001"
+                                            v-model="formData[`exchange_rate_${currency.code.toLowerCase()}`]" 
+                                            :placeholder="`1 ${formData.base_currency || 'MWK'} = ? ${currency.code}`"
+                                            class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Currency Display Settings -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Currency Symbol Position
+                                    </label>
+                                    <select 
+                                        v-model="formData.currency_symbol_position"
+                                        class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
+                                    >
+                                        <option value="before">Before amount (MK 100)</option>
+                                        <option value="after">After amount (100 MK)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Decimal Places
+                                    </label>
+                                    <select 
+                                        v-model="formData.currency_decimal_places"
+                                        class="w-full bg-slate-100/70 backdrop-blur-sm px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
+                                    >
+                                        <option value="0">0 (100)</option>
+                                        <option value="2">2 (100.00)</option>
+                                        <option value="3">3 (100.000)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Auto Update Settings -->
+                            <div>
+                                <label class="flex items-center">
+                                    <input 
+                                        type="checkbox" 
+                                        v-model="formData.auto_update_exchange_rates"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                    >
+                                    <span class="ml-3 text-sm font-medium text-gray-700">Auto-update exchange rates daily</span>
+                                </label>
+                                <p class="text-xs text-gray-500 mt-2 ml-6">Automatically fetch latest exchange rates from external API</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Save Button -->
                     <div class="flex justify-end">
                         <button 
@@ -274,6 +362,17 @@ const jsonFields = ref({});
 const faviconInput = ref(null);
 const selectedFavicon = ref(null);
 const currentFavicon = ref(null);
+
+// Supported currencies for conversion
+const supportedCurrencies = ref([
+    { code: 'USD', name: 'US Dollar' },
+    { code: 'EUR', name: 'Euro' },
+    { code: 'GBP', name: 'British Pound' },
+    { code: 'ZAR', name: 'South African Rand' },
+    { code: 'KES', name: 'Kenyan Shilling' },
+    { code: 'TZS', name: 'Tanzanian Shilling' },
+    { code: 'ZMW', name: 'Zambian Kwacha' }
+]);
 
 onMounted(() => {
     // Initialize form data from settings

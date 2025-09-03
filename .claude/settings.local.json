@@ -9,7 +9,11 @@
       "Bash(composer dev:*)",
       "Bash(curl:*)",
       "Bash(mysql:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "WebFetch(domain:127.0.0.1)",
+      "Bash(php:*)",
+      "Bash(find:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

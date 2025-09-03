@@ -27,7 +27,7 @@ class NotificationSettingsController extends Controller
 
         $currentSettings = array_merge($defaultSettings, $settings);
 
-        return Inertia::render('Settings/Notifications', [
+        return Inertia::render('Profile/NotificationSettings', [
             'settings' => $currentSettings
         ]);
     }

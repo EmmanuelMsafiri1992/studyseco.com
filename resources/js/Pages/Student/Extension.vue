@@ -1,12 +1,7 @@
 <template>
-  <AuthenticatedLayout title="Extend Access">
-    <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-        Extend Access Period
-      </h2>
-    </template>
-
-    <div class="py-12">
+  <Head title="Extend Access" />
+  
+  <DashboardLayout title="Extend Access" subtitle="Extend your course access period">
       <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
           <div class="p-6">
@@ -195,14 +190,13 @@
           </div>
         </div>
       </div>
-    </div>
-  </AuthenticatedLayout>
+  </DashboardLayout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useForm } from '@inertiajs/vue3'
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { useForm, Head } from '@inertiajs/vue3'
+import DashboardLayout from '@/Layouts/DashboardLayout.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import TextInput from '@/components/TextInput.vue'

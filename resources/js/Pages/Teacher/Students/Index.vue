@@ -1,15 +1,13 @@
 <template>
-    <div class="min-h-screen bg-gray-50">
-        <Head title="My Students" />
-        
-        <div class="max-w-7xl mx-auto px-4 py-8">
-            <!-- Header -->
+    <Head title="My Students" />
+    
+    <DashboardLayout 
+        title="My Assigned Students" 
+        subtitle="Manage and communicate with your assigned students">
+        <div class="max-w-7xl mx-auto">
+            <!-- Quick Stats -->
             <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">My Assigned Students</h1>
-                <p class="text-gray-600">Manage and communicate with your assigned students</p>
-                
-                <!-- Quick Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="bg-blue-50 rounded-lg p-4">
                         <div class="flex items-center">
                             <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -233,12 +231,13 @@
                 </div>
             </div>
         </div>
-    </div>
+    </DashboardLayout>
 </template>
 
 <script setup>
 import { Head } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
+import DashboardLayout from '@/Layouts/DashboardLayout.vue'
 
 const props = defineProps({
     assignedStudents: Array,
