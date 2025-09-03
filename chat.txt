@@ -2,7 +2,7 @@
        134 +                  'is_active' => true
        135 +              ]
        136 +          ];
-       137 +  
+       137 +
        138 +          foreach ($schools as $school) {
        139 +              SecondarySchool::create($school);
        140 +          }
@@ -76,14 +76,14 @@
   - on notifications I needed that when you visit some pages and you try to click on notifications, the page does not take you anywhere, this must be fixed.
   - when the student have loggedin, under "Recent Activities" students must not be able to system payment details paid by others, they must only see what is related to them.
   - also notification sounds when there is a new notication students must be able to hear the sound, and also under their account settings they must be able to choose either to enable or disable the notification sounds.
-  - in the teacher dashboard the teacher must be able to see the calendar and book a meeting with students and also he must be able to upload his teaching and reference materials, a section for teach creating lesson plans, notes and many more so that the   
+  - in the teacher dashboard the teacher must be able to see the calendar and book a meeting with students and also he must be able to upload his teaching and reference materials, a section for teach creating lesson plans, notes and many more so that the
   teacher does not have to use hard copies for planning.
   - in the admin panel the admin panel add the audit trail that will be able to log every activity of every user for system security.
-  - under achievements I want each person to be able to see what he or she has achieve so far and the admin must be able to see all the peoples achievements. and also for students once completed studies can achieve certificate of completions, also when     
+  - under achievements I want each person to be able to see what he or she has achieve so far and the admin must be able to see all the peoples achievements. and also for students once completed studies can achieve certificate of completions, also when
   they are taking much time watching videos must achieve hardwork and be encouraged and they must all be notified.
   - under http://127.0.0.1:8000/payments I must be able to see the real data and be able to approve and  reject payments
   -  under Active Enrollments and Monthly Revenue I need the real data not sample data in the dashboard.
-  - also admin settings I must be able to see the preferred currency to see to it means ther is a need to implement a currency changing logic such that when you choose Malawian Kwachas, all the different payment currencies must be converted to kwacha       
+  - also admin settings I must be able to see the preferred currency to see to it means ther is a need to implement a currency changing logic such that when you choose Malawian Kwachas, all the different payment currencies must be converted to kwacha
   based on the rate you have set so that you are able to see the correct revenue made.
   - under Active Enrollments on http://127.0.0.1:8000/reports I need the actual data not sample.
   ⎿  ⧉ Selected 12 lines from plannings.txt in Visual Studio Code
@@ -116,7 +116,7 @@
 ● Search(pattern: "@click.*handleNotificationClick|handleNotificationClick|notification.*click", path: "resources\js\Pages\Notifications", glob: "*.vue", output_mode: "content")
   ⎿  Found 2 lines (ctrl+r to expand)
 
-● Good! I can see the notifications have a handleNotificationClick method that routes to different pages based on notification type, but it's not handling all cases properly. Let me enhance the notification routing system to handle more notification        
+● Good! I can see the notifications have a handleNotificationClick method that routes to different pages based on notification type, but it's not handling all cases properly. Let me enhance the notification routing system to handle more notification
   types and provide better navigation:
 
 ● Update(resources\js\Pages\Notifications\Index.vue)
@@ -139,10 +139,10 @@
        135 +      if (notification.id && !notification.id.toString().includes('_')) {
        136 +          router.post(route('notifications.read', notification.id));
        137        }
-       138 +      
+       138 +
        139 +      // Handle different notification types based on user role and notification type
        140 +      const userRole = user.role;
-       141 +      
+       141 +
        142 +      try {
        143 +          if (notification.type === 'enrollment') {
        144 +              if (userRole === 'admin') {
@@ -485,7 +485,7 @@
        35 +                  'total_revenue' => EnrollmentPayment::where('status', 'verified')->sum('amount'),
        36 +                  'pending_revenue' => EnrollmentPayment::where('status', 'pending')->sum('amount'),
        37 +              ];
-       38 +  
+       38 +
        39                return Inertia::render('Payments/Admin/Index', [
        40 -                  'payments' => $payments
        40 +                  'payments' => $payments,
@@ -534,13 +534,13 @@
        211 +          if (auth()->user()->role !== 'admin') {
        212 +              abort(403, 'Only administrators can verify payments.');
        213 +          }
-       214 +  
+       214 +
        215 +          $request->validate([
        216 +              'action' => 'required|in:approve,reject',
        217 +              'notes' => 'nullable|string|max:500',
        218 +              'rejection_reason' => 'required_if:action,reject|string|max:500'
        219 +          ]);
-       220 +  
+       220 +
        221 +          if ($request->action === 'approve') {
        222 +              $payment->update([
        223 +                  'status' => 'verified',
@@ -548,7 +548,7 @@
        225 +                  'verified_by' => auth()->id(),
        226 +                  'admin_notes' => $request->notes
        227 +              ]);
-       228 +  
+       228 +
        229 +              // Update enrollment access
        230 +              $enrollment = $payment->enrollment;
        231 +              if ($enrollment) {
@@ -558,7 +558,7 @@
        235 +                      'approved_by' => auth()->id()
        236 +                  ]);
        237 +              }
-       238 +  
+       238 +
        239 +              return redirect()->back()->with('success', 'Payment verified and access granted successfully.');
        240 +          } else {
        241 +              $payment->update([
@@ -567,11 +567,11 @@
        244 +                  'verified_by' => auth()->id(),
        245 +                  'admin_notes' => $request->rejection_reason
        246 +              ]);
-       247 +  
+       247 +
        248 +              return redirect()->back()->with('success', 'Payment rejected successfully.');
        249 +          }
        250 +      }
-       251 +  
+       251 +
        252 +      /**
        253         * Get payment statistics for admin dashboard
        254         */
@@ -645,7 +645,7 @@
        60 +          notes: verificationForm.admin_notes,
        61 +          rejection_reason: action === 'reject' ? verificationForm.rejection_reason : null
        62 +      };
-       63 +  
+       63 +
        64        verificationForm.post(route('payments.verify', selectedPayment.value.id), {
        65 +          data: data,
        66            onSuccess: () => {
@@ -843,23 +843,23 @@
         92            </Link>
         93
         94 +          <!-- School Selection - Students only -->
-        95 +          <Link v-if="$page.props.auth?.user?.role === 'student'" href="/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+        95 +          <Link v-if="$page.props.auth?.user?.role === 'student'" href="/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
         96 +                                      $page.component?.includes('SchoolSelection') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
         97 +            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         98 +              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M9 7l3-3 3 3M4 10h16v11H4V10z"></path>
         99 +            </svg>
        100 +            <span class="font-medium">Exam Schools</span>
        101 +          </Link>
-       102 +  
+       102 +
        103 +          <!-- Course Extension - Students only -->
-       104 +          <Link v-if="$page.props.auth?.user?.role === 'student'" href="/student/extension" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+       104 +          <Link v-if="$page.props.auth?.user?.role === 'student'" href="/student/extension" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        105 +                                      $page.component?.includes('Extension') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
        106 +            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
        107 +              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
        108 +            </svg>
        109 +            <span class="font-medium">Extend Access</span>
        110 +          </Link>
-       111 +  
+       111 +
        112            <!-- Payments for Students - Limited access to own payments -->
        113            <Link v-if="$page.props.auth?.user?.role === 'student'" href="/payments/create" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        114                                        $page.component?.includes('Payment') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
@@ -870,7 +870,7 @@
        103 +          <!-- Teacher Section -->
        104 +          <div v-if="$page.props.auth?.user?.role === 'teacher'" class="pt-4 mt-4 border-t border-slate-200">
        105 +            <!-- My Students - Teachers only -->
-       106 +            <Link href="/teacher/students" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+       106 +            <Link href="/teacher/students" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        107 +                                            $page.component?.includes('TeacherStudent') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
        108 +              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
        109 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
@@ -880,7 +880,7 @@
        113 +            </Link>
        114 +
        115 +            <!-- Teaching Calendar - Teachers only -->
-       116 +            <Link href="/teacher/calendar" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+       116 +            <Link href="/teacher/calendar" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        117 +                                            $page.component?.includes('TeacherCalendar') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
        118 +              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
        119 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -889,7 +889,7 @@
        122 +            </Link>
        123 +
        124 +            <!-- Teaching Materials - Teachers only -->
-       125 +            <Link href="/teacher/materials" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+       125 +            <Link href="/teacher/materials" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        126 +                                            $page.component?.includes('TeacherMaterial') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
        127 +              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
        128 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -897,7 +897,7 @@
        130 +              <span class="font-medium">Materials</span>
        131 +            </Link>
        132 +          </div>
-       133 +  
+       133 +
        134            <!-- Support - Available to all roles -->
        135            <Link href="/complaints" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        136                                              $page.component?.includes('Complaint') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
@@ -910,7 +910,7 @@
        199              </Link>
        200
        201 +            <!-- School Selection Management -->
-       202 +            <Link href="/admin/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+       202 +            <Link href="/admin/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        203 +                                                           $page.component?.includes('SchoolSelection') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
        204 +              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
        205 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M9 7l3-3 3 3M4 10h16v11H4V10z"></path>
@@ -919,25 +919,25 @@
        208 +            </Link>
        209 +
        210 +            <!-- Audit Trail -->
-       211 +            <Link href="/admin/audit" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+       211 +            <Link href="/admin/audit" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        212 +                                             $page.component?.includes('Audit') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
        213 +              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-       214 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 
+       214 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332
            + 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
        215 +              </svg>
        216 +              <span class="font-medium">Audit Trail</span>
        217 +            </Link>
        218 +
        219 +            <!-- AI Training Materials -->
-       220 +            <Link href="/admin/ai-training" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+       220 +            <Link href="/admin/ai-training" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        221 +                                                    $page.component?.includes('AiTraining') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
        222 +              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-       223 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 
+       223 +                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014
            + 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
        224 +              </svg>
        225 +              <span class="font-medium">AI Training</span>
        226 +            </Link>
-       227 +  
+       227 +
        228              <!-- Settings -->
        229              <Link href="/settings" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
        230                                              $page.component?.includes('Setting') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
@@ -964,7 +964,7 @@
        653            Route::get('/', [\App\Http\Controllers\SchoolSelectionController::class, 'adminIndex'])->name('index');
        654            Route::patch('/{selection}', [\App\Http\Controllers\SchoolSelectionController::class, 'adminUpdate'])->name('update');
        655        });
-       656 +  
+       656 +
        657 +      // Teacher Routes
        658 +      Route::middleware('role:teacher')->prefix('teacher')->name('teacher.')->group(function () {
        659 +          Route::get('/students', function () {
@@ -987,7 +987,7 @@
        676 +                      'tutor_assigned_at' => $enrollment->tutor_assigned_at
        677 +                  ];
        678 +              });
-       679 +  
+       679 +
        680 +              return Inertia::render('Teacher/Students/Index', [
        681 +                  'assignedStudents' => $assignedStudents,
        682 +                  'stats' => [
@@ -1028,3 +1028,17 @@
   ⎿  Read 50 lines (ctrl+r to expand)
   ⎿  5-hour limit reached ∙ resets 8pm
      /upgrade to increase your usage limit.
+
+
+
+     Issues when loggedin as an admin
+under this route: http://127.0.0.1:8000/profile
+- clicking notifications does not work.
+- i cannot see notification settings and Account Settings
+- under http://127.0.0.1:8000/account-settings uploading image to change the profile does not work. it says (The name field is required.,The email field is required.) yes fields already have the data.
+- under academic on http://127.0.0.1:8000/subjects, the edit button is not working and the delete button does not give any warning but when you referesh the page you see the resource deleted.
+- here http://127.0.0.1:8000/subjects you are supposed to select the department but there is no place to add new departments or edit
+- here http://127.0.0.1:8000/admin/library/create you have to select the subject but you have no where to add subjects or edit subjects
+- here http://127.0.0.1:8000/teachers add teachers does not work.
+- this http://127.0.0.1:8000/admin/system-settings is failing to display proper layout fix
+- this http://127.0.0.1:8000/admin/audit-logs does not display logs please fix
