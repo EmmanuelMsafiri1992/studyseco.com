@@ -22,6 +22,7 @@ public function run()
         SiteContentSeeder::class,
         StudentStoriesSeeder::class,
         LibrarySeeder::class,
+        SecondarySchoolSeeder::class,
     ]);
 }
 }

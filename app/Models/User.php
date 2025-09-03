@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role',
         'custom_permissions',
         'dashboard_preferences',
+        'notification_settings',
         'is_active',
         'last_login_at',
         'profile_photo_url',
@@ -55,6 +56,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'custom_permissions' => 'array',
             'dashboard_preferences' => 'array',
+            'notification_settings' => 'array',
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
         ];
@@ -123,6 +125,36 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class)
                     ->withPivot('assigned_at', 'assigned_by')
                     ->withTimestamps();
+    }
+
+    /**
+     * Check if notification sounds are enabled
+     */
+    public function hasNotificationSoundsEnabled(): bool
+    {
+        $settings = $this->notification_settings ?? [];
+        return $settings['sounds_enabled'] ?? true; // Default to enabled
+    }
+
+    /**
+     * Get notification sound preference for specific event type
+     */
+    public function getNotificationSoundPreference(string $eventType): bool
+    {
+        $settings = $this->notification_settings ?? [];
+        $soundSettings = $settings['sound_types'] ?? [];
+        
+        return $soundSettings[$eventType] ?? true; // Default to enabled
+    }
+
+    /**
+     * Update notification settings
+     */
+    public function updateNotificationSettings(array $settings): void
+    {
+        $currentSettings = $this->notification_settings ?? [];
+        $this->notification_settings = array_merge($currentSettings, $settings);
+        $this->save();
     }
 
     /**

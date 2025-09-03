@@ -23,6 +23,25 @@ const isMobile = ref(false);
 const buffered = ref(0);
 const expandedModules = ref(new Set());
 
+// AI Tutor Chat functionality
+const showAIChat = ref(true);
+const chatMessages = ref([
+    {
+        id: 1,
+        sender: 'ai',
+        message: "Hi! I'm your AI Agriculture tutor. Ask me anything about the lesson or agriculture topics!",
+        timestamp: new Date()
+    },
+    {
+        id: 2,
+        sender: 'ai', 
+        message: "Welcome to the Agriculture lesson! I'm here to help you understand any concepts. What would you like to know about farming techniques or agricultural practices?",
+        timestamp: new Date()
+    }
+]);
+const newMessage = ref('');
+const chatContainer = ref(null);
+
 const formattedCurrentTime = computed(() => formatTime(currentTime.value));
 const formattedDuration = computed(() => formatTime(duration.value));
 const progress = computed(() => duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0);
@@ -124,6 +143,51 @@ const getLessonProgress = (lessonItem) => {
     return lessonItem.id === props.lesson.id ? 100 : Math.random() > 0.5 ? 100 : 0;
 };
 
+const toggleAIChat = () => {
+    showAIChat.value = !showAIChat.value;
+};
+
+const sendMessage = () => {
+    if (newMessage.value.trim()) {
+        // Add user message
+        chatMessages.value.push({
+            id: Date.now(),
+            sender: 'user',
+            message: newMessage.value.trim(),
+            timestamp: new Date()
+        });
+        
+        const userMsg = newMessage.value.trim();
+        newMessage.value = '';
+        
+        // Simulate AI response
+        setTimeout(() => {
+            chatMessages.value.push({
+                id: Date.now(),
+                sender: 'ai',
+                message: generateAIResponse(userMsg),
+                timestamp: new Date()
+            });
+            
+            // Scroll to bottom
+            if (chatContainer.value) {
+                chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+            }
+        }, 1000);
+    }
+};
+
+const generateAIResponse = (userMessage) => {
+    const responses = [
+        "That's a great question about agriculture! Let me help you with that concept.",
+        "In agricultural practices, this relates to soil management and crop rotation techniques.",
+        "This topic is fundamental to understanding sustainable farming methods.",
+        "Let me explain how this applies to modern agricultural techniques and farming practices.",
+        "This concept is important for crop yield optimization and soil health maintenance."
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+};
+
 onMounted(() => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -132,6 +196,13 @@ onMounted(() => {
     if (props.lesson.topic) {
         expandedModules.value.add(props.lesson.topic.id);
     }
+    
+    // Scroll chat to bottom on mount
+    nextTick(() => {
+        if (chatContainer.value) {
+            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+        }
+    });
     
     if (videoPlayer.value) {
         videoPlayer.value.preload = 'metadata';
@@ -237,12 +308,34 @@ onMounted(() => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
+                
+                <!-- Mobile AI Chat Toggle -->
+                <button @click="toggleAIChat" 
+                        :class="[
+                            'p-2 rounded-xl transition-all duration-200 lg:hidden',
+                            showAIChat ? 'bg-green-100 text-green-600' : 'hover:bg-slate-100 text-slate-600'
+                        ]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
+                    </svg>
+                </button>
                 <div class="min-w-0 flex-1">
                     <h1 class="text-sm md:text-lg font-bold text-slate-800 truncate">{{ subject?.name || lesson.topic.subject.name }}</h1>
                 </div>
             </div>
             
             <div class="flex items-center space-x-3 flex-shrink-0">
+                <!-- AI Chat Toggle -->
+                <button @click="toggleAIChat" 
+                        :class="[
+                            'p-2 rounded-xl transition-all duration-200 hidden lg:block',
+                            showAIChat ? 'bg-green-100 text-green-600' : 'hover:bg-slate-100 text-slate-600'
+                        ]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
+                    </svg>
+                </button>
+                
                 <div class="text-right hidden sm:block">
                     <p class="text-sm font-semibold text-slate-800">{{ user.name }}</p>
                     <p class="text-xs text-slate-500">{{ user.role }}</p>
@@ -396,8 +489,10 @@ onMounted(() => {
             </div>
 
             <!-- Main Content Area -->
-            <div class="flex-1 flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
-                <!-- Lesson Header -->
+            <div class="flex-1 flex">
+                <!-- Video and Lesson Content -->
+                <div class="flex-1 flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
+                    <!-- Lesson Header -->
                 <div class="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 p-4">
                     <div class="flex items-center justify-between">
                         <div>
@@ -574,13 +669,97 @@ onMounted(() => {
                         </div>
                     </div>
                 </div>
+                </div>
+
+                <!-- AI Tutor Chat Sidebar -->
+                <div :class="[
+                    'bg-white border-l border-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col',
+                    showAIChat ? 'w-96' : 'w-0',
+                    isMobile ? 'fixed inset-y-16 right-0 z-40 shadow-xl' : ''
+                ]">
+                    <!-- Chat Header -->
+                    <div class="p-4 border-b border-slate-200/50 bg-gradient-to-r from-green-50 to-emerald-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800">AI {{ subject?.name || 'Agriculture' }} Tutor</h3>
+                                    <div class="flex items-center space-x-1">
+                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                        <span class="text-sm text-green-600 font-medium">Online</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button @click="toggleAIChat" class="p-1 hover:bg-white/50 rounded-lg">
+                                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div ref="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div v-for="message in chatMessages" :key="message.id" 
+                             :class="[
+                                 'flex',
+                                 message.sender === 'user' ? 'justify-end' : 'justify-start'
+                             ]">
+                            <div :class="[
+                                'max-w-xs lg:max-w-md px-4 py-3 rounded-2xl',
+                                message.sender === 'user' 
+                                    ? 'bg-indigo-500 text-white rounded-br-md' 
+                                    : 'bg-green-500 text-white rounded-bl-md'
+                            ]">
+                                <p class="text-sm">{{ message.message }}</p>
+                                <p class="text-xs opacity-75 mt-1">
+                                    {{ message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="p-4 border-t border-slate-200/50 bg-slate-50">
+                        <p class="text-xs text-slate-600 mb-2 italic">
+                            Hi! I'm your AI Agriculture tutor. Ask me anything about the lesson or agriculture topics!
+                        </p>
+                        <div class="flex space-x-2">
+                            <input 
+                                v-model="newMessage"
+                                @keyup.enter="sendMessage"
+                                type="text" 
+                                placeholder="Ask me anything about agriculture..."
+                                class="flex-1 px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                            />
+                            <button 
+                                @click="sendMessage"
+                                class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors duration-200"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Mobile Sidebar Overlay -->
+        <!-- Mobile Overlays -->
         <div 
             v-if="isMobile && showSidebar" 
             @click="toggleSidebar" 
+            class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        ></div>
+        
+        <div 
+            v-if="isMobile && showAIChat" 
+            @click="toggleAIChat" 
             class="fixed inset-0 bg-black/50 z-30 lg:hidden"
         ></div>
     </div>

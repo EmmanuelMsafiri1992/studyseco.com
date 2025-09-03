@@ -6,6 +6,7 @@ use App\Models\EnrollmentPayment;
 use App\Models\PaymentMethod;
 use App\Models\AccessDuration;
 use App\Models\Enrollment;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -90,9 +91,10 @@ class PaymentController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user has pending payment
-        $hasPendingPayment = Payment::where('user_id', $user->id)
-            ->pending()
+        // Check if user has pending payment through enrollment
+        $enrollment = Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->first();
+        $hasPendingPayment = $enrollment && EnrollmentPayment::where('enrollment_id', $enrollment->id)
+            ->where('status', 'pending')
             ->exists();
 
         // Get active payment methods and access durations from database
@@ -126,77 +128,58 @@ class PaymentController extends Controller
 
         $user = auth()->user();
 
+        // Get or create enrollment
+        $enrollment = Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->first();
+        if (!$enrollment) {
+            return back()->withErrors(['error' => 'Enrollment not found. Please enroll first.']);
+        }
+
         // Check if user already has pending payment
-        if (Payment::where('user_id', $user->id)->pending()->exists()) {
+        if (EnrollmentPayment::where('enrollment_id', $enrollment->id)->where('status', 'pending')->exists()) {
             return back()->withErrors(['error' => 'You already have a pending payment. Please wait for verification.']);
         }
 
         // Handle screenshot upload
+        $paymentProofPath = null;
         if ($request->hasFile('proof_screenshot')) {
-            $path = $request->file('proof_screenshot')->store('payment-proofs', 'public');
-            $validated['proof_screenshot'] = $path;
+            $paymentProofPath = $request->file('proof_screenshot')->store('payment-proofs', 'public');
         }
 
         // Get access duration details
         $accessDuration = AccessDuration::find($validated['access_duration_id']);
 
-        // Create payment record
-        $validated['user_id'] = $user->id;
-        $validated['status'] = 'pending';
-        $validated['access_duration_days'] = $accessDuration->days;
+        // Create enrollment payment record
+        $payment = EnrollmentPayment::create([
+            'enrollment_id' => $enrollment->id,
+            'payment_method_id' => PaymentMethod::where('key', $validated['payment_method'])->first()?->id,
+            'reference_number' => $validated['reference_number'],
+            'amount' => $validated['amount'],
+            'currency' => 'MWK',
+            'payment_proof_path' => $paymentProofPath,
+            'extension_months' => $accessDuration->months ?? ($accessDuration->days / 30),
+            'status' => 'pending'
+        ]);
 
-        // Remove access_duration_id from the array as it's not a column in payments table
-        unset($validated['access_duration_id']);
-
-        Payment::create($validated);
+        // Log the payment creation
+        AuditService::logPayment($payment, 'created');
 
         return redirect()->route('payments.index')->with('success', 'Payment submitted successfully! Your payment is being verified. You will receive access once approved.');
     }
 
-    /**
-     * Admin method to approve/reject payment
-     */
-    public function verify(Request $request, Payment $payment)
-    {
-        // Ensure only admins can verify
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Only administrators can verify payments.');
-        }
-
-        $validated = $request->validate([
-            'status' => 'required|in:approved,rejected',
-            'admin_notes' => 'nullable|string|max:1000',
-            'rejection_reason' => 'required_if:status,rejected|string|max:500'
-        ]);
-
-        $payment->update([
-            'status' => $validated['status'],
-            'admin_notes' => $validated['admin_notes'] ?? null,
-            'rejection_reason' => $validated['status'] === 'rejected' ? $validated['rejection_reason'] : null,
-            'verified_by' => auth()->id(),
-            'verified_at' => now(),
-            'access_expires_at' => $validated['status'] === 'approved' 
-                ? Carbon::now()->addDays($payment->access_duration_days)
-                : null
-        ]);
-
-        $status = $validated['status'] === 'approved' ? 'approved' : 'rejected';
-        return back()->with('success', "Payment has been {$status} successfully.");
-    }
 
     /**
      * Display the specified payment
      */
-    public function show(Payment $payment)
+    public function show(EnrollmentPayment $payment)
     {
         $user = auth()->user();
 
         // Only admin or payment owner can view
-        if ($user->role !== 'admin' && $payment->user_id !== $user->id) {
+        if ($user->role !== 'admin' && $payment->enrollment->user_id !== $user->id) {
             abort(403);
         }
 
-        $payment->load(['user', 'verifiedBy']);
+        $payment->load(['enrollment.user', 'verifiedBy', 'paymentMethod']);
 
         return Inertia::render('Payments/Show', [
             'payment' => $payment
@@ -234,7 +217,13 @@ class PaymentController extends Controller
                     'approved_at' => now(),
                     'approved_by' => auth()->id()
                 ]);
+                
+                // Log access granted
+                AuditService::logAccess($enrollment->user, true);
             }
+
+            // Log payment verification
+            AuditService::logPayment($payment, 'approved');
 
             return redirect()->back()->with('success', 'Payment verified and access granted successfully.');
         } else {
@@ -244,6 +233,9 @@ class PaymentController extends Controller
                 'verified_by' => auth()->id(),
                 'admin_notes' => $request->rejection_reason
             ]);
+
+            // Log payment rejection
+            AuditService::logPayment($payment, 'rejected');
 
             return redirect()->back()->with('success', 'Payment rejected successfully.');
         }

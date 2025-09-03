@@ -1392,20 +1392,36 @@ onUnmounted(() => {
                                 <div 
                                     v-for="method in availablePaymentMethods" 
                                     :key="method.id"
-                                    :class="['border-2 rounded-xl p-4 cursor-pointer transition-all', enrollmentForm.payment_method_id == method.id ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300']" 
+                                    :class="[
+                                        'border-2 rounded-xl p-3 sm:p-4 cursor-pointer transition-all duration-200 hover:shadow-md active:scale-98',
+                                        enrollmentForm.payment_method_id == method.id 
+                                            ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200' 
+                                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                                    ]" 
                                     @click="enrollmentForm.payment_method_id = method.id.toString()"
                                 >
                                     <div class="flex items-center">
-                                        <input type="radio" v-model="enrollmentForm.payment_method_id" :value="method.id.toString()" class="mr-3 flex-shrink-0">
-                                        <div class="flex items-center space-x-3 min-w-0">
-                                            <span class="text-2xl flex-shrink-0">{{ method.icon }}</span>
-                                            <div class="min-w-0">
-                                                <h5 class="font-semibold text-sm sm:text-base">{{ method.name }}</h5>
-                                                <p class="text-xs sm:text-sm text-secondary-600">{{ method.type }} - {{ method.currency }}</p>
-                                                <div v-if="method.instructions" class="text-xs text-secondary-500 mt-1 break-words">
+                                        <input 
+                                            type="radio" 
+                                            v-model="enrollmentForm.payment_method_id" 
+                                            :value="method.id.toString()" 
+                                            class="mr-3 flex-shrink-0 w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500" 
+                                            @click.stop
+                                        >
+                                        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                                            <span class="text-xl sm:text-2xl flex-shrink-0">{{ method.icon }}</span>
+                                            <div class="min-w-0 flex-1">
+                                                <h5 class="font-semibold text-sm sm:text-base text-gray-800 leading-tight">{{ method.name }}</h5>
+                                                <p class="text-xs sm:text-sm text-gray-600 mt-0.5">{{ method.type }} - {{ method.currency }}</p>
+                                                <div v-if="method.instructions" class="text-xs text-gray-500 mt-1 break-words leading-relaxed">
                                                     {{ method.instructions }}
                                                 </div>
                                             </div>
+                                        </div>
+                                        <div v-if="enrollmentForm.payment_method_id == method.id" class="flex-shrink-0 ml-2">
+                                            <svg class="w-5 h-5 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                            </svg>
                                         </div>
                                     </div>
                                 </div>
@@ -1735,3 +1751,35 @@ onUnmounted(() => {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Mobile-friendly touch interactions */
+.active\:scale-98:active {
+    transform: scale(0.98);
+}
+
+/* Better mobile button sizing */
+@media (max-width: 640px) {
+    .payment-method-card {
+        min-height: 60px;
+        touch-action: manipulation;
+    }
+    
+    /* Ensure buttons are touch-friendly on mobile */
+    .btn-primary, .btn-secondary {
+        min-height: 44px;
+        padding: 12px 24px;
+    }
+    
+    /* Better spacing on mobile */
+    .space-y-3 > * + * {
+        margin-top: 12px;
+    }
+}
+
+/* Better focus states for accessibility */
+input:focus-visible, button:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+</style>

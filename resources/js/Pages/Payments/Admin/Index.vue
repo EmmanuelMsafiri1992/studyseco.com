@@ -266,7 +266,7 @@ const getStatusColor = (status) => {
 
         <!-- Verification Modal -->
         <div v-if="showVerificationModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div class="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-200/50 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-white/90 backdrop-blur-xl rounded-3xl p-4 sm:p-8 shadow-2xl border border-slate-200/50 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <h3 class="text-xl font-bold text-slate-800">Verify Payment</h3>
@@ -281,7 +281,7 @@ const getStatusColor = (status) => {
 
                 <!-- Payment Details -->
                 <div class="bg-slate-50 rounded-2xl p-6 mb-6">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                             <span class="text-slate-500">Payment Method:</span>
                             <span class="font-medium text-slate-800 ml-2">{{ getPaymentMethodName(selectedPayment?.payment_method) }}</span>
@@ -309,7 +309,7 @@ const getStatusColor = (status) => {
                     <!-- Verification Decision -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-slate-700 mb-4">Verification Decision</label>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <button type="button"
                                     @click="verificationForm.status = 'approved'"
                                     :class="[

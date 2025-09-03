@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50">
+    <DashboardLayout>
         <Head title="School Selection Management" />
         
         <div class="max-w-7xl mx-auto px-4 py-8">
@@ -135,20 +135,20 @@
                                     <div class="flex items-center">
                                         <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                             <span class="text-blue-600 font-medium text-sm">
-                                                {{ selection.user.name.charAt(0).toUpperCase() }}
+                                                {{ selection.user?.name?.charAt(0).toUpperCase() || '?' }}
                                             </span>
                                         </div>
                                         <div class="ml-4">
-                                            <p class="text-sm font-medium text-gray-900">{{ selection.user.name }}</p>
-                                            <p class="text-sm text-gray-500">{{ selection.user.email }}</p>
+                                            <p class="text-sm font-medium text-gray-900">{{ selection.user?.name || 'Unknown User' }}</p>
+                                            <p class="text-sm text-gray-500">{{ selection.user?.email || 'No email' }}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div>
-                                        <p class="text-sm font-medium text-gray-900">{{ selection.secondary_school.name }}</p>
-                                        <p class="text-sm text-gray-500">{{ selection.secondary_school.district }}, {{ selection.secondary_school.region }}</p>
-                                        <p class="text-xs text-gray-400">{{ selection.secondary_school.available_slots }} slots available</p>
+                                        <p class="text-sm font-medium text-gray-900">{{ selection.secondary_school?.name || 'Unknown School' }}</p>
+                                        <p class="text-sm text-gray-500">{{ selection.secondary_school?.district || 'Unknown' }}, {{ selection.secondary_school?.region || 'Unknown' }}</p>
+                                        <p class="text-xs text-gray-400">{{ selection.secondary_school?.available_slots || 0 }} slots available</p>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -201,20 +201,31 @@
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="selections.links" class="px-6 py-4 border-t border-gray-200">
+                <div v-if="selections?.links" class="px-6 py-4 border-t border-gray-200">
                     <div class="flex items-center justify-between">
                         <div class="text-sm text-gray-700">
-                            Showing {{ selections.from }} to {{ selections.to }} of {{ selections.total }} results
+                            Showing {{ selections?.from || 0 }} to {{ selections?.to || 0 }} of {{ selections?.total || 0 }} results
                         </div>
                         <div class="flex space-x-1">
                             <Link
-                                v-for="link in selections.links"
+                                v-for="link in (selections?.links || [])"
+                                v-if="link?.url"
                                 :key="link.label"
                                 :href="link.url"
                                 v-html="link.label"
                                 :class="[
                                     'px-3 py-2 text-sm border',
                                     link.active ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ]"
+                            />
+                            <span
+                                v-for="link in (selections?.links || [])"
+                                v-if="!link?.url"
+                                :key="link.label"
+                                v-html="link.label"
+                                :class="[
+                                    'px-3 py-2 text-sm border cursor-not-allowed',
+                                    'bg-gray-100 text-gray-400 border-gray-300'
                                 ]"
                             />
                         </div>
@@ -270,12 +281,13 @@
                 </div>
             </div>
         </div>
-    </div>
+    </DashboardLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
+import DashboardLayout from '@/Layouts/DashboardLayout.vue'
 
 const props = defineProps({
     selections: Object
@@ -295,19 +307,19 @@ const filters = ref({
 })
 
 const filteredSelections = computed(() => {
-    let filtered = props.selections.data
+    let filtered = props.selections?.data || []
 
     if (filters.value.status) {
         filtered = filtered.filter(selection => selection.status === filters.value.status)
     }
     if (filters.value.school) {
         filtered = filtered.filter(selection => 
-            selection.secondary_school.name.toLowerCase().includes(filters.value.school.toLowerCase())
+            selection.secondary_school?.name?.toLowerCase().includes(filters.value.school.toLowerCase())
         )
     }
     if (filters.value.student) {
         filtered = filtered.filter(selection => 
-            selection.user.name.toLowerCase().includes(filters.value.student.toLowerCase())
+            selection.user?.name?.toLowerCase().includes(filters.value.student.toLowerCase())
         )
     }
     if (filters.value.priority) {
@@ -318,20 +330,20 @@ const filteredSelections = computed(() => {
 })
 
 const pendingCount = computed(() => 
-    props.selections.data.filter(s => s.status === 'pending').length
+    (props.selections?.data || []).filter(s => s.status === 'pending').length
 )
 
 const approvedTodayCount = computed(() => 
-    props.selections.data.filter(s => 
+    (props.selections?.data || []).filter(s => 
         s.status === 'confirmed' && 
-        new Date(s.confirmed_at).toDateString() === new Date().toDateString()
+        s.confirmed_at && new Date(s.confirmed_at).toDateString() === new Date().toDateString()
     ).length
 )
 
 const rejectedTodayCount = computed(() => 
-    props.selections.data.filter(s => 
+    (props.selections?.data || []).filter(s => 
         s.status === 'rejected' && 
-        new Date(s.rejected_at).toDateString() === new Date().toDateString()
+        s.rejected_at && new Date(s.rejected_at).toDateString() === new Date().toDateString()
     ).length
 )
 

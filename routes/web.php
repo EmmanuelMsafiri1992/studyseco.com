@@ -278,12 +278,13 @@ Route::get('/dashboard', function () {
                     'id' => 'enrollment_' . $enrollment->id,
                     'type' => 'enrollment',
                     'title' => 'Course Enrollment',
-                    'description' => 'Enrolled in ' . count($enrollment->selected_subjects ?: []) . ' subjects',
+                    'description' => 'You enrolled in ' . count($enrollment->selected_subjects ?: []) . ' subjects',
                     'created_at' => $enrollment->created_at->diffForHumans(),
-                    'status' => $enrollment->status
+                    'status' => $enrollment->status,
+                    'is_personal' => true
                 ]);
                 
-                // Student's own payment activities
+                // Student's own payment activities (ONLY their payments)
                 $studentPayments = \App\Models\EnrollmentPayment::where('enrollment_id', $enrollment->id)
                     ->orderBy('created_at', 'desc')
                     ->limit(3)
@@ -293,12 +294,31 @@ Route::get('/dashboard', function () {
                     $data['recent_activities']->push([
                         'id' => 'payment_' . $payment->id,
                         'type' => 'payment',
-                        'title' => 'Payment ' . ucfirst($payment->status),
-                        'description' => 'Payment of ' . $payment->currency . ' ' . number_format($payment->amount, 2),
+                        'title' => 'Your Payment ' . ucfirst($payment->status),
+                        'description' => 'Your payment of ' . $payment->currency . ' ' . number_format($payment->amount, 2),
                         'created_at' => $payment->created_at->diffForHumans(),
                         'status' => $payment->status,
                         'amount' => $payment->amount,
-                        'currency' => $payment->currency
+                        'currency' => $payment->currency,
+                        'is_personal' => true
+                    ]);
+                }
+                
+                // Add student's achievements if any
+                $studentAchievements = \App\Models\Achievement::where('user_id', $user->id)
+                    ->orderBy('achieved_date', 'desc')
+                    ->limit(2)
+                    ->get();
+                    
+                foreach ($studentAchievements as $achievement) {
+                    $data['recent_activities']->push([
+                        'id' => 'achievement_' . $achievement->id,
+                        'type' => 'achievement',
+                        'title' => 'Achievement Earned',
+                        'description' => 'You earned: ' . $achievement->title,
+                        'created_at' => $achievement->achieved_date->diffForHumans(),
+                        'status' => 'earned',
+                        'is_personal' => true
                     ]);
                 }
             }
@@ -385,26 +405,27 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    // Community Feed Routes
-    Route::prefix('community')->name('community.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\CommunityController::class, 'index'])->name('index');
-        Route::get('/create', [\App\Http\Controllers\CommunityController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\CommunityController::class, 'store'])->name('store');
-        Route::get('/{post}', [\App\Http\Controllers\CommunityController::class, 'show'])->name('show');
-        Route::get('/{post}/edit', [\App\Http\Controllers\CommunityController::class, 'edit'])->name('edit');
-        Route::patch('/{post}', [\App\Http\Controllers\CommunityController::class, 'update'])->name('update');
-        Route::delete('/{post}', [\App\Http\Controllers\CommunityController::class, 'destroy'])->name('destroy');
-        Route::post('/{post}/react', [\App\Http\Controllers\CommunityController::class, 'toggleReaction'])->name('react');
-        Route::post('/{post}/comment', [\App\Http\Controllers\CommunityController::class, 'storeComment'])->name('comment');
-        Route::post('/{post}/vote', [\App\Http\Controllers\CommunityController::class, 'votePoll'])->name('vote');
-        Route::post('/comment/{comment}/solution', [\App\Http\Controllers\CommunityController::class, 'markSolution'])->name('markSolution');
-        Route::post('/share-resource', [\App\Http\Controllers\CommunityController::class, 'shareResource'])->name('shareResource');
-        Route::get('/resource/{resource}/download', [\App\Http\Controllers\CommunityController::class, 'downloadResource'])->name('downloadResource');
-    });
 
     // Student Extension Routes
     Route::get('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'index'])->name('student.extension');
     Route::post('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'store'])->name('student.extension.store');
+    
+    // Student Access Expired Page
+    Route::get('/student/access-expired', function () {
+        $user = auth()->user();
+        $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
+            ->orWhere('email', $user->email)
+            ->first();
+            
+        $extensionOptions = \App\Models\AccessDuration::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+            
+        return Inertia::render('Student/AccessExpired', [
+            'enrollment' => $enrollment,
+            'extensionOptions' => $extensionOptions
+        ]);
+    })->name('student.access-expired');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -427,6 +448,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/teachers', [\App\Http\Controllers\TeacherController::class, 'index'])->name('teachers.index');
         Route::get('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'show'])->name('teachers.show');
     });
+
+    // Teacher Dashboard and Student Management
+    Route::middleware('role:teacher')->prefix('teacher')->name('teacher.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\TeacherDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/students', [\App\Http\Controllers\TeacherDashboardController::class, 'students'])->name('students');
+        Route::get('/students/{enrollment}', [\App\Http\Controllers\TeacherDashboardController::class, 'studentDetail'])->name('students.detail');
+        Route::post('/send-message', [\App\Http\Controllers\TeacherDashboardController::class, 'sendMessage'])->name('send-message');
+        Route::post('/book-session', [\App\Http\Controllers\TeacherDashboardController::class, 'bookSession'])->name('book-session');
+    });
     
     // Admin-only teacher management operations
     Route::middleware('role:admin')->group(function () {
@@ -437,10 +467,64 @@ Route::middleware('auth')->group(function () {
         Route::delete('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'destroy'])->name('teachers.destroy');
     });
 
-    // Subject Management Routes
-    Route::resource('subjects', SubjectController::class);
+    // Student Content Access Routes - Protected by access expiry check
+    Route::middleware('check.student.access')->group(function () {
+        // Subject Management Routes
+        Route::resource('subjects', SubjectController::class);
+        
+        // Lesson Player Route
+        Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
+        
+        // Library Routes
+        Route::prefix('library')->name('library.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\LibraryController::class, 'index'])->name('index');
+            Route::get('/books', [\App\Http\Controllers\LibraryController::class, 'books'])->name('books');
+            Route::get('/past-papers', [\App\Http\Controllers\LibraryController::class, 'pastPapers'])->name('pastPapers');
+            Route::get('/search', [\App\Http\Controllers\LibraryController::class, 'search'])->name('search');
+            Route::get('/{resource}', [\App\Http\Controllers\LibraryController::class, 'show'])->name('show');
+            Route::get('/{resource}/stream', [\App\Http\Controllers\LibraryController::class, 'stream'])->name('stream');
+        });
+        
+        // Community Routes
+        Route::prefix('community')->name('community.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\CommunityController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\CommunityController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\CommunityController::class, 'store'])->name('store');
+            Route::get('/{post}', [\App\Http\Controllers\CommunityController::class, 'show'])->name('show');
+            Route::get('/{post}/edit', [\App\Http\Controllers\CommunityController::class, 'edit'])->name('edit');
+            Route::patch('/{post}', [\App\Http\Controllers\CommunityController::class, 'update'])->name('update');
+            Route::delete('/{post}', [\App\Http\Controllers\CommunityController::class, 'destroy'])->name('destroy');
+            Route::post('/{post}/react', [\App\Http\Controllers\CommunityController::class, 'toggleReaction'])->name('react');
+            Route::post('/{post}/comment', [\App\Http\Controllers\CommunityController::class, 'storeComment'])->name('comment');
+            Route::post('/{post}/vote', [\App\Http\Controllers\CommunityController::class, 'votePoll'])->name('vote');
+            Route::post('/comment/{comment}/solution', [\App\Http\Controllers\CommunityController::class, 'markSolution'])->name('markSolution');
+            Route::post('/share-resource', [\App\Http\Controllers\CommunityController::class, 'shareResource'])->name('shareResource');
+            Route::get('/resource/{resource}/download', [\App\Http\Controllers\CommunityController::class, 'downloadResource'])->name('downloadResource');
+        });
+        
+        // AI Chat Routes
+        Route::prefix('ai')->name('ai.')->group(function () {
+            Route::post('/chat', [\App\Http\Controllers\AIChatController::class, 'chat'])->name('chat');
+            Route::get('/subjects', [\App\Http\Controllers\AIChatController::class, 'getSubjects'])->name('subjects');
+            Route::post('/book-session', [\App\Http\Controllers\AIChatController::class, 'bookSession'])->name('book-session');
+        });
+        
+        // Chat Routes  
+        Route::prefix('chat')->name('chat.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\ChatController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\ChatController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\ChatController::class, 'store'])->name('store');
+            Route::get('/{chatGroup}', [\App\Http\Controllers\ChatController::class, 'show'])->name('show');
+            Route::post('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'storeMessage'])->name('storeMessage');
+            Route::get('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('getMessages');
+            Route::post('/{chatGroup}/join', [\App\Http\Controllers\ChatController::class, 'join'])->name('join');
+            Route::post('/{chatGroup}/leave', [\App\Http\Controllers\ChatController::class, 'leave'])->name('leave');
+            Route::post('/{chatGroup}/add-member', [\App\Http\Controllers\ChatController::class, 'addMember'])->name('addMember');
+            Route::delete('/{chatGroup}/remove-member/{user}', [\App\Http\Controllers\ChatController::class, 'removeMember'])->name('removeMember');
+        });
+    });
     
-    // Topic Management Routes (API)
+    // Topic Management Routes (API) - Admin/Teacher only
     Route::prefix('api')->group(function () {
         Route::post('topics', [TopicController::class, 'store'])->name('topics.store');
         Route::get('topics/{topic}', [TopicController::class, 'show'])->name('topics.show');
@@ -455,9 +539,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('lessons/{lesson}/publish', [LessonController::class, 'publish'])->name('lessons.publish');
         Route::patch('lessons/{lesson}/unpublish', [LessonController::class, 'unpublish'])->name('lessons.unpublish');
     });
-    
-    // Lesson Player Route
-    Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
 
     Route::get('/fees', function () {
         return Inertia::render('Fees/Index', [
@@ -586,31 +667,17 @@ Route::middleware('auth')->group(function () {
         // Admin payment methods management
         Route::resource('payment-methods', \App\Http\Controllers\Admin\PaymentMethodController::class);
         Route::post('payment-methods/{paymentMethod}/toggle', [\App\Http\Controllers\Admin\PaymentMethodController::class, 'toggle'])->name('payment-methods.toggle');
+        
+        // Tutor Assignment Management
+        Route::prefix('tutor-assignments')->name('tutor-assignments.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'index'])->name('index');
+            Route::post('/assign', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'assign'])->name('assign');
+            Route::post('/unassign', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'unassign'])->name('unassign');
+            Route::post('/bulk-assign', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'bulkAssign'])->name('bulk-assign');
+            Route::get('/tutor/{tutor}/stats', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'getTutorStats'])->name('tutor-stats');
+        });
     });
 
-    // Chat Routes
-    Route::prefix('chat')->name('chat.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\ChatController::class, 'index'])->name('index');
-        Route::get('/create', [\App\Http\Controllers\ChatController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\ChatController::class, 'store'])->name('store');
-        Route::get('/{chatGroup}', [\App\Http\Controllers\ChatController::class, 'show'])->name('show');
-        Route::post('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'storeMessage'])->name('storeMessage');
-        Route::get('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('getMessages');
-        Route::post('/{chatGroup}/join', [\App\Http\Controllers\ChatController::class, 'join'])->name('join');
-        Route::post('/{chatGroup}/leave', [\App\Http\Controllers\ChatController::class, 'leave'])->name('leave');
-        Route::post('/{chatGroup}/add-member', [\App\Http\Controllers\ChatController::class, 'addMember'])->name('addMember');
-        Route::delete('/{chatGroup}/remove-member/{user}', [\App\Http\Controllers\ChatController::class, 'removeMember'])->name('removeMember');
-    });
-
-    // Library Routes
-    Route::prefix('library')->name('library.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\LibraryController::class, 'index'])->name('index');
-        Route::get('/books', [\App\Http\Controllers\LibraryController::class, 'books'])->name('books');
-        Route::get('/past-papers', [\App\Http\Controllers\LibraryController::class, 'pastPapers'])->name('pastPapers');
-        Route::get('/search', [\App\Http\Controllers\LibraryController::class, 'search'])->name('search');
-        Route::get('/{resource}', [\App\Http\Controllers\LibraryController::class, 'show'])->name('show');
-        Route::get('/{resource}/stream', [\App\Http\Controllers\LibraryController::class, 'stream'])->name('stream');
-    });
     
     // Admin Library Management Routes
     Route::middleware('role:admin')->prefix('admin/library')->name('admin.library.')->group(function () {
@@ -687,6 +754,41 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('students.index');
     });
+
+    // Admin Audit Trail Routes
+    Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/audit-logs', [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
+        Route::get('/audit-logs/{auditLog}', [\App\Http\Controllers\Admin\AuditController::class, 'show'])->name('audit.show');
+        
+        // Tutor Assignment Routes
+        Route::get('/tutor-assignments', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'index'])->name('tutor-assignments.index');
+        Route::post('/tutor-assignments/assign', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'assign'])->name('tutor-assignments.assign');
+        Route::post('/tutor-assignments/unassign', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'unassign'])->name('tutor-assignments.unassign');
+        Route::post('/tutor-assignments/bulk-assign', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'bulkAssign'])->name('tutor-assignments.bulk-assign');
+        Route::get('/tutors/{tutor}/stats', [\App\Http\Controllers\Admin\TutorAssignmentController::class, 'getTutorStats'])->name('tutors.stats');
+        
+        // AI Training Routes
+        Route::get('/ai-training', [\App\Http\Controllers\Admin\AiTrainingController::class, 'index'])->name('ai-training.index');
+        Route::post('/ai-training', [\App\Http\Controllers\Admin\AiTrainingController::class, 'store'])->name('ai-training.store');
+        Route::delete('/ai-training/{material}', [\App\Http\Controllers\Admin\AiTrainingController::class, 'destroy'])->name('ai-training.destroy');
+        Route::post('/ai-training/{material}/process', [\App\Http\Controllers\Admin\AiTrainingController::class, 'process'])->name('ai-training.process');
+        Route::post('/ai-training/bulk-process', [\App\Http\Controllers\Admin\AiTrainingController::class, 'bulkProcess'])->name('ai-training.bulk-process');
+        Route::get('/ai-training/stats', [\App\Http\Controllers\Admin\AiTrainingController::class, 'getTrainingStats'])->name('ai-training.stats');
+    });
+
+    // Notification Settings Routes
+    Route::middleware('auth')->group(function () {
+        Route::get('/notification-settings', [\App\Http\Controllers\NotificationSettingsController::class, 'index'])->name('notification-settings.index');
+        Route::post('/notification-settings', [\App\Http\Controllers\NotificationSettingsController::class, 'update'])->name('notification-settings.update');
+        Route::get('/api/notification-settings', [\App\Http\Controllers\NotificationSettingsController::class, 'getSettings'])->name('api.notification-settings');
+    });
+
+    // Data Usage Routes
+    Route::middleware('auth')->prefix('data-usage')->name('data-usage.')->group(function () {
+        Route::get('/estimation', [\App\Http\Controllers\DataUsageController::class, 'getEstimation'])->name('estimation');
+        Route::get('/stats', [\App\Http\Controllers\DataUsageController::class, 'getUserUsageStats'])->name('stats');
+    });
+
 });
 
 require __DIR__.'/auth.php';

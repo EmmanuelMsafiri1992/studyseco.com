@@ -1,7 +1,20 @@
 <template>
   <div class="flex h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
+    <!-- Mobile overlay -->
+    <div 
+      v-if="sidebarOpen" 
+      @click="sidebarOpen = false"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+    ></div>
+    
     <!-- Sidebar -->
-    <div class="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 flex-shrink-0 shadow-xl">
+    <div 
+      :class="[
+        'bg-white/80 backdrop-blur-xl border-r border-slate-200/50 shadow-xl transition-transform duration-300 ease-in-out z-50',
+        'fixed lg:static inset-y-0 left-0 w-72 lg:w-72',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      ]"
+    >
       <div class="p-8 border-b border-slate-200/50">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -208,7 +221,7 @@
           </Link>
           
           <!-- Audit Trail -->
-          <Link href="/admin/audit" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+          <Link :href="route('admin.audit.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                            $page.component?.includes('Audit') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
             <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
@@ -217,7 +230,7 @@
           </Link>
           
           <!-- AI Training Materials -->
-          <Link href="/admin/ai-training" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+          <Link :href="route('admin.ai-training.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                                   $page.component?.includes('AiTraining') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
             <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
@@ -239,8 +252,29 @@
     </div>
 
     <div class="flex-1 flex flex-col">
-      <!-- Header -->
-      <header class="h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-8 flex items-center justify-between relative z-50">
+      <!-- Mobile Header -->
+      <div class="lg:hidden bg-white/90 backdrop-blur-xl border-b border-slate-200/50 p-4 flex items-center justify-between">
+        <button 
+          @click="sidebarOpen = !sidebarOpen"
+          class="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197m.547-4.197h-.547"></path>
+            </svg>
+          </div>
+          <span class="text-lg font-bold text-slate-800">StudySeco</span>
+        </div>
+        <div class="w-10"></div> <!-- Spacer for balance -->
+      </div>
+      
+      <!-- Desktop Header -->
+      <header class="hidden lg:flex h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-4 lg:px-8 items-center justify-between relative z-50">
         <div>
           <h1 class="text-2xl font-bold text-slate-800">
             <slot name="header-title">{{ title }}</slot>
@@ -306,16 +340,24 @@
       </header>
 
       <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto p-8 relative">
+      <main class="flex-1 overflow-y-auto p-4 lg:p-8 relative">
         <slot />
       </main>
     </div>
+    
+    <!-- Notification Sound Component -->
+    <NotificationSound 
+      ref="notificationSoundRef"
+      :enabled="notificationSettings.sound_enabled"
+      :unread-count="notificationCount"
+    />
   </div>
 </template>
 
 <script setup>
 import { Link } from '@inertiajs/vue3'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import NotificationSound from '@/Components/NotificationSound.vue'
 
 defineProps({
   title: {
@@ -333,20 +375,98 @@ defineProps({
 })
 
 const notificationCount = ref(0)
+const previousNotificationCount = ref(0)
+const notificationSettings = ref({
+  sound_enabled: true,
+  desktop_enabled: true
+})
+const notificationSoundRef = ref(null)
+const pollingInterval = ref(null)
+const sidebarOpen = ref(false)
 
 // Fetch notification count
 const fetchNotificationCount = async () => {
   try {
     const response = await fetch('/api/notifications/count')
     const data = await response.json()
+    
+    // Check if notifications increased
+    if (data.count > notificationCount.value && notificationCount.value > 0) {
+      // Play sound if enabled
+      if (notificationSettings.value.sound_enabled) {
+        notificationSoundRef.value?.testSound()
+      }
+      
+      // Show desktop notification if enabled and supported
+      if (notificationSettings.value.desktop_enabled && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification('StudySeco', {
+            body: `You have ${data.count - notificationCount.value} new notification${data.count - notificationCount.value > 1 ? 's' : ''}`,
+            icon: '/favicon.ico',
+            tag: 'studyseco-notification'
+          })
+        } else if (Notification.permission === 'default') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification('StudySeco', {
+                body: `You have ${data.count - notificationCount.value} new notification${data.count - notificationCount.value > 1 ? 's' : ''}`,
+                icon: '/favicon.ico',
+                tag: 'studyseco-notification'
+              })
+            }
+          })
+        }
+      }
+    }
+    
     notificationCount.value = data.count
   } catch (error) {
     console.error('Failed to fetch notification count:', error)
   }
 }
 
-// Initialize notification count on mount
-onMounted(() => {
-  fetchNotificationCount()
+// Fetch notification settings
+const fetchNotificationSettings = async () => {
+  try {
+    const response = await fetch('/api/notification-settings')
+    const data = await response.json()
+    notificationSettings.value = {
+      sound_enabled: data.sound_enabled ?? true,
+      desktop_enabled: data.desktop_enabled ?? true
+    }
+  } catch (error) {
+    console.warn('Could not fetch notification settings, using defaults:', error)
+  }
+}
+
+// Start polling for notifications
+const startNotificationPolling = () => {
+  // Poll every 30 seconds
+  pollingInterval.value = setInterval(fetchNotificationCount, 30000)
+}
+
+// Stop polling
+const stopNotificationPolling = () => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+    pollingInterval.value = null
+  }
+}
+
+// Initialize notification system
+onMounted(async () => {
+  await fetchNotificationSettings()
+  await fetchNotificationCount()
+  startNotificationPolling()
+  
+  // Request notification permission on first load
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
+})
+
+// Cleanup
+onUnmounted(() => {
+  stopNotificationPolling()
 })
 </script>

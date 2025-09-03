@@ -10,13 +10,13 @@
                 
                 <!-- Status Badge -->
                 <div v-if="confirmedSchool" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    ✅ Confirmed at {{ confirmedSchool.secondarySchool.name }}
+                    ✅ Confirmed at {{ confirmedSchool.secondarySchool?.name || 'Selected School' }}
                 </div>
                 <div v-else-if="hasRequiredSelections" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    ⏳ {{ userSelections.length }} schools selected - awaiting confirmation
+                    ⏳ {{ userSelections?.length || 0 }} schools selected - awaiting confirmation
                 </div>
                 <div v-else class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
-                    📝 Need {{ 5 - userSelections.length }} more school selections
+                    📝 Need {{ 5 - (userSelections?.length || 0) }} more school selections
                 </div>
             </div>
 
@@ -175,7 +175,7 @@
             </div>
 
             <!-- Existing Selections -->
-            <div v-if="userSelections.length > 0" class="mt-8">
+            <div v-if="(userSelections?.length || 0) > 0" class="mt-8">
                 <div class="bg-white rounded-xl shadow-sm">
                     <div class="p-6 border-b border-gray-200">
                         <h2 class="text-xl font-semibold text-gray-900">Your Current Applications</h2>
@@ -183,7 +183,7 @@
                     <div class="p-6">
                         <div class="grid gap-4">
                             <div 
-                                v-for="selection in userSelections" 
+                                v-for="selection in userSelections || []" 
                                 :key="selection.id"
                                 class="border border-gray-200 rounded-lg p-4"
                             >
@@ -243,11 +243,11 @@ const form = useForm({
 })
 
 const uniqueRegions = computed(() => {
-    return [...new Set(props.schools.map(school => school.region))].sort()
+    return [...new Set((props.schools || []).map(school => school.region))].sort()
 })
 
 const filteredSchools = computed(() => {
-    let filtered = props.schools.filter(school => {
+    let filtered = (props.schools || []).filter(school => {
         const matchesSearch = !searchQuery.value || 
             school.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
             school.region.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -258,7 +258,7 @@ const filteredSchools = computed(() => {
         return matchesSearch && matchesRegion
     })
     
-    return filtered.sort((a, b) => b.available_slots - a.available_slots)
+    return filtered.sort((a, b) => (b.available_slots || 0) - (a.available_slots || 0))
 })
 
 const isSchoolSelected = (schoolId) => {

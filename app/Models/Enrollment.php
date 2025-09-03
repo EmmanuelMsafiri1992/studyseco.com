@@ -78,6 +78,11 @@ class Enrollment extends Model
         return $this->belongsTo(Subject::class);
     }
 
+    public function assignedTutor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_tutor_id');
+    }
+
     // Generate unique enrollment number
     protected static function booted()
     {

@@ -5,7 +5,11 @@
       "Bash(composer --version)",
       "Bash(node:*)",
       "Bash(npm:*)",
-      "Bash(composer install:*)"
+      "Bash(composer install:*)",
+      "Bash(composer dev:*)",
+      "Bash(curl:*)",
+      "Bash(mysql:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

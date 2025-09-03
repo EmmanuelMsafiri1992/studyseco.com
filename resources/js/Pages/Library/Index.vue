@@ -8,7 +8,7 @@ const props = defineProps({
     resources: Object,
     subjects: Array,
     years: Array,
-    grades: Array,
+    grades: [Array, Object],
     stats: Object,
     filters: Object,
 });
@@ -21,6 +21,17 @@ const selectedType = ref(props.filters.type || 'all');
 const selectedSubject = ref(props.filters.subject || '');
 const selectedGrade = ref(props.filters.grade || '');
 const selectedYear = ref(props.filters.year || '');
+
+// Normalize grades to always be an array
+const normalizedGrades = computed(() => {
+    if (Array.isArray(props.grades)) {
+        return props.grades;
+    } else if (props.grades && typeof props.grades === 'object') {
+        return Object.values(props.grades);
+    } else {
+        return [];
+    }
+});
 
 // Search and filter functions
 const applyFilters = () => {
@@ -180,7 +191,7 @@ const formatFileSize = (bytes) => {
 
                         <select v-model="selectedGrade" @change="applyFilters" class="bg-slate-100/70 px-4 py-2 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
                             <option value="">All Grades</option>
-                            <option v-for="grade in grades" :key="grade" :value="grade">{{ grade }}</option>
+                            <option v-for="grade in normalizedGrades" :key="grade" :value="grade">{{ grade }}</option>
                         </select>
 
                         <select v-model="selectedYear" @change="applyFilters" class="bg-slate-100/70 px-4 py-2 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
@@ -214,13 +225,13 @@ const formatFileSize = (bytes) => {
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 overflow-hidden">
                 <div class="p-6 border-b border-slate-200/50">
                     <h2 class="text-xl font-bold text-slate-800">Resources</h2>
-                    <p class="text-slate-600 text-sm">{{ resources.total }} resources found</p>
+                    <p class="text-slate-600 text-sm">{{ resources?.total || 0 }} resources found</p>
                 </div>
 
-                <div v-if="resources.data.length > 0" class="p-6">
+                <div v-if="(resources?.data?.length || 0) > 0" class="p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         <Link 
-                            v-for="resource in resources.data" 
+                            v-for="resource in (resources?.data || [])" 
                             :key="resource.id"
                             :href="route('library.show', resource.id)"
                             class="bg-white rounded-2xl shadow-lg border border-slate-200/50 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group"
@@ -270,18 +281,27 @@ const formatFileSize = (bytes) => {
                     </div>
 
                     <!-- Pagination -->
-                    <div v-if="resources.links && resources.links.length > 3" class="mt-8 flex justify-center">
+                    <div v-if="resources?.links && resources.links.length > 3" class="mt-8 flex justify-center">
                         <div class="flex space-x-2">
-                            <Link 
-                                v-for="link in resources.links" 
-                                :key="link.label" 
-                                :href="link.url"
-                                :class="[
-                                    'px-4 py-2 text-sm rounded-lg transition-colors duration-200',
-                                    link.active ? 'bg-indigo-500 text-white' : 'text-slate-600 hover:bg-slate-100'
-                                ]"
-                                v-html="link.label"
-                            />
+                            <template v-for="(link, index) in (resources?.links || [])" :key="`link-${index}`">
+                                <Link 
+                                    v-if="link?.url"
+                                    :href="link.url"
+                                    :class="[
+                                        'px-4 py-2 text-sm rounded-lg transition-colors duration-200',
+                                        link.active ? 'bg-indigo-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                                    ]"
+                                    v-html="link.label"
+                                />
+                                <span
+                                    v-else
+                                    :class="[
+                                        'px-4 py-2 text-sm rounded-lg transition-colors duration-200 cursor-not-allowed',
+                                        'text-slate-400 bg-slate-100'
+                                    ]"
+                                    v-html="link?.label || ''"
+                                />
+                            </template>
                         </div>
                     </div>
                 </div>

@@ -237,7 +237,7 @@ const setAccessDuration = (duration) => {
                         </div>
 
                         <!-- Submit Button -->
-                        <div class="flex justify-end space-x-4">
+                        <div class="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
                             <Link :href="route('payments.index')" 
                                   class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold transition-all duration-200">
                                 Cancel

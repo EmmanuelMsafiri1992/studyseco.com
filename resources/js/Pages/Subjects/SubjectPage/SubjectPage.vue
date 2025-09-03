@@ -1,9 +1,6 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
-import TopicSidebar from './TopicSidebar.vue';
-import LessonCard from './LessonCard.vue';
-import ChunkedVideoUpload from '@/components/ChunkedVideoUpload.vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 
 const props = defineProps({
     auth: Object,
@@ -12,376 +9,479 @@ const props = defineProps({
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
 
-const selectedTopicId = ref(props.subject.topics[0]?.id || null);
-const showAddTopicForm = ref(false);
-const showAddLessonForm = ref(false);
+const showSidebar = ref(true);
+const isMobile = ref(false);
+const expandedModules = ref(new Set());
+const selectedLesson = ref(null);
 
-const newTopic = ref({
-    name: '',
-    description: '',
-});
+// AI Tutor Chat functionality
+const showAIChat = ref(true);
+const chatMessages = ref([
+    {
+        id: 1,
+        sender: 'ai',
+        message: `Hi! I'm your AI ${props.subject.name} tutor. Ask me anything about the lesson or ${props.subject.name.toLowerCase()} topics!`,
+        timestamp: new Date()
+    },
+    {
+        id: 2,
+        sender: 'ai', 
+        message: `Welcome to the ${props.subject.name} lesson! I'm here to help you understand any concepts. What would you like to know about ${props.subject.name.toLowerCase()} techniques or practices?`,
+        timestamp: new Date()
+    }
+]);
+const newMessage = ref('');
+const chatContainer = ref(null);
 
-const newLesson = ref({
-    title: '',
-    description: '',
-    notes: '',
-    videoData: null, // Will contain the chunked upload result
-});
-
-const isUploading = ref(false);
-const uploadProgress = ref(0);
-const showChunkedUpload = ref(false);
-
-const selectedTopic = computed(() => {
-    return props.subject.topics.find(topic => topic.id === selectedTopicId.value);
-});
-
-const selectTopic = (topicId) => {
-    selectedTopicId.value = topicId;
+const toggleSidebar = () => {
+    showSidebar.value = !showSidebar.value;
 };
 
-const addTopic = async () => {
-    try {
-        const response = await axios.post(route('topics.store'), {
-            subject_id: props.subject.id,
-            name: newTopic.value.name,
-            description: newTopic.value.description,
+const checkMobile = () => {
+    isMobile.value = window.innerWidth < 768;
+};
+
+const toggleModule = (topicId) => {
+    if (expandedModules.value.has(topicId)) {
+        expandedModules.value.delete(topicId);
+    } else {
+        expandedModules.value.add(topicId);
+    }
+};
+
+const getLessonTypeIcon = (lesson) => {
+    if (lesson.video_path) return 'video';
+    if (lesson.type === 'quiz') return 'quiz';
+    if (lesson.type === 'text') return 'text';
+    return 'document';
+};
+
+const getLessonProgress = (lesson) => {
+    // This would come from actual progress tracking
+    return Math.random() > 0.5 ? 100 : 0;
+};
+
+const toggleAIChat = () => {
+    showAIChat.value = !showAIChat.value;
+};
+
+const sendMessage = () => {
+    if (newMessage.value.trim()) {
+        // Add user message
+        chatMessages.value.push({
+            id: Date.now(),
+            sender: 'user',
+            message: newMessage.value.trim(),
+            timestamp: new Date()
         });
-
-        if (response.data.success) {
-            // Add the new topic to the existing topics
-            props.subject.topics.push(response.data.topic);
+        
+        const userMsg = newMessage.value.trim();
+        newMessage.value = '';
+        
+        // Simulate AI response
+        setTimeout(() => {
+            chatMessages.value.push({
+                id: Date.now(),
+                sender: 'ai',
+                message: generateAIResponse(userMsg),
+                timestamp: new Date()
+            });
             
-            // Reset form
-            newTopic.value = { name: '', description: '' };
-            showAddTopicForm.value = false;
-            
-            // Select the new topic
-            selectedTopicId.value = response.data.topic.id;
-        }
-    } catch (error) {
-        console.error('Error adding topic:', error);
-        alert('Error adding topic. Please try again.');
+            // Scroll to bottom
+            if (chatContainer.value) {
+                chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+            }
+        }, 1000);
     }
 };
 
-const addLesson = async () => {
-    if (isUploading.value) return;
+const generateAIResponse = (userMessage) => {
+    const subjectLower = props.subject.name.toLowerCase();
+    const responses = [
+        `That's a great question about ${subjectLower}! Let me help you with that concept.`,
+        `In ${subjectLower} practices, this relates to fundamental principles and techniques.`,
+        `This topic is fundamental to understanding ${subjectLower} concepts.`,
+        `Let me explain how this applies to ${subjectLower} techniques and practices.`,
+        `This concept is important for understanding ${subjectLower} fundamentals.`
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+};
+
+onMounted(() => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
     
-    try {
-        isUploading.value = true;
-        
-        const formData = new FormData();
-        formData.append('topic_id', selectedTopicId.value);
-        formData.append('title', newLesson.value.title);
-        formData.append('description', newLesson.value.description);
-        formData.append('notes', newLesson.value.notes);
-        
-        // If we have chunked video data, use that
-        if (newLesson.value.videoData) {
-            formData.append('video_path', newLesson.value.videoData.filePath);
-            formData.append('video_filename', newLesson.value.videoData.fileName || 'uploaded_video.mp4');
-            if (newLesson.value.videoData.duration) {
-                formData.append('duration_minutes', newLesson.value.videoData.duration);
-            }
-        }
-
-        const response = await axios.post(route('lessons.store'), formData);
-
-        if (response.data.success) {
-            // Add the new lesson to the selected topic
-            const topic = props.subject.topics.find(t => t.id === selectedTopicId.value);
-            if (topic) {
-                if (!topic.lessons) topic.lessons = [];
-                topic.lessons.push(response.data.lesson);
-            }
-            
-            // Reset form
-            newLesson.value = { title: '', description: '', notes: '', videoData: null };
-            showAddLessonForm.value = false;
-            showChunkedUpload.value = false;
-        }
-    } catch (error) {
-        console.error('Error adding lesson:', error);
-        alert('Error adding lesson. Please try again.');
-    } finally {
-        isUploading.value = false;
-        uploadProgress.value = 0;
+    // Expand all modules by default
+    if (props.subject?.topics) {
+        props.subject.topics.forEach(topic => {
+            expandedModules.value.add(topic.id);
+        });
     }
-};
-
-const handleVideoUploadSuccess = (uploadResult) => {
-    newLesson.value.videoData = uploadResult;
-    showChunkedUpload.value = false;
-};
-
-const handleVideoUploadError = (error) => {
-    console.error('Video upload error:', error);
-    alert('Video upload failed. Please try again.');
-};
-
-const removeVideo = () => {
-    newLesson.value.videoData = null;
-    showChunkedUpload.value = false;
-};
-
-const cancelAddTopic = () => {
-    newTopic.value = { name: '', description: '' };
-    showAddTopicForm.value = false;
-};
-
-const cancelAddLesson = () => {
-    newLesson.value = { title: '', description: '', notes: '', videoData: null };
-    showAddLessonForm.value = false;
-    showChunkedUpload.value = false;
-};
+    
+    // Select first lesson if available
+    if (props.subject?.topics?.[0]?.lessons?.[0]) {
+        selectedLesson.value = props.subject.topics[0].lessons[0];
+    }
+    
+    // Scroll chat to bottom on mount
+    nextTick(() => {
+        if (chatContainer.value) {
+            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+        }
+    });
+});
 </script>
 
 <template>
     <Head :title="subject.name" />
     
-    <div class="flex h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
-        <!-- Sidebar with Topics -->
-        <TopicSidebar 
-            :subject="subject" 
-            :selectedTopicId="selectedTopicId"
-            @selectTopic="selectTopic"
-        />
-
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col">
-            <!-- Header -->
-            <header class="h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 px-8 flex items-center justify-between relative z-50">
-                <div>
-                    <div class="flex items-center space-x-4">
-                        <Link :href="route('subjects.index')" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
-                            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                        </Link>
-                        <div>
-                            <h1 class="text-2xl font-bold text-slate-800">{{ subject.name }}</h1>
-                            <p class="text-slate-500 text-sm">{{ subject.department }} - {{ subject.grade_level }}</p>
-                        </div>
-                    </div>
-                </div>
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans text-slate-800">
+        <!-- Header -->
+        <header class="h-16 bg-white/90 backdrop-blur-xl border-b border-slate-200/50 px-4 md:px-6 flex items-center justify-between relative z-50">
+            <div class="flex items-center space-x-4 flex-1 min-w-0">
+                <Link :href="route('subjects.index')" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200 flex-shrink-0">
+                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </Link>
+                <button @click="toggleSidebar" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200 lg:hidden">
+                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
                 
-                <div class="flex items-center space-x-4" v-if="user?.role === 'admin' || user?.role === 'teacher'">
-                    <button @click="showAddTopicForm = true"
-                            class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            <span>Add Topic</span>
-                        </div>
-                    </button>
-                    
-                    <button @click="showAddLessonForm = true" :disabled="!selectedTopic"
-                            class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                            </svg>
-                            <span>Add Lesson</span>
-                        </div>
-                    </button>
+                <!-- Mobile AI Chat Toggle -->
+                <button @click="toggleAIChat" 
+                        :class="[
+                            'p-2 rounded-xl transition-all duration-200 lg:hidden',
+                            showAIChat ? 'bg-green-100 text-green-600' : 'hover:bg-slate-100 text-slate-600'
+                        ]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
+                    </svg>
+                </button>
+                <div class="min-w-0 flex-1">
+                    <h1 class="text-sm md:text-lg font-bold text-slate-800 truncate">{{ subject?.name }}</h1>
                 </div>
-            </header>
-
-            <!-- Main Content -->
-            <main class="flex-1 overflow-y-auto p-8 space-y-6">
-                <!-- Selected Topic Content -->
-                <div v-if="selectedTopic" class="space-y-6">
-                    <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h2 class="text-2xl font-bold text-slate-800">{{ selectedTopic.name }}</h2>
-                                <p class="text-slate-600 mt-1">{{ selectedTopic.description || 'No description provided.' }}</p>
-                            </div>
-                            <div class="flex items-center space-x-4 text-sm text-slate-500">
-                                <span>{{ selectedTopic.lessons?.length || 0 }} lessons</span>
-                                <span v-if="selectedTopic.total_duration">{{ Math.floor(selectedTopic.total_duration / 60) }}h {{ selectedTopic.total_duration % 60 }}m</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lessons Grid -->
-                    <div v-if="selectedTopic.lessons && selectedTopic.lessons.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <LessonCard 
-                            v-for="lesson in selectedTopic.lessons" 
-                            :key="lesson.id" 
-                            :lesson="lesson"
-                            :canManage="user?.role === 'admin' || user?.role === 'teacher'"
-                        />
-                    </div>
-
-                    <!-- No Lessons State -->
-                    <div v-else class="text-center py-16">
-                        <div class="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                            <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-semibold text-slate-800 mb-2">No lessons yet</h3>
-                        <p class="text-slate-500 mb-6">Start building your subject by adding the first lesson.</p>
-                        <button v-if="user?.role === 'admin' || user?.role === 'teacher'" @click="showAddLessonForm = true"
-                                class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                            Add First Lesson
-                        </button>
-                    </div>
-                </div>
-
-                <!-- No Topic Selected -->
-                <div v-else-if="subject.topics.length === 0" class="text-center py-16">
-                    <div class="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold text-slate-800 mb-2">No topics yet</h3>
-                    <p class="text-slate-500 mb-6">Create your first topic to start organizing lessons.</p>
-                    <button v-if="user?.role === 'admin' || user?.role === 'teacher'" @click="showAddTopicForm = true"
-                            class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                        Create First Topic
-                    </button>
-                </div>
-            </main>
-        </div>
-
-        <!-- Add Topic Modal -->
-        <div v-if="showAddTopicForm" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div class="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-200/50 max-w-md w-full mx-4">
-                <h3 class="text-xl font-bold text-slate-800 mb-6">Add New Topic</h3>
-                <form @submit.prevent="addTopic">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Topic Name*</label>
-                            <input v-model="newTopic.name" type="text" required
-                                   class="w-full bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all duration-200"
-                                   placeholder="e.g. Introduction, Basic Concepts">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                            <textarea v-model="newTopic.description" rows="3"
-                                      class="w-full bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all duration-200"
-                                      placeholder="Brief description of this topic..."></textarea>
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-4 mt-6">
-                        <button type="button" @click="cancelAddTopic"
-                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-all duration-200">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                                class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                            Add Topic
-                        </button>
-                    </div>
-                </form>
             </div>
-        </div>
+            
+            <div class="flex items-center space-x-3 flex-shrink-0">
+                <!-- AI Chat Toggle -->
+                <button @click="toggleAIChat" 
+                        :class="[
+                            'p-2 rounded-xl transition-all duration-200 hidden lg:block',
+                            showAIChat ? 'bg-green-100 text-green-600' : 'hover:bg-slate-100 text-slate-600'
+                        ]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.645C5.525 14.88 7.42 16 9 16c2.31 0 4.792-.88 6-2.5l-.5-1.5"></path>
+                    </svg>
+                </button>
+                
+                <div class="text-right hidden sm:block">
+                    <p class="text-sm font-semibold text-slate-800">{{ user.name }}</p>
+                    <p class="text-xs text-slate-500">{{ user.role }}</p>
+                </div>
+                <img :src="user.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" :alt="user.name" class="h-8 w-8 md:h-10 md:w-10 rounded-xl ring-2 ring-white shadow-md">
+            </div>
+        </header>
 
-        <!-- Add Lesson Modal -->
-        <div v-if="showAddLessonForm" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div class="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-200/50 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <h3 class="text-xl font-bold text-slate-800 mb-6">Add New Lesson</h3>
-                <form @submit.prevent="addLesson">
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Lesson Title*</label>
-                            <input v-model="newLesson.title" type="text" required
-                                   class="w-full bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
-                                   placeholder="e.g. Introduction to Algebra">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                            <textarea v-model="newLesson.description" rows="3"
-                                      class="w-full bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
-                                      placeholder="What will students learn in this lesson?"></textarea>
-                        </div>
+        <!-- Main Content -->
+        <div class="flex h-[calc(100vh-64px)]">
+            <!-- Left Sidebar - Course Structure -->
+            <div :class="[
+                'bg-white/90 backdrop-blur-xl border-r border-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col',
+                showSidebar ? 'w-80' : 'w-0',
+                isMobile ? 'fixed inset-y-16 left-0 z-40 shadow-xl' : ''
+            ]">
+                <!-- Sidebar Header -->
+                <div class="p-4 border-b border-slate-200/50">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-bold text-slate-800">Subject Content</h2>
+                        <button @click="toggleSidebar" class="p-1 hover:bg-slate-100 rounded-lg lg:hidden">
+                            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-sm text-slate-600 mt-1">
+                        {{ subject.topics?.length || 0 }}/{{ subject.topics?.length || 0 }}
+                    </div>
+                </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Video File</label>
-                            
-                            <!-- Video Upload Interface -->
-                            <div v-if="!newLesson.videoData && !showChunkedUpload" class="space-y-3">
-                                <button @click="showChunkedUpload = true" type="button"
-                                        class="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-dashed border-blue-300 rounded-2xl p-6 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 transition-all duration-200">
-                                    <div class="text-center">
-                                        <svg class="mx-auto h-12 w-12 text-blue-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                        </svg>
-                                        <p class="mt-2 text-sm font-medium text-slate-700">Upload Video File</p>
-                                        <p class="text-xs text-slate-500">Fast chunked upload with compression</p>
-                                        <p class="text-xs text-slate-400 mt-1">MP4, MOV, AVI, WMV, MKV up to 1GB</p>
-                                    </div>
-                                </button>
-                            </div>
-                            
-                            <!-- Chunked Upload Component -->
-                            <ChunkedVideoUpload
-                                v-if="showChunkedUpload"
-                                @upload-success="handleVideoUploadSuccess"
-                                @upload-error="handleVideoUploadError"
-                                @cancel="showChunkedUpload = false"
-                                class="mt-3"
-                            />
-                            
-                            <!-- Video Selected State -->
-                            <div v-if="newLesson.videoData" class="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                <!-- Course Progress Overview -->
+                <div class="p-4 border-b border-slate-200/50">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-600">Progress</span>
+                        <span class="text-slate-800 font-medium">0/{{ subject.topics?.reduce((acc, topic) => acc + (topic.lessons?.length || 0), 0) || 0 }} lessons</span>
+                    </div>
+                    <div class="mt-2 bg-slate-200 rounded-full h-2">
+                        <div class="bg-indigo-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Course Modules/Topics -->
+                <div class="flex-1 overflow-y-auto">
+                    <template v-for="topic in (subject?.topics || [])" :key="topic.id">
+                        <div class="border-b border-slate-200/50">
+                            <!-- Module Header -->
+                            <button 
+                                @click="toggleModule(topic.id)"
+                                class="w-full p-4 text-left hover:bg-slate-100 transition-colors duration-200"
+                            >
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center space-x-3">
-                                        <div class="flex-shrink-0">
-                                            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                            </svg>
+                                        <div class="w-6 h-6 border-2 border-slate-300 rounded-full flex items-center justify-center">
+                                            <div v-if="getLessonProgress(topic) === 100" class="w-3 h-3 bg-green-500 rounded-full"></div>
                                         </div>
                                         <div>
-                                            <p class="text-sm font-medium text-green-800">Video uploaded successfully!</p>
-                                            <p class="text-xs text-green-600">
-                                                {{ newLesson.videoData.fileName }}
-                                                <span v-if="newLesson.videoData.duration" class="ml-2">• {{ newLesson.videoData.duration }} min</span>
-                                            </p>
+                                            <h3 class="text-slate-800 font-medium">Topic {{ topic.order_index + 1 || 1 }}</h3>
+                                            <p class="text-xs text-slate-500">0/{{ topic.lessons?.length || 0 }}</p>
                                         </div>
                                     </div>
-                                    <button @click="removeVideo" type="button" class="text-green-600 hover:text-green-800">
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    <svg 
+                                        :class="[
+                                            'w-5 h-5 text-slate-400 transform transition-transform duration-200',
+                                            expandedModules.has(topic.id) ? 'rotate-90' : ''
+                                        ]" 
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </button>
+
+                            <!-- Module Lessons -->
+                            <div 
+                                v-if="expandedModules.has(topic.id)" 
+                                class="bg-slate-50"
+                            >
+                                <template v-for="lesson in (topic.lessons || [])" :key="lesson.id">
+                                    <Link 
+                                        :href="route('lessons.show', lesson.id)"
+                                        :class="[
+                                            'block py-3 px-6 pl-12 border-l-4 transition-all duration-200 hover:bg-slate-100',
+                                            selectedLesson?.id === lesson.id 
+                                                ? 'border-indigo-500 bg-indigo-50' 
+                                                : 'border-transparent'
+                                        ]"
+                                    >
+                                        <div class="flex items-center space-x-3">
+                                            <!-- Lesson Icon -->
+                                            <div class="flex-shrink-0">
+                                                <div v-if="getLessonTypeIcon(lesson) === 'video'" class="w-5 h-5 text-indigo-500">
+                                                    <svg fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M8 5v14l11-7z"/>
+                                                    </svg>
+                                                </div>
+                                                <div v-else-if="getLessonTypeIcon(lesson) === 'quiz'" class="w-5 h-5 text-green-500">
+                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div v-else class="w-5 h-5 text-slate-400">
+                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            <!-- Lesson Content -->
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="min-w-0 flex-1">
+                                                        <p :class="[
+                                                            'text-sm font-medium truncate',
+                                                            selectedLesson?.id === lesson.id ? 'text-indigo-600' : 'text-slate-800'
+                                                        ]">
+                                                            {{ (topic.order_index + 1 || 1) }}.{{ (lesson.order_index + 1 || 1) }} {{ lesson.title }}
+                                                        </p>
+                                                        <div class="flex items-center space-x-2 mt-1">
+                                                            <span v-if="getLessonTypeIcon(lesson) === 'video'" class="text-xs text-slate-500">
+                                                                MULTIMEDIA
+                                                            </span>
+                                                            <span v-else-if="getLessonTypeIcon(lesson) === 'quiz'" class="text-xs text-slate-500">
+                                                                QUIZ - 18 QUESTIONS
+                                                            </span>
+                                                            <span v-else class="text-xs text-slate-500">
+                                                                TEXT
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Completion Status -->
+                                                    <div class="flex-shrink-0 ml-2">
+                                                        <div v-if="getLessonProgress(lesson) === 100" class="w-5 h-5 text-green-500">
+                                                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        </div>
+                                                        <div v-else class="w-5 h-5 border-2 border-slate-300 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="flex-1 flex">
+                <!-- Video and Lesson Content -->
+                <div class="flex-1 flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
+                    <!-- Lesson Header -->
+                    <div class="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-xl font-bold text-slate-800">
+                                    {{ selectedLesson?.title || '1.1 Lesson Introduction' }}
+                                </h1>
+                                <p class="text-sm text-slate-600 mt-1">
+                                    {{ selectedLesson?.topic?.name || 'Topic 1' }}
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="text-right">
+                                    <p class="text-sm text-slate-600">Lesson {{ selectedLesson?.order_index + 1 || 1 }}</p>
+                                </div>
+                                <button class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
+                                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Player -->
+                    <div class="flex-1 bg-slate-800 relative">
+                        <div class="w-full h-full flex items-center justify-center">
+                            <div class="text-center text-white px-4">
+                                <div class="text-6xl text-white/20 mb-4">{{ subject.name.charAt(0) }}</div>
+                                <h3 class="text-2xl font-medium mb-2 text-white/80">Topic 1</h3>
+                                <h2 class="text-4xl font-bold mb-8">Lesson Introduction</h2>
+                                
+                                <!-- Video Controls Mockup -->
+                                <div class="mt-8 flex items-center justify-center space-x-4">
+                                    <button class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
                                         </svg>
                                     </button>
                                 </div>
+                                
+                                <div class="mt-6 flex items-center justify-between max-w-lg mx-auto">
+                                    <span class="text-sm text-white/80">36:08</span>
+                                    <div class="flex-1 mx-4 h-1 bg-white/20 rounded-full">
+                                        <div class="h-full bg-white/70 rounded-full" style="width: 35%"></div>
+                                    </div>
+                                    <div class="flex space-x-1">
+                                        <div class="w-2 h-2 bg-white/60 rounded-sm"></div>
+                                        <div class="w-2 h-2 bg-white/60 rounded-sm"></div>
+                                        <div class="w-2 h-2 bg-white/60 rounded-sm"></div>
+                                        <div class="w-2 h-2 bg-white/60 rounded-sm"></div>
+                                        <div class="w-2 h-2 bg-white/60 rounded-sm"></div>
+                                        <div class="w-2 h-2 bg-white/60 rounded-sm"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">Lesson Notes</label>
-                            <textarea v-model="newLesson.notes" rows="4"
-                                      class="w-full bg-slate-100/70 px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-200"
-                                      placeholder="Additional notes, resources, or homework for this lesson..."></textarea>
+                <!-- AI Tutor Chat Sidebar -->
+                <div :class="[
+                    'bg-white border-l border-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col',
+                    showAIChat ? 'w-96' : 'w-0',
+                    isMobile ? 'fixed inset-y-16 right-0 z-40 shadow-xl' : ''
+                ]">
+                    <!-- Chat Header -->
+                    <div class="p-4 border-b border-slate-200/50 bg-gradient-to-r from-green-50 to-emerald-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800">AI {{ subject?.name }} Tutor</h3>
+                                    <div class="flex items-center space-x-1">
+                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                        <span class="text-sm text-green-600 font-medium">Online</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button @click="toggleAIChat" class="p-1 hover:bg-white/50 rounded-lg">
+                                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="flex justify-end space-x-4 mt-8">
-                        <button type="button" @click="cancelAddLesson"
-                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-all duration-200">
-                            Cancel
-                        </button>
-                        <button type="submit" :disabled="isUploading"
-                                class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span v-if="!isUploading">Add Lesson</span>
-                            <span v-else class="flex items-center space-x-2">
-                                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
-                                    <path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Uploading... {{ uploadProgress }}%</span>
-                            </span>
-                        </button>
+
+                    <!-- Chat Messages -->
+                    <div ref="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div v-for="message in chatMessages" :key="message.id" 
+                             :class="[
+                                 'flex',
+                                 message.sender === 'user' ? 'justify-end' : 'justify-start'
+                             ]">
+                            <div :class="[
+                                'max-w-xs lg:max-w-md px-4 py-3 rounded-2xl',
+                                message.sender === 'user' 
+                                    ? 'bg-indigo-500 text-white rounded-br-md' 
+                                    : 'bg-green-500 text-white rounded-bl-md'
+                            ]">
+                                <p class="text-sm">{{ message.message }}</p>
+                                <p class="text-xs opacity-75 mt-1">
+                                    {{ message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </form>
+
+                    <!-- Chat Input -->
+                    <div class="p-4 border-t border-slate-200/50 bg-slate-50">
+                        <p class="text-xs text-slate-600 mb-2 italic">
+                            Hi! I'm your AI {{ subject.name }} tutor. Ask me anything about the lesson or {{ subject.name.toLowerCase() }} topics!
+                        </p>
+                        <div class="flex space-x-2">
+                            <input 
+                                v-model="newMessage"
+                                @keyup.enter="sendMessage"
+                                type="text" 
+                                :placeholder="`Ask me anything about ${subject.name.toLowerCase()}...`"
+                                class="flex-1 px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                            />
+                            <button 
+                                @click="sendMessage"
+                                class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors duration-200"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Mobile Overlays -->
+        <div 
+            v-if="isMobile && showSidebar" 
+            @click="toggleSidebar" 
+            class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        ></div>
+        
+        <div 
+            v-if="isMobile && showAIChat" 
+            @click="toggleAIChat" 
+            class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        ></div>
     </div>
 </template>
