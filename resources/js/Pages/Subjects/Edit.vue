@@ -5,18 +5,19 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     auth: Object,
+    subject: Object,
     departments: Array,
 });
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
 
 const form = useForm({
-    name: '',
-    code: '',
-    description: '',
-    department: '',
-    grade_level: '',
-    credits: 1,
-    teacher_name: '',
+    name: props.subject?.name || '',
+    code: props.subject?.code || '',
+    description: props.subject?.description || '',
+    department: props.subject?.department || '',
+    grade_level: props.subject?.grade_level || '',
+    credits: props.subject?.credits || 1,
+    teacher_name: props.subject?.teacher_name || '',
     cover_image: null,
 });
 
@@ -42,7 +43,7 @@ const updatePhotoPreview = () => {
 };
 
 const submit = () => {
-    form.post(route('subjects.store'), {
+    form.put(route('subjects.update', props.subject.id), {
         preserveScroll: true,
         onSuccess: () => {
             // Form submission successful
@@ -77,9 +78,9 @@ const departmentOptions = props.departments && props.departments.length > 0 ? pr
 </script>
 
 <template>
-    <Head title="Add New Subject" />
+    <Head title="Edit Subject" />
     
-    <DashboardLayout title="Add New Subject" subtitle="Create a new subject for students">
+    <DashboardLayout title="Edit Subject" subtitle="Update subject information">
         <div class="space-y-6">
             <!-- Form -->
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50">
@@ -90,13 +91,14 @@ const departmentOptions = props.departments && props.departments.length > 0 ? pr
                         <div class="flex items-center space-x-6">
                             <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center overflow-hidden">
                                 <img v-if="photoPreview" :src="photoPreview" alt="Cover preview" class="w-full h-full object-cover">
+                                <img v-else-if="subject.cover_image" :src="`/storage/${subject.cover_image}`" alt="Current cover" class="w-full h-full object-cover">
                                 <svg v-else class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
                             </div>
                             <div>
                                 <button type="button" @click="selectNewPhoto" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium transition-colors duration-200">
-                                    Select Image
+                                    Change Image
                                 </button>
                                 <p class="text-xs text-slate-500 mt-1">JPG, PNG up to 2MB</p>
                             </div>
@@ -171,8 +173,8 @@ const departmentOptions = props.departments && props.departments.length > 0 ? pr
                             Cancel
                         </Link>
                         <button type="submit" :disabled="form.processing" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50">
-                            <span v-if="form.processing">Creating...</span>
-                            <span v-else>Create Subject</span>
+                            <span v-if="form.processing">Updating...</span>
+                            <span v-else>Update Subject</span>
                         </button>
                     </div>
                 </form>

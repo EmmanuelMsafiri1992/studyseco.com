@@ -8,8 +8,8 @@ const props = defineProps({
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
 
 const form = useForm({
-    name: user.name,
-    email: user.email,
+    name: user.name || '',
+    email: user.email || '',
     password: '',
     profile_photo: null,
 });

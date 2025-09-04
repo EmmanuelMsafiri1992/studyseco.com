@@ -63,7 +63,11 @@ class SubjectController extends Controller
 
     public function create()
     {
-        return Inertia::render('Subjects/Create');
+        $departments = \App\Models\Department::active()->ordered()->get();
+        
+        return Inertia::render('Subjects/Create', [
+            'departments' => $departments
+        ]);
     }
 
     public function store(Request $request)
@@ -119,8 +123,11 @@ class SubjectController extends Controller
 
     public function edit(Subject $subject)
     {
+        $departments = \App\Models\Department::active()->ordered()->get();
+        
         return Inertia::render('Subjects/Edit', [
             'subject' => $subject,
+            'departments' => $departments
         ]);
     }
 

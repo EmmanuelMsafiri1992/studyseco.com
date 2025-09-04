@@ -27,7 +27,9 @@ class PaymentMethod extends Model
 
     protected $appends = [
         'icon', 
-        'color'
+        'color',
+        'description',
+        'account_details'
     ];
 
     // Scope for active payment methods
@@ -92,6 +94,42 @@ class PaymentMethod extends Model
             'ZAR' => 350,
             'USD' => 25,
             default => 50000
+        };
+    }
+
+    // Get description based on method
+    public function getDescriptionAttribute()
+    {
+        return match($this->code) {
+            'tnm_mpamba' => 'Send money via TNM Mpamba mobile money',
+            'airtel_money' => 'Send money via Airtel Money mobile service',
+            'bank_transfer' => 'Transfer money directly to our bank account',
+            'mukuru' => 'Send money via Mukuru money transfer service',
+            'hello_paisa' => 'Send money via Hello Paisa service',
+            'worldremit' => 'International money transfer via WorldRemit',
+            'remitly' => 'International money transfer via Remitly',
+            'western_union' => 'Send money via Western Union',
+            'moneygram' => 'Send money via MoneyGram',
+            'paypal' => 'Pay securely with your PayPal account',
+            default => 'Complete payment using this method'
+        };
+    }
+
+    // Get account details based on method
+    public function getAccountDetailsAttribute()
+    {
+        return match($this->code) {
+            'tnm_mpamba' => 'Send to: +265 99 123 4567 (StudySeco)',
+            'airtel_money' => 'Send to: +265 88 123 4567 (StudySeco)',
+            'bank_transfer' => 'Account: 1234567890, Bank: Standard Bank',
+            'mukuru' => 'Recipient: StudySeco, Country: Malawi',
+            'hello_paisa' => 'Recipient: StudySeco Education',
+            'worldremit' => 'Recipient: StudySeco, Malawi',
+            'remitly' => 'Recipient: StudySeco Education',
+            'western_union' => 'Recipient: StudySeco, Lilongwe, Malawi',
+            'moneygram' => 'Recipient: StudySeco, Lilongwe, Malawi',
+            'paypal' => 'Pay to: payments@studyseco.com',
+            default => 'Contact support for payment details'
         };
     }
 }

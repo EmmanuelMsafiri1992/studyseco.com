@@ -591,6 +591,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [SystemSettingsController::class, 'update'])->name('update');
     });
 
+    // Admin Department Management Routes
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::resource('departments', \App\Http\Controllers\Admin\DepartmentController::class);
+    });
+
     // Support Chat Routes (formerly Complaints) - Live chat system
     Route::get('/complaints', [\App\Http\Controllers\ComplaintController::class, 'index'])
          ->name('complaints.index');
@@ -854,7 +859,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/enrollments/{enrollment}/payment-proof', [EnrollmentController::class, 'viewPaymentProof'])->name('enrollments.payment-proof');
         
         // Admin extension management
-        Route::post('/extensions/{payment}/approve', [\App\Http\Controllers\ExtensionController::class, 'approve'])->name('extensions.approve');
+        Route::prefix('extensions')->name('extensions.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\ExtensionController::class, 'index'])->name('index');
+            Route::get('/{payment}', [\App\Http\Controllers\Admin\ExtensionController::class, 'show'])->name('show');
+            Route::post('/{payment}/approve', [\App\Http\Controllers\Admin\ExtensionController::class, 'approve'])->name('approve');
+            Route::post('/{payment}/reject', [\App\Http\Controllers\Admin\ExtensionController::class, 'reject'])->name('reject');
+            Route::post('/grant-extension', [\App\Http\Controllers\Admin\ExtensionController::class, 'grantExtension'])->name('grant');
+            Route::post('/update-pricing', [\App\Http\Controllers\Admin\ExtensionController::class, 'updatePricing'])->name('update-pricing');
+            Route::post('/bulk-action', [\App\Http\Controllers\Admin\ExtensionController::class, 'bulkAction'])->name('bulk-action');
+        });
         
         // Admin payment methods management
         Route::resource('payment-methods', \App\Http\Controllers\Admin\PaymentMethodController::class);

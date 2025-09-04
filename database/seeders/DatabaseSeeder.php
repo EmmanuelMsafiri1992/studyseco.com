@@ -23,6 +23,9 @@ public function run()
         StudentStoriesSeeder::class,
         LibrarySeeder::class,
         SecondarySchoolSeeder::class,
+        AuditLogSeeder::class,
+        AiTrainingMaterialSeeder::class,
+        SupportChatSeeder::class,
     ]);
 }
 }

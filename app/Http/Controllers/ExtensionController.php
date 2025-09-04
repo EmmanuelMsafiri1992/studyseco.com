@@ -20,11 +20,27 @@ class ExtensionController extends Controller
             return redirect()->route('dashboard')->with('error', 'You need to enroll in a course first before you can extend access. Please contact support if you need assistance with enrollment.');
         }
         
-        // Calculate extension pricing based on user's currency
+        // Get available payment methods for user's region
+        // If region is empty, default to 'malawi' or show all available methods
+        $region = $enrollment->region ?: 'malawi';
+        
+        // Update enrollment region if it's empty
+        if (empty($enrollment->region)) {
+            $enrollment->region = 'malawi';
+            $enrollment->save();
+        }
+        
+        // Fix currency mismatch based on region
+        $correctCurrency = $this->getCurrencyForRegion($region);
+        if ($enrollment->currency !== $correctCurrency) {
+            $enrollment->currency = $correctCurrency;
+            $enrollment->save();
+        }
+        
+        // Calculate extension pricing based on user's corrected currency
         $extensionPricing = $this->getExtensionPricing($enrollment->currency);
         
-        // Get available payment methods for user's region
-        $paymentMethods = PaymentMethod::where('region', $enrollment->region)
+        $paymentMethods = PaymentMethod::where('region', $region)
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
@@ -134,5 +150,18 @@ class ExtensionController extends Controller
         }
         
         return back()->with('success', 'Extension approved successfully! Student has been notified.');
+    }
+    
+    private function getCurrencyForRegion($region)
+    {
+        return match($region) {
+            'malawi' => 'MWK',
+            'south_africa' => 'ZAR',
+            'zambia' => 'ZMW',
+            'botswana' => 'BWP',
+            'zimbabwe' => 'USD', // USD is commonly used in Zimbabwe
+            'international' => 'USD',
+            default => 'MWK' // Default to Malawi Kwacha
+        };
     }
 }

@@ -10,12 +10,12 @@
     <!-- Sidebar -->
     <div 
       :class="[
-        'bg-white/80 backdrop-blur-xl border-r border-slate-200/50 shadow-xl transition-transform duration-300 ease-in-out z-50',
+        'bg-white/80 backdrop-blur-xl border-r border-slate-200/50 shadow-xl transition-transform duration-300 ease-in-out z-50 flex flex-col',
         'fixed lg:static inset-y-0 left-0 w-72 lg:w-72',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       ]"
     >
-      <div class="p-8 border-b border-slate-200/50">
+      <div class="p-8 border-b border-slate-200/50 flex-shrink-0">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@
         </div>
       </div>
 
-      <nav class="px-4 py-6 space-y-2">
+      <nav class="px-4 py-6 space-y-2 overflow-y-auto flex-1 max-h-[calc(100vh-120px)]">
         <!-- Dashboard - Available to all roles -->
         <Link href="/dashboard" :class="['flex items-center px-4 py-3 rounded-xl border transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
                                          $page.component === 'Dashboard' ? 'text-slate-700 bg-indigo-50 border-indigo-100' : 'text-slate-600 border-transparent']">
@@ -39,14 +39,70 @@
           <span class="font-medium">Dashboard</span>
         </Link>
 
-        <!-- Academics - Available to all roles -->
-        <Link href="/subjects" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                        $page.component?.includes('Subject') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
-          </svg>
-          <span class="font-medium">Academics</span>
-        </Link>
+        <!-- Academics - Enhanced with Admin Dropdown -->
+        <div class="group">
+          <button
+            v-if="$page.props.auth?.user?.role === 'admin'"
+            @click="toggleDropdown('academics')"
+            :class="[
+              'flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 hover:bg-slate-50 hover:text-slate-800',
+              isActiveSection(['Subject', 'Department', 'Teacher', 'AITraining']) ? 'text-slate-700 bg-indigo-50' : 'text-slate-600'
+            ]"
+          >
+            <div class="flex items-center">
+              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
+              </svg>
+              <span class="font-medium">Academics</span>
+            </div>
+            <svg 
+              :class="['h-4 w-4 transition-all duration-300 transform', dropdowns.academics ? 'rotate-180' : '']" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          
+          <!-- Regular link for non-admin users -->
+          <Link v-else href="/subjects" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                              $page.component?.includes('Subject') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.447m0-13.447l6.818-4.757M12 6.253l-6.818-4.757m6.818 4.757l-.547 4.197"></path>
+            </svg>
+            <span class="font-medium">Academics</span>
+          </Link>
+
+          <!-- Admin Dropdown Content -->
+          <div 
+            v-if="$page.props.auth?.user?.role === 'admin'"
+            :class="[
+              'overflow-hidden transition-all duration-500 ease-out ml-6 mt-1',
+              dropdowns.academics ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            ]"
+          >
+            <div class="space-y-1 pl-4 border-l-2 border-indigo-100">
+              <Link href="/subjects" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                             $page.component?.includes('Subject') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>📚 Subjects</span>
+              </Link>
+              <Link :href="route('admin.departments.index')" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                                                      $page.component?.includes('Department') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>🏛️ Departments</span>
+              </Link>
+              <Link href="/teachers" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                             $page.component?.includes('Teacher') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>👨‍🏫 Teachers</span>
+                <span v-if="stats?.total_teachers" class="ml-auto text-xs bg-indigo-500 text-white px-2 py-1 rounded-full">{{ stats.total_teachers }}</span>
+              </Link>
+              <Link :href="route('admin.ai-training.index')" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                                                      $page.component?.includes('AITraining') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>🤖 AI Training</span>
+              </Link>
+            </div>
+          </div>
+        </div>
 
         <!-- Library - Available to all roles -->
         <Link href="/library" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
@@ -67,34 +123,60 @@
         </Link>
 
 
-        <!-- Students - Admin only -->
-        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/students" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                        $page.component?.includes('Student') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-          </svg>
-          <span class="font-medium">Students</span>
-          <span class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{{ stats?.total_students || 0 }}</span>
-        </Link>
+        <!-- Students - Enhanced with Admin Dropdown -->
+        <div v-if="$page.props.auth?.user?.role === 'admin'" class="group">
+          <button
+            @click="toggleDropdown('students')"
+            :class="[
+              'flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 hover:bg-slate-50 hover:text-slate-800',
+              isActiveSection(['Student', 'Enrollment', 'Role', 'SchoolSelection']) ? 'text-slate-700 bg-indigo-50' : 'text-slate-600'
+            ]"
+          >
+            <div class="flex items-center">
+              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+              </svg>
+              <span class="font-medium">Students</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{{ stats?.total_students || 0 }}</span>
+              <svg 
+                :class="['h-4 w-4 transition-all duration-300 transform', dropdowns.students ? 'rotate-180' : '']" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </button>
 
-        <!-- Faculty - Admin only -->
-        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/teachers" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                        $page.component?.includes('Teacher') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-          </svg>
-          <span class="font-medium">Faculty</span>
-          <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{{ stats?.total_teachers || 0 }}</span>
-        </Link>
+          <!-- Admin Student Management Dropdown -->
+          <div 
+            :class="[
+              'overflow-hidden transition-all duration-500 ease-out ml-6 mt-1',
+              dropdowns.students ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            ]"
+          >
+            <div class="space-y-1 pl-4 border-l-2 border-indigo-100">
+              <Link href="/students" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                             $page.component?.includes('Student') && !$page.component?.includes('SchoolSelection') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>👥 All Students</span>
+                <span class="ml-auto text-xs bg-indigo-500 text-white px-2 py-1 rounded-full">{{ stats?.total_students || 0 }}</span>
+              </Link>
+              <Link href="/admin/enrollments" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                                       $page.component?.includes('Enrollment') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>📝 Enrollments</span>
+                <span v-if="stats?.pending_enrollments" class="ml-auto text-xs bg-amber-500 text-white px-2 py-1 rounded-full">{{ stats.pending_enrollments }}</span>
+              </Link>
+              <Link href="/admin/school-selections" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                                             $page.component?.includes('SchoolSelection') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>🏫 School Applications</span>
+              </Link>
+            </div>
+          </div>
+        </div>
 
-        <!-- Finance - Admin only for full access, students see limited view -->
-        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/payments" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                    $page.component?.includes('Payment') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-          </svg>
-          <span class="font-medium">Finance</span>
-        </Link>
         
         <!-- School Selection - Students only -->
         <Link v-if="$page.props.auth?.user?.role === 'student'" href="/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
@@ -163,92 +245,87 @@
           <span class="font-medium">Achievements</span>
         </Link>
 
-        <!-- Support - Available to all roles -->
-        <Link href="/complaints" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                          $page.component?.includes('Complaint') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
-          </svg>
-          <span class="font-medium">Support</span>
-          <span v-if="$page.props.auth?.user?.role === 'admin'" class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">{{ stats?.pending_enrollments || 0 }}</span>
-        </Link>
-
-        <!-- Analytics - Admin only -->
-        <Link v-if="$page.props.auth?.user?.role === 'admin'" href="/reports" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                       $page.component?.includes('Report') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-          <span class="font-medium">Analytics</span>
-        </Link>
-
-        <!-- Admin-only section -->
-        <div v-if="$page.props.auth?.user?.role === 'admin'" class="pt-4 mt-4 border-t border-slate-200">
-          <!-- Role Management -->
-          <Link href="/admin/roles" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                             $page.component?.includes('Role') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-            </svg>
-            <span class="font-medium">Role Management</span>
-          </Link>
+        <!-- Support & System Management -->
+        <div class="group">
+          <button
+            v-if="$page.props.auth?.user?.role === 'admin'"
+            @click="toggleDropdown('support')"
+            :class="[
+              'flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 hover:bg-slate-50 hover:text-slate-800',
+              isActiveSection(['Complaint', 'SystemSettings', 'Audit', 'Report', 'PaymentMethod', 'Payment']) ? 'text-slate-700 bg-indigo-50' : 'text-slate-600'
+            ]"
+          >
+            <div class="flex items-center">
+              <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <span class="font-medium">System & Support</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span v-if="stats?.pending_enrollments" class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">{{ stats.pending_enrollments }}</span>
+              <svg 
+                :class="['h-4 w-4 transition-all duration-300 transform', dropdowns.support ? 'rotate-180' : '']" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </button>
           
-          <!-- Enrollments -->
-          <Link href="/admin/enrollments" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                                   $page.component?.includes('Enrollment') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <!-- Regular Support link for non-admin users -->
+          <Link v-else href="/complaints" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                                  $page.component?.includes('Complaint') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
             <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
-            <span class="font-medium">Enrollments</span>
-            <span class="ml-auto text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">{{ stats?.pending_enrollments || 0 }}</span>
-          </Link>
-          
-          <!-- Payment Methods -->
-          <Link href="/admin/payment-methods" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                                       $page.component?.includes('PaymentMethod') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-            </svg>
-            <span class="font-medium">Payment Methods</span>
-          </Link>
-          
-          <!-- School Selection Management -->
-          <Link href="/admin/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                                         $page.component?.includes('SchoolSelection') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M9 7l3-3 3 3M4 10h16v11H4V10z"></path>
-            </svg>
-            <span class="font-medium">School Applications</span>
-          </Link>
-          
-          <!-- AI Training -->
-          <Link :href="route('admin.ai-training.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                           $page.component?.includes('AITraining') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-            </svg>
-            <span class="font-medium">AI Training</span>
+            <span class="font-medium">Support</span>
           </Link>
 
-          <!-- System Settings -->
-          <Link :href="route('admin.system-settings.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                           $page.component?.includes('SystemSettings') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            </svg>
-            <span class="font-medium">System Settings</span>
-          </Link>
-
-          <!-- Audit Trail -->
-          <Link :href="route('admin.audit.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                           $page.component?.includes('Audit') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
-            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-            </svg>
-            <span class="font-medium">Audit Trail</span>
-          </Link>
+          <!-- Admin System Management Dropdown -->
+          <div 
+            v-if="$page.props.auth?.user?.role === 'admin'"
+            :class="[
+              'overflow-hidden transition-all duration-500 ease-out ml-6 mt-1',
+              dropdowns.support ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            ]"
+          >
+            <div class="space-y-1 pl-4 border-l-2 border-indigo-100">
+              <Link href="/complaints" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                               $page.component?.includes('Complaint') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>🎧 Support Tickets</span>
+                <span v-if="stats?.pending_enrollments" class="ml-auto text-xs bg-red-500 text-white px-2 py-1 rounded-full">{{ stats.pending_enrollments }}</span>
+              </Link>
+              <Link href="/admin/roles" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                               $page.component?.includes('Role') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>🛡️ Role Management</span>
+              </Link>
+              <Link :href="route('admin.system-settings.index')" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                                                           $page.component?.includes('SystemSettings') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>⚙️ System Settings</span>
+              </Link>
+              <Link :href="route('admin.audit.index')" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                                               $page.component?.includes('Audit') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>🔍 Audit Trail</span>
+              </Link>
+              <Link href="/reports" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                            $page.component?.includes('Report') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>📊 Analytics</span>
+              </Link>
+              <Link href="/admin/payment-methods" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                                           $page.component?.includes('PaymentMethod') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>💳 Payment Methods</span>
+              </Link>
+              <Link href="/payments" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+                                             $page.component?.includes('Payment') && !$page.component?.includes('PaymentMethod') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>💰 Payments Overview</span>
+              </Link>
+            </div>
+          </div>
         </div>
+
       </nav>
     </div>
 
@@ -363,7 +440,7 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { ref, onMounted, onUnmounted } from 'vue'
 import NotificationSound from '@/Components/NotificationSound.vue'
 import { playNotificationSound, soundEnabled } from '@/composables/useNotificationSounds'
@@ -462,6 +539,24 @@ const stopNotificationPolling = () => {
   }
 }
 
+// Admin dropdown state management
+const dropdowns = ref({
+  student: false,
+  academic: false,
+  financial: false,
+  system: false
+})
+
+const toggleDropdown = (section) => {
+  dropdowns.value[section] = !dropdowns.value[section]
+}
+
+const page = usePage()
+
+const isActiveSection = (components) => {
+  return components.some(component => page.component?.includes(component))
+}
+
 // Initialize notification system
 onMounted(async () => {
   await fetchNotificationSettings()
@@ -471,6 +566,20 @@ onMounted(async () => {
   // Request notification permission on first load
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission()
+  }
+  
+  // Auto-expand active dropdown sections
+  if (isActiveSection(['Enrollment', 'Role', 'SchoolSelection'])) {
+    dropdowns.value.student = true
+  }
+  if (isActiveSection(['Subject', 'Department', 'Teacher', 'AITraining'])) {
+    dropdowns.value.academic = true
+  }
+  if (isActiveSection(['PaymentMethod', 'Payment'])) {
+    dropdowns.value.financial = true
+  }
+  if (isActiveSection(['SystemSettings', 'Audit', 'Report'])) {
+    dropdowns.value.system = true
   }
 })
 
