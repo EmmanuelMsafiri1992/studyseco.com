@@ -9,6 +9,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 const props = defineProps({
     auth: Object,
     stats: Object,
+    recent_activities: Array,
 });
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
@@ -144,6 +145,54 @@ const lineOptions = ref({
         }
     }
 });
+
+// Navigation methods
+const navigateToEnrollment = () => {
+    // Check enrollment status and navigate accordingly
+    const enrollment = props.auth?.enrollment || null;
+    
+    if (!enrollment || props.stats?.enrollment_status === 'not_enrolled') {
+        // Navigate to student enrollment management
+        window.location.href = '/student/enrollment';
+    } else if (props.stats?.enrollment_status === 'pending') {
+        // Show enrollment details
+        window.location.href = '/student/enrollment/details';
+    } else {
+        // Show enrollment details for approved/trial users
+        window.location.href = '/student/enrollment/details';
+    }
+};
+
+const navigateToSubjects = () => {
+    const hasAccess = props.stats?.enrollment_status === 'approved' || props.stats?.enrollment_status === 'trial';
+    
+    if (hasAccess) {
+        // Navigate to student-specific subjects page
+        window.location.href = '/student/subjects';
+    } else {
+        // Navigate to student enrollment if no access
+        window.location.href = '/student/enrollment';
+    }
+};
+
+const navigateToAccessManagement = () => {
+    const enrollment = props.auth?.enrollment || null;
+    
+    if (!enrollment || props.stats?.enrollment_status === 'not_enrolled') {
+        // Navigate to student enrollment
+        window.location.href = '/student/enrollment';
+    } else if (props.stats?.access_remaining_days <= 0) {
+        // Navigate to extension page if access expired
+        window.location.href = '/student/extension';
+    } else {
+        // Show enrollment details with access information
+        window.location.href = '/student/enrollment/details';
+    }
+};
+
+const navigateToAccountSettings = () => {
+    window.location.href = '/account-settings';
+};
 </script>
 
 <template>
@@ -235,18 +284,21 @@ const lineOptions = ref({
             <!-- Student Stats -->
             <template v-else>
                 <!-- Enrollment Status -->
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToEnrollment"
+                >
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-slate-500 text-sm font-medium">Enrollment Status</p>
-                            <p class="text-3xl font-bold text-slate-800 mt-2 capitalize">{{ stats.enrollment_status }}</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 capitalize group-hover:text-indigo-600 transition-colors">{{ stats.enrollment_status === 'not_enrolled' ? 'Not enrolled' : stats.enrollment_status }}</p>
                             <div class="flex items-center mt-2">
                                 <span :class="stats.enrollment_status === 'approved' || stats.enrollment_status === 'trial' ? 'text-emerald-600' : stats.enrollment_status === 'pending' ? 'text-amber-600' : 'text-red-600'" class="text-sm font-semibold">
                                     {{ stats.enrollment_status === 'approved' ? '✓ Active' : stats.enrollment_status === 'trial' ? '✓ Free Access' : stats.enrollment_status === 'pending' ? '⏳ Pending' : 'Not Enrolled' }}
                                 </span>
                             </div>
                         </div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                             </svg>
@@ -255,16 +307,19 @@ const lineOptions = ref({
                 </div>
 
                 <!-- Subjects Enrolled -->
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToSubjects"
+                >
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-slate-500 text-sm font-medium">Subjects Enrolled</p>
-                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.subjects_enrolled || 0 }}</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-emerald-600 transition-colors">{{ stats.total_subjects || 0 }}</p>
                             <div class="flex items-center mt-2">
-                                <span class="text-emerald-600 text-sm font-semibold">{{ stats.subjects_enrolled ? 'Active' : 'None' }}</span>
+                                <span class="text-emerald-600 text-sm font-semibold">{{ stats.total_subjects ? 'Active' : 'None' }}</span>
                             </div>
                         </div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
+                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                             </svg>
@@ -273,18 +328,21 @@ const lineOptions = ref({
                 </div>
 
                 <!-- Access Remaining -->
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToAccessManagement"
+                >
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-slate-500 text-sm font-medium">{{ stats.is_trial ? 'Trial Days Left' : 'Access Days Left' }}</p>
-                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.is_trial ? stats.trial_days_remaining : stats.access_days_remaining || 0 }}</p>
+                            <p class="text-slate-500 text-sm font-medium">Access Days Left</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-amber-600 transition-colors">{{ stats.access_remaining_days || 0 }}</p>
                             <div class="flex items-center mt-2">
                                 <span class="text-slate-500 text-xs">
-                                    Expires: {{ stats.is_trial ? stats.trial_expires_at : stats.access_expires_at || 'N/A' }}
+                                    {{ stats.access_remaining_days > 0 ? 'Expires: N/A' : 'Expired' }}
                                 </span>
                             </div>
                         </div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
+                        <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -293,18 +351,23 @@ const lineOptions = ref({
                 </div>
 
                 <!-- Account Type -->
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300">
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToAccountSettings"
+                >
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-slate-500 text-sm font-medium">Account Type</p>
-                            <p class="text-3xl font-bold text-slate-800 mt-2">{{ stats.is_trial ? 'Trial' : 'Premium' }}</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-rose-600 transition-colors">
+                                {{ stats.is_trial === true ? 'Free Trial' : 'Premium' }}
+                            </p>
                             <div class="flex items-center mt-2">
-                                <span :class="stats.is_trial ? 'text-blue-600' : 'text-purple-600'" class="text-sm font-semibold">
-                                    {{ stats.is_trial ? '🆓 Free Trial' : '⭐ Full Access' }}
+                                <span :class="stats.is_trial === true ? 'text-blue-600' : 'text-purple-600'" class="text-sm font-semibold">
+                                    {{ stats.is_trial === true ? '🆓 7 Days Free Trial' : '⭐ Full Access' }}
                                 </span>
                             </div>
                         </div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
+                        <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
                             </svg>
@@ -347,57 +410,141 @@ const lineOptions = ref({
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 lg:col-span-2">
                 <h3 class="text-xl font-bold text-slate-800 mb-6">Recent Activities</h3>
                 <div class="space-y-4">
-                    <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
-                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mr-4">
-                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
+                    <!-- Dynamic Activities for Students -->
+                    <template v-if="user.role === 'student'">
+                        <div v-if="recent_activities && recent_activities.length > 0" class="space-y-4">
+                            <div 
+                                v-for="activity in recent_activities" 
+                                :key="activity.id"
+                                class="flex items-center p-4 bg-slate-50/50 rounded-2xl"
+                            >
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center mr-4" 
+                                     :class="{
+                                         'bg-emerald-100': activity.type === 'enrollment',
+                                         'bg-blue-100': activity.type === 'payment',
+                                         'bg-purple-100': activity.type === 'achievement',
+                                         'bg-amber-100': activity.type === 'assignment'
+                                     }">
+                                    <!-- Enrollment Icon -->
+                                    <svg v-if="activity.type === 'enrollment'" class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    <!-- Payment Icon -->
+                                    <svg v-else-if="activity.type === 'payment'" class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                    </svg>
+                                    <!-- Achievement Icon -->
+                                    <svg v-else-if="activity.type === 'achievement'" class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                                    </svg>
+                                    <!-- Default Icon -->
+                                    <svg v-else class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-slate-800">{{ activity.title }}</p>
+                                    <p class="text-sm text-slate-600">{{ activity.description }}</p>
+                                </div>
+                                <span class="text-xs text-slate-500">{{ activity.created_at }}</span>
+                            </div>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-slate-800">New student enrollment</p>
-                            <p class="text-sm text-slate-600">Sarah Mwangi enrolled in Mathematics & Physics</p>
+                        <div v-else class="text-center py-8">
+                            <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-slate-500 text-sm">No recent activities yet</p>
+                            <p class="text-slate-400 text-xs mt-2">Your enrollment and payment activities will appear here</p>
                         </div>
-                        <span class="text-xs text-slate-500">2 mins ago</span>
-                    </div>
+                    </template>
 
-                    <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
-                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                            </svg>
+                    <!-- Admin Activities (unchanged) -->
+                    <template v-else-if="user.role === 'admin'">
+                        <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
+                            <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-slate-800">New student enrollment</p>
+                                <p class="text-sm text-slate-600">Sarah Mwangi enrolled in Mathematics & Physics</p>
+                            </div>
+                            <span class="text-xs text-slate-500">2 mins ago</span>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-slate-800">Payment received</p>
-                            <p class="text-sm text-slate-600">MWK 75,000 payment from James Phiri</p>
-                        </div>
-                        <span class="text-xs text-slate-500">15 mins ago</span>
-                    </div>
 
-                    <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
-                        <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mr-4">
-                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                            </svg>
+                        <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
+                            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-slate-800">Payment received</p>
+                                <p class="text-sm text-slate-600">MWK 75,000 payment from James Phiri</p>
+                            </div>
+                            <span class="text-xs text-slate-500">15 mins ago</span>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-slate-800">Trial expiring soon</p>
-                            <p class="text-sm text-slate-600">5 students have trials expiring in 24 hours</p>
-                        </div>
-                        <span class="text-xs text-slate-500">1 hour ago</span>
-                    </div>
 
-                    <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
-                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-4">
-                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
+                        <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
+                            <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-slate-800">Trial expiring soon</p>
+                                <p class="text-sm text-slate-600">5 students have trials expiring in 24 hours</p>
+                            </div>
+                            <span class="text-xs text-slate-500">1 hour ago</span>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-slate-800">New content uploaded</p>
-                            <p class="text-sm text-slate-600">Chemistry Chapter 5: Organic Compounds</p>
+
+                        <div class="flex items-center p-4 bg-slate-50/50 rounded-2xl">
+                            <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-slate-800">New content uploaded</p>
+                                <p class="text-sm text-slate-600">Chemistry Chapter 5: Organic Compounds</p>
+                            </div>
+                            <span class="text-xs text-slate-500">2 hours ago</span>
                         </div>
-                        <span class="text-xs text-slate-500">2 hours ago</span>
-                    </div>
+                    </template>
+
+                    <!-- Teacher Activities -->
+                    <template v-else-if="user.role === 'teacher'">
+                        <div v-if="recent_activities && recent_activities.length > 0" class="space-y-4">
+                            <div 
+                                v-for="activity in recent_activities" 
+                                :key="activity.id"
+                                class="flex items-center p-4 bg-slate-50/50 rounded-2xl"
+                            >
+                                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-slate-800">{{ activity.title }}</p>
+                                    <p class="text-sm text-slate-600">{{ activity.description }}</p>
+                                </div>
+                                <span class="text-xs text-slate-500">{{ activity.created_at }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-8">
+                            <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-slate-500 text-sm">No recent activities yet</p>
+                            <p class="text-slate-400 text-xs mt-2">Student assignments will appear here</p>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 
-// User preferences (stored in localStorage)
-const soundEnabled = ref(JSON.parse(localStorage.getItem('studyseco_notification_sounds') ?? 'true'))
+// User preferences (stored in localStorage) - default to false to prevent annoying sounds
+const soundEnabled = ref(JSON.parse(localStorage.getItem('studyseco_notification_sounds') ?? 'false'))
 
 // Audio context for notification sounds
 let audioContext = null

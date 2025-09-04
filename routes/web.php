@@ -255,9 +255,9 @@ Route::get('/dashboard', function () {
     } elseif ($user->role === 'student') {
         // Get student-specific data
         try {
-            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->with('subjects')->first();
+            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->first();
             $data['enrollment'] = $enrollment;
-            $data['enrolled_subjects'] = $enrollment ? $enrollment->subjects : collect([]);
+            $data['enrolled_subjects'] = $enrollment ? $enrollment->selected_subjects_with_details : collect([]);
             $data['access_remaining'] = $enrollment ? $enrollment->access_days_remaining : 0;
             $data['access_expired'] = $enrollment ? $enrollment->is_access_expired : true;
             
@@ -267,6 +267,11 @@ Route::get('/dashboard', function () {
                 'total_subjects' => $enrollment ? count($enrollment->selected_subjects ?: []) : 0,
                 'access_remaining_days' => $enrollment ? $enrollment->access_days_remaining : 0,
                 'is_trial' => $enrollment ? $enrollment->is_trial : false,
+                'trial_days_remaining' => $enrollment && $enrollment->is_trial ? $enrollment->access_days_remaining : null,
+                'trial_expires_at' => $enrollment && $enrollment->is_trial && $enrollment->access_expires_at ? 
+                    \Carbon\Carbon::parse($enrollment->access_expires_at)->format('M j, Y') : null,
+                'access_expires_at' => $enrollment && !$enrollment->is_trial && $enrollment->access_expires_at ? 
+                    \Carbon\Carbon::parse($enrollment->access_expires_at)->format('M j, Y') : null,
             ];
             
             // Student-specific recent activities (only their own data)
@@ -406,11 +411,42 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
 
-    // Student Extension Routes
+    // Student-specific routes
+    Route::prefix('student')->name('student.')->group(function () {
+        // Student Enrollment Management
+        Route::get('/enrollment', [\App\Http\Controllers\Student\EnrollmentController::class, 'index'])->name('enrollment.index');
+        Route::get('/enrollment/details', [\App\Http\Controllers\Student\EnrollmentController::class, 'show'])->name('enrollment.show');
+        
+        // Student Subject Management
+        Route::get('/subjects', [\App\Http\Controllers\Student\SubjectController::class, 'index'])->name('subjects.index');
+        
+        // Student Extension Routes
+        Route::get('/extension', [\App\Http\Controllers\ExtensionController::class, 'index'])->name('extension.index');
+        Route::post('/extension', [\App\Http\Controllers\ExtensionController::class, 'store'])->name('extension.store');
+        
+        // Student Access Expired Page
+        Route::get('/access-expired', function () {
+            $user = auth()->user();
+            $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
+                ->orWhere('email', $user->email)
+                ->first();
+                
+            $extensionOptions = \App\Models\AccessDuration::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+                
+            return Inertia::render('Student/AccessExpired', [
+                'enrollment' => $enrollment,
+                'extensionOptions' => $extensionOptions
+            ]);
+        })->name('access-expired');
+    });
+
+    // Legacy routes for backward compatibility
     Route::get('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'index'])->name('student.extension');
     Route::post('/student/extension', [\App\Http\Controllers\ExtensionController::class, 'store'])->name('student.extension.store');
     
-    // Student Access Expired Page
+    // Student Access Expired Page (legacy)
     Route::get('/student/access-expired', function () {
         $user = auth()->user();
         $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
@@ -543,7 +579,7 @@ Route::middleware('auth')->group(function () {
     })->name('fees.create');
 
     // Payment Management Routes (Admin-only viewing, students can only create)
-    Route::get('/payments', [PaymentController::class, 'index'])->middleware('role:admin')->name('payments.index');
+    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::get('/payments/create', [PaymentController::class, 'create'])->name('payments.create');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');

@@ -430,12 +430,12 @@
       </main>
     </div>
     
-    <!-- Notification Sound Component -->
-    <NotificationSound 
+    <!-- Notification Sound Component - Disabled to prevent conflicts -->
+    <!-- <NotificationSound 
       ref="notificationSoundRef"
       :enabled="notificationSettings.sound_enabled"
       :unread-count="notificationCount"
-    />
+    /> -->
   </div>
 </template>
 
@@ -476,35 +476,25 @@ const fetchNotificationCount = async () => {
     const response = await fetch('/api/notifications/count')
     const data = await response.json()
     
-    // Check if notifications increased
-    if (data.count > notificationCount.value && notificationCount.value > 0) {
-      // Play sound using our new system
-      if (soundEnabled.value) {
-        playNotificationSound('message')
-      }
-      
-      // Show desktop notification if enabled and supported
-      if (notificationSettings.value.desktop_enabled && 'Notification' in window) {
-        if (Notification.permission === 'granted') {
-          new Notification('StudySeco', {
-            body: `You have ${data.count - notificationCount.value} new notification${data.count - notificationCount.value > 1 ? 's' : ''}`,
-            icon: '/favicon.ico',
-            tag: 'studyseco-notification'
-          })
-        } else if (Notification.permission === 'default') {
-          Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-              new Notification('StudySeco', {
-                body: `You have ${data.count - notificationCount.value} new notification${data.count - notificationCount.value > 1 ? 's' : ''}`,
-                icon: '/favicon.ico',
-                tag: 'studyseco-notification'
-              })
-            }
-          })
-        }
+    // Only play sound if notifications actually increased (not on initial load)
+    if (data.count > previousNotificationCount.value && previousNotificationCount.value > 0 && soundEnabled.value) {
+      // Only play once per actual new notification
+      playNotificationSound('message')
+    }
+    
+    // Show desktop notification if there are actual new notifications
+    if (data.count > previousNotificationCount.value && previousNotificationCount.value > 0 && notificationSettings.value.desktop_enabled && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification('StudySeco', {
+          body: `You have new notifications`,
+          icon: '/favicon.ico',
+          tag: 'studyseco-notification'
+        })
       }
     }
     
+    // Update counts
+    previousNotificationCount.value = notificationCount.value
     notificationCount.value = data.count
   } catch (error) {
     console.error('Failed to fetch notification count:', error)

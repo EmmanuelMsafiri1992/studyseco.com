@@ -26,19 +26,50 @@
                     <div class="bg-white rounded-xl shadow-sm">
                         <div class="p-6 border-b border-gray-200">
                             <h2 class="text-xl font-semibold text-gray-900 mb-2">Available Schools</h2>
-                            <div class="flex items-center gap-4">
-                                <div class="flex-1">
-                                    <input 
-                                        v-model="searchQuery"
-                                        type="text" 
-                                        placeholder="Search schools by name, region, or district..." 
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <input 
+                                            v-model="searchQuery"
+                                            type="text" 
+                                            placeholder="Search schools by name, region, or district..." 
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                    </div>
+                                    <select v-model="filterRegion" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                        <option value="">All Regions</option>
+                                        <option v-for="region in uniqueRegions" :key="region" :value="region">{{ region }}</option>
+                                    </select>
                                 </div>
-                                <select v-model="filterRegion" class="px-4 py-2 border border-gray-300 rounded-lg">
-                                    <option value="">All Regions</option>
-                                    <option v-for="region in uniqueRegions" :key="region" :value="region">{{ region }}</option>
-                                </select>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <select v-model="filterDistrict" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                            <option value="">All Districts</option>
+                                            <option v-for="district in filteredDistricts" :key="district" :value="district">{{ district }}</option>
+                                        </select>
+                                        <div class="flex items-center gap-2">
+                                            <label class="text-sm text-gray-600">View:</label>
+                                            <button 
+                                                @click="viewMode = 'detailed'"
+                                                :class="viewMode === 'detailed' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'"
+                                                class="px-3 py-1 rounded text-sm"
+                                            >
+                                                Detailed
+                                            </button>
+                                            <button 
+                                                @click="viewMode = 'compact'"
+                                                :class="viewMode === 'compact' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'"
+                                                class="px-3 py-1 rounded text-sm"
+                                            >
+                                                Compact
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        Showing {{ paginatedSchools.length }} of {{ filteredSchools.length }} schools
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -48,9 +79,10 @@
                                 <p class="text-gray-500">No schools match your search criteria.</p>
                             </div>
                             
-                            <div v-else class="grid gap-4">
+                            <!-- Detailed View -->
+                            <div v-else-if="viewMode === 'detailed'" class="grid gap-4">
                                 <div 
-                                    v-for="school in filteredSchools" 
+                                    v-for="school in paginatedSchools" 
                                     :key="school.id"
                                     :class="[
                                         'border-2 rounded-lg p-4 cursor-pointer transition-all',
@@ -79,7 +111,7 @@
                                                 Priority #{{ getSchoolPriority(school.id) }}
                                             </div>
                                             <button 
-                                                v-if="!isSchoolSelected(school.id) && selectedSchools.length < 10 && school.available_slots > 0"
+                                                v-if="!isSchoolSelected(school.id) && selectedSchools.length < 5 && school.available_slots > 0"
                                                 @click.stop="addSchoolToSelection(school)"
                                                 class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
                                             >
@@ -87,6 +119,83 @@
                                             </button>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Compact View -->
+                            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div 
+                                    v-for="school in paginatedSchools" 
+                                    :key="school.id"
+                                    :class="[
+                                        'border-2 rounded-lg p-3 cursor-pointer transition-all',
+                                        isSchoolSelected(school.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300',
+                                        school.available_slots === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                                    ]"
+                                    @click="toggleSchoolSelection(school)"
+                                >
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <h3 class="font-medium text-gray-900 text-sm truncate">{{ school.name }}</h3>
+                                                <div v-if="isSchoolSelected(school.id)" class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                                                    #{{ getSchoolPriority(school.id) }}
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-600 truncate">{{ school.district }}, {{ school.region }}</p>
+                                            <div class="flex items-center gap-3 mt-1">
+                                                <span class="text-xs text-gray-500">{{ school.capacity }} cap.</span>
+                                                <span :class="school.available_slots > 0 ? 'text-green-600' : 'text-red-600'" class="text-xs">
+                                                    {{ school.available_slots }} slots
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            v-if="!isSchoolSelected(school.id) && selectedSchools.length < 5 && school.available_slots > 0"
+                                            @click.stop="addSchoolToSelection(school)"
+                                            class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 ml-2"
+                                        >
+                                            Select
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pagination -->
+                            <div v-if="totalPages > 1" class="mt-6 flex items-center justify-between">
+                                <div class="text-sm text-gray-500">
+                                    Page {{ currentPage }} of {{ totalPages }}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button 
+                                        @click="currentPage = Math.max(1, currentPage - 1)"
+                                        :disabled="currentPage === 1"
+                                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                    >
+                                        Previous
+                                    </button>
+                                    
+                                    <div class="flex gap-1">
+                                        <button 
+                                            v-for="page in visiblePages" 
+                                            :key="page"
+                                            @click="currentPage = page"
+                                            :class="[
+                                                'px-3 py-2 text-sm border rounded-lg',
+                                                page === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 hover:bg-gray-50'
+                                            ]"
+                                        >
+                                            {{ page }}
+                                        </button>
+                                    </div>
+                                    
+                                    <button 
+                                        @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                                        :disabled="currentPage === totalPages"
+                                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                    >
+                                        Next
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -223,7 +332,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import { router } from '@inertiajs/vue3'
 import DashboardLayout from '@/Layouts/DashboardLayout.vue'
@@ -237,7 +346,11 @@ const props = defineProps({
 
 const searchQuery = ref('')
 const filterRegion = ref('')
+const filterDistrict = ref('')
 const selectedSchools = ref([])
+const viewMode = ref('compact')
+const currentPage = ref(1)
+const itemsPerPage = ref(4)
 
 const form = useForm({
     school_selections: []
@@ -245,6 +358,13 @@ const form = useForm({
 
 const uniqueRegions = computed(() => {
     return [...new Set((props.schools || []).map(school => school.region))].sort()
+})
+
+const filteredDistricts = computed(() => {
+    const schoolsInRegion = filterRegion.value 
+        ? (props.schools || []).filter(school => school.region === filterRegion.value)
+        : (props.schools || [])
+    return [...new Set(schoolsInRegion.map(school => school.district))].sort()
 })
 
 const filteredSchools = computed(() => {
@@ -255,11 +375,42 @@ const filteredSchools = computed(() => {
             school.district.toLowerCase().includes(searchQuery.value.toLowerCase())
         
         const matchesRegion = !filterRegion.value || school.region === filterRegion.value
+        const matchesDistrict = !filterDistrict.value || school.district === filterDistrict.value
         
-        return matchesSearch && matchesRegion
+        return matchesSearch && matchesRegion && matchesDistrict
     })
     
     return filtered.sort((a, b) => (b.available_slots || 0) - (a.available_slots || 0))
+})
+
+const totalPages = computed(() => {
+    return Math.ceil(filteredSchools.value.length / itemsPerPage.value)
+})
+
+const paginatedSchools = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value
+    const end = start + itemsPerPage.value
+    return filteredSchools.value.slice(start, end)
+})
+
+const visiblePages = computed(() => {
+    const total = totalPages.value
+    const current = currentPage.value
+    const delta = 2
+    
+    let start = Math.max(1, current - delta)
+    let end = Math.min(total, current + delta)
+    
+    if (end - start < delta * 2) {
+        start = Math.max(1, end - delta * 2)
+        end = Math.min(total, start + delta * 2)
+    }
+    
+    const pages = []
+    for (let i = start; i <= end; i++) {
+        pages.push(i)
+    }
+    return pages
 })
 
 const isSchoolSelected = (schoolId) => {
@@ -272,8 +423,8 @@ const getSchoolPriority = (schoolId) => {
 }
 
 const addSchoolToSelection = (school) => {
-    if (selectedSchools.value.length >= 10) {
-        alert('You can select maximum 10 schools.')
+    if (selectedSchools.value.length >= 5) {
+        alert('You can select maximum 5 schools.')
         return
     }
     
@@ -335,4 +486,14 @@ const toggleSchoolSelection = (school) => {
         addSchoolToSelection(school)
     }
 }
+
+// Reset to page 1 when filters change
+watch([searchQuery, filterRegion, filterDistrict], () => {
+    currentPage.value = 1
+})
+
+// Clear district filter when region changes
+watch(filterRegion, () => {
+    filterDistrict.value = ''
+})
 </script>
