@@ -23,3 +23,22 @@
        21            }
        22
        23            // Calculate extension pricing based on user's currency
+above is where we ended
+
+
+when the user has selected free 7days trial
+they must not be able to see the following:
+ Cancellation Policy:
+
+• 14-day cooling period: Cancel within 14 days for full refund via same payment method
+• Refund processing: 24-48 hours after cancellation approval
+• No pausing: Course access cannot be paused once started
+• Material policy: Resources are for personal use only, not downloadable or shareable outside the platform
+
+since they are not paying anything hence it does not make sense for them to see about refund or cancellation. only users who
+are paying must be able to see it.
+
+also on Data Usage: Approximately 2-3GB monthly for optimal learning experience. i think 7 to 10gb will be correct approximation per
+month.
+
+on the landing page night schools are those schools which offers afternoon classes better called open school.
