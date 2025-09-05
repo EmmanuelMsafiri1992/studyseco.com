@@ -67,7 +67,7 @@
                     </svg>
                     <h3 class="text-lg font-medium text-gray-900 mb-2">Upload Teaching Materials</h3>
                     <p class="text-gray-600 mb-4">Drag and drop files here, or click to select</p>
-                    <input ref="fileInput" type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" class="hidden" @change="handleFileSelect">
+                    <input ref="fileInput" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.mp4,.mov,.avi,.mp3,.wav" class="hidden" @change="handleFileSelect">
                     <button @click="$refs.fileInput.click()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
                         Choose Files
                     </button>
@@ -78,7 +78,7 @@
                 <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <select v-model="form.subject_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             <option value="">Select Subject</option>
                             <option v-for="subject in subjects" :key="subject.id" :value="subject.id">
                                 {{ subject.name }}
@@ -87,7 +87,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Material Type</label>
-                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <select v-model="form.material_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             <option value="">Select Type</option>
                             <option value="lesson_plan">Lesson Plan</option>
                             <option value="worksheet">Worksheet</option>
@@ -95,6 +95,41 @@
                             <option value="reference">Reference Material</option>
                             <option value="assignment">Assignment</option>
                         </select>
+                    </div>
+                </div>
+                
+                <!-- Additional Form Fields -->
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                        <input v-model="form.title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter material title">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description (optional)</label>
+                        <textarea v-model="form.description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Brief description of the material"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+                            <input v-model="form.grade_level" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., Form 1-4">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
+                            <input v-model="form.duration" type="number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., 45">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                            <input v-model="form.tags" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="comma, separated, tags">
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <input v-model="form.is_public" type="checkbox" id="is_public" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="is_public" class="ml-2 text-sm text-gray-700">Make this material public (visible to other teachers)</label>
+                    </div>
+                    <div class="flex justify-end">
+                        <button @click="uploadMaterial" :disabled="!form.file" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            Upload Material
+                        </button>
                     </div>
                 </div>
             </div>
@@ -125,29 +160,32 @@
                 </div>
                 
                 <div v-else class="divide-y divide-gray-200">
-                    <div v-for="material in sampleMaterials" 
+                    <div v-for="material in materials" 
                          :key="material.id"
                          class="p-6 hover:bg-gray-50 transition-colors">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-4">
                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center"
-                                     :class="getFileTypeColor(material.type)">
+                                     :class="material.color">
                                     <span class="text-white font-semibold text-sm">
-                                        {{ getFileTypeIcon(material.type) }}
+                                        {{ material.icon }}
                                     </span>
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-semibold text-gray-900">{{ material.title }}</h3>
-                                    <p class="text-sm text-gray-600">{{ material.subject }} • {{ material.type }}</p>
+                                    <p class="text-sm text-gray-600">{{ material.subject }} • {{ material.material_type }}</p>
                                     <div class="flex items-center space-x-4 mt-2">
                                         <span class="text-xs text-gray-500">
                                             📅 {{ formatDate(material.created_at) }}
                                         </span>
                                         <span class="text-xs text-gray-500">
-                                            📁 {{ material.size }}
+                                            📁 {{ material.file_size }}
                                         </span>
                                         <span class="text-xs text-gray-500">
-                                            👁️ {{ material.downloads }} downloads
+                                            📥 {{ material.download_count }} downloads
+                                        </span>
+                                        <span class="text-xs text-gray-500">
+                                            👁️ {{ material.view_count }} views
                                         </span>
                                     </div>
                                 </div>
@@ -172,17 +210,27 @@
 </template>
 
 <script setup>
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import DashboardLayout from '@/Layouts/DashboardLayout.vue'
 
 const props = defineProps({
     materials: Array,
     subjects: Array,
-    upload_stats: Object
+    uploadStats: Object
 })
 
-const uploadStats = computed(() => props.upload_stats || { total: 0, this_month: 0 })
+const form = ref({
+    title: '',
+    subject_id: '',
+    material_type: '',
+    description: '',
+    grade_level: '',
+    duration: '',
+    tags: '',
+    is_public: false,
+    file: null
+})
 
 // Sample materials for demonstration
 const sampleMaterials = ref([
@@ -272,7 +320,8 @@ const downloadMaterial = (material) => {
     // Create a temporary download link
     const link = document.createElement('a')
     link.href = `/teacher/materials/${material.id}/download`
-    link.download = material.title
+    link.download = material.file_name || material.title
+    link.target = '_blank'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -280,14 +329,15 @@ const downloadMaterial = (material) => {
 
 const deleteMaterial = (material) => {
     if (confirm(`Are you sure you want to delete "${material.title}"? This action cannot be undone.`)) {
-        // TODO: Implement actual deletion via API
-        console.log('Deleting material:', material.title)
-        
-        // For now, show success message
-        alert(`"${material.title}" has been deleted successfully!`)
-        
-        // In a real implementation, you would:
-        // router.delete(`/teacher/materials/${material.id}`)
+        router.delete(`/teacher/materials/${material.id}`, {
+            onSuccess: () => {
+                console.log('Material deleted successfully')
+            },
+            onError: (errors) => {
+                console.error('Delete errors:', errors)
+                alert('Error deleting material. Please try again.')
+            }
+        })
     }
 }
 
@@ -296,15 +346,49 @@ const handleFileSelect = (event) => {
     
     if (files.length === 0) return
     
-    files.forEach(file => {
-        console.log(`Selected file: ${file.name}, size: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+    // For now, handle single file upload
+    form.value.file = files[0]
+    
+    console.log(`Selected file: ${files[0].name}, size: ${(files[0].size / 1024 / 1024).toFixed(2)}MB`)
+}
+
+const uploadMaterial = () => {
+    if (!form.value.title || !form.value.subject_id || !form.value.material_type || !form.value.file) {
+        alert('Please fill in all required fields and select a file')
+        return
+    }
+
+    const formData = new FormData()
+    Object.keys(form.value).forEach(key => {
+        if (form.value[key] !== null) {
+            formData.append(key, form.value[key])
+        }
     })
-    
-    alert(`${files.length} file(s) selected! Upload functionality will be implemented soon.`)
-    
-    // TODO: Implement actual file upload
-    // const formData = new FormData()
-    // files.forEach(file => formData.append('files[]', file))
-    // router.post('/teacher/materials', formData)
+
+    // Use Inertia's router for form submission
+    router.post('/teacher/materials', formData, {
+        forceFormData: true,
+        onSuccess: () => {
+            // Reset form
+            form.value = {
+                title: '',
+                subject_id: '',
+                material_type: '',
+                description: '',
+                grade_level: '',
+                duration: '',
+                tags: '',
+                is_public: false,
+                file: null
+            }
+            // Clear file input
+            if (fileInput.value) {
+                fileInput.value.value = ''
+            }
+        },
+        onError: (errors) => {
+            console.error('Upload errors:', errors)
+        }
+    })
 }
 </script>

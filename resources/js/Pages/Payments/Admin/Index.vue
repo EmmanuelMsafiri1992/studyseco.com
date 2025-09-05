@@ -18,7 +18,9 @@ const selectedScreenshot = ref(null);
 
 const verificationForm = useForm({
     status: '',
+    action: '',
     admin_notes: '',
+    notes: '',
     rejection_reason: '',
 });
 
@@ -55,15 +57,22 @@ const viewScreenshot = (screenshotUrl) => {
 };
 
 const submitVerification = () => {
-    const action = verificationForm.status;
-    const data = {
-        action: action,
-        notes: verificationForm.admin_notes,
-        rejection_reason: action === 'reject' ? verificationForm.rejection_reason : null
-    };
+    // Map frontend status to backend action
+    const action = verificationForm.status === 'approved' ? 'approve' : 'reject';
+    
+    // Update form data directly
+    verificationForm.action = action;
+    verificationForm.notes = verificationForm.admin_notes;
+    
+    // Only include rejection_reason for reject action
+    if (action === 'reject') {
+        verificationForm.rejection_reason = verificationForm.rejection_reason || '';
+    } else {
+        // Remove rejection_reason field entirely when approving
+        delete verificationForm.rejection_reason;
+    }
 
-    verificationForm.post(route('payments.verify', selectedPayment.value.id), {
-        data: data,
+    verificationForm.post(route('payments.verify', selectedPayment.value?.id), {
         onSuccess: () => {
             closeVerificationModal();
         },
@@ -74,11 +83,11 @@ const submitVerification = () => {
 };
 
 const pendingPayments = computed(() => {
-    return props.payments.data.filter(payment => payment.status === 'pending');
+    return props.payments?.data?.filter(payment => payment.status === 'pending') || [];
 });
 
 const recentlyVerified = computed(() => {
-    return props.payments.data.filter(payment => payment.status !== 'pending').slice(0, 5);
+    return props.payments?.data?.filter(payment => payment.status !== 'pending').slice(0, 5) || [];
 });
 
 const getPaymentMethodName = (method) => {
@@ -123,7 +132,7 @@ const getStatusColor = (status) => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-green-600 text-sm font-medium">Approved Today</p>
-                            <p class="text-2xl font-bold text-green-800">{{ payments.data.filter(p => p.status === 'approved' && new Date(p.verified_at).toDateString() === new Date().toDateString()).length }}</p>
+                            <p class="text-2xl font-bold text-green-800">{{ payments?.data?.filter(p => p.status === 'approved' && new Date(p.verified_at).toDateString() === new Date().toDateString()).length || 0 }}</p>
                         </div>
                         <div class="w-10 h-10 bg-green-200 rounded-xl flex items-center justify-center">
                             <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +146,7 @@ const getStatusColor = (status) => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-red-600 text-sm font-medium">Rejected</p>
-                            <p class="text-2xl font-bold text-red-800">{{ payments.data.filter(p => p.status === 'rejected').length }}</p>
+                            <p class="text-2xl font-bold text-red-800">{{ payments?.data?.filter(p => p.status === 'rejected')?.length || 0 }}</p>
                         </div>
                         <div class="w-10 h-10 bg-red-200 rounded-xl flex items-center justify-center">
                             <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +160,7 @@ const getStatusColor = (status) => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-indigo-600 text-sm font-medium">Total Revenue</p>
-                            <p class="text-2xl font-bold text-indigo-800">{{ formatAmount(payments.data.filter(p => p.status === 'approved').reduce((sum, p) => sum + parseFloat(p.amount), 0)) }}</p>
+                            <p class="text-2xl font-bold text-indigo-800">{{ formatAmount((payments?.data?.filter(p => p.status === 'approved') || []).reduce((sum, p) => sum + parseFloat(p.amount), 0)) }}</p>
                         </div>
                         <div class="w-10 h-10 bg-indigo-200 rounded-xl flex items-center justify-center">
                             <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,11 +185,11 @@ const getStatusColor = (status) => {
                             <div class="flex items-center space-x-4">
                                 <!-- Student Avatar -->
                                 <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                                    {{ payment.user.name.charAt(0).toUpperCase() }}
+                                    {{ payment.enrollment?.user?.name?.charAt(0)?.toUpperCase() || 'U' }}
                                 </div>
 
                                 <div>
-                                    <h3 class="font-semibold text-slate-800">{{ payment.user.name }}</h3>
+                                    <h3 class="font-semibold text-slate-800">{{ payment.enrollment?.user?.name || 'Unknown User' }}</h3>
                                     <div class="flex items-center space-x-4 text-sm text-slate-600">
                                         <span>{{ getPaymentMethodName(payment.payment_method) }}</span>
                                         <span>{{ formatAmount(payment.amount) }}</span>
@@ -237,15 +246,15 @@ const getStatusColor = (status) => {
                             <div class="flex items-center space-x-4">
                                 <!-- Student Avatar -->
                                 <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                                    {{ payment.user.name.charAt(0).toUpperCase() }}
+                                    {{ payment.enrollment?.user?.name?.charAt(0)?.toUpperCase() || 'U' }}
                                 </div>
 
                                 <div>
-                                    <h3 class="font-semibold text-slate-800">{{ payment.user.name }}</h3>
+                                    <h3 class="font-semibold text-slate-800">{{ payment.enrollment?.user?.name || 'Unknown User' }}</h3>
                                     <div class="flex items-center space-x-4 text-sm text-slate-600">
                                         <span>{{ formatAmount(payment.amount) }}</span>
                                         <span>{{ formatDate(payment.verified_at) }}</span>
-                                        <span v-if="payment.verified_by_user">by {{ payment.verified_by_user.name }}</span>
+                                        <span v-if="payment.verified_by_user">by {{ payment.verified_by_user?.name || 'Unknown' }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -270,7 +279,7 @@ const getStatusColor = (status) => {
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <h3 class="text-xl font-bold text-slate-800">Verify Payment</h3>
-                        <p class="text-sm text-slate-600">{{ selectedPayment?.user.name }}</p>
+                        <p class="text-sm text-slate-600">{{ selectedPayment?.enrollment?.user?.name || 'Unknown User' }}</p>
                     </div>
                     <button @click="closeVerificationModal" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
                         <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

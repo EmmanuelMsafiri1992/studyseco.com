@@ -31,19 +31,43 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        // Debug: Log what the server receives
+        \Log::debug('Profile update request received:', [
+            'all_data' => $request->all(),
+            'files' => $request->allFiles(),
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'password' => $request->has('password') ? 'present' : 'missing',
+            'profile_photo' => $request->hasFile('profile_photo') ? [
+                'original_name' => $request->file('profile_photo')->getClientOriginalName(),
+                'mime_type' => $request->file('profile_photo')->getMimeType(),
+                'size' => $request->file('profile_photo')->getSize(),
+                'is_valid' => $request->file('profile_photo')->isValid()
+            ] : 'no_file',
+            'method' => $request->method(),
+            'content_type' => $request->header('Content-Type')
+        ]);
+        
         $user = $request->user();
         $validated = $request->validated();
         
         // Handle profile photo upload
         if ($request->hasFile('profile_photo')) {
+            \Log::debug('Processing profile photo upload...');
+            
             // Delete old profile photo if exists
             if ($user->profile_photo_url && Storage::exists($user->profile_photo_url)) {
+                \Log::debug('Deleting old profile photo: ' . $user->profile_photo_url);
                 Storage::delete($user->profile_photo_url);
             }
             
             // Store new profile photo
             $path = $request->file('profile_photo')->store('profile-photos', 'public');
             $validated['profile_photo_url'] = $path;
+            
+            \Log::debug('New profile photo stored at: ' . $path);
+        } else {
+            \Log::debug('No profile photo file found in request');
         }
         
         // Handle password update

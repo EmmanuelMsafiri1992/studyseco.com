@@ -42,6 +42,31 @@ const getDaysRemaining = (expiresAt) => {
     return diffDays > 0 ? diffDays : 0;
 };
 
+const downloadReceipt = (payment) => {
+    // Create a simple receipt download
+    fetch(`/payments/${payment.id}/receipt`)
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            }
+            throw new Error('Failed to download receipt');
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `payment-receipt-${payment.id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('Error downloading receipt:', error);
+            alert('Error downloading receipt. Please try again.');
+        });
+};
+
 const activePayment = computed(() => {
     return props.payments.data.find(payment => 
         payment.status === 'approved' && 
@@ -152,6 +177,18 @@ const activePayment = computed(() => {
                                 ]">
                                     {{ payment.status.charAt(0).toUpperCase() + payment.status.slice(1) }}
                                 </div>
+
+                                <!-- Download Receipt -->
+                                <button 
+                                    v-if="payment.status === 'approved'" 
+                                    @click="downloadReceipt(payment)"
+                                    class="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors duration-200 group"
+                                    title="Download Receipt"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </button>
 
                                 <!-- View Details -->
                                 <Link :href="route('payments.show', payment.id)" 

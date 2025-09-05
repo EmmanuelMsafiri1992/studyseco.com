@@ -17,6 +17,7 @@ class EnrollmentPayment extends Model
         'payment_proof_path',
         'payment_details',
         'payment_type',
+        'additional_data',
         'extension_months',
         'status',
         'admin_notes',
@@ -26,7 +27,8 @@ class EnrollmentPayment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'verified_at' => 'datetime'
+        'verified_at' => 'datetime',
+        'additional_data' => 'array'
     ];
 
     public function enrollment(): BelongsTo

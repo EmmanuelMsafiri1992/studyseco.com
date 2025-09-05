@@ -30,11 +30,14 @@ const form = useForm({
     access_duration_id: null,
     selected_subjects: [],  // Start with empty array to avoid stale data
     upgrade: props.isUpgrade || false,
+    terms_accepted: false,
+    conduct_agreed: false,
 });
 
 const screenshotInput = ref(null);
 const screenshotPreview = ref(null);
 const showProcessing = ref(false);
+const showTermsModal = ref(false);
 
 // Ensure selected subjects are always integers
 const selectedSubjectsAsIntegers = computed(() => {
@@ -63,20 +66,8 @@ const getPaymentInstructions = (method) => {
 };
 
 const filteredPaymentMethods = computed(() => {
-    // Filter payment methods based on user location/country
-    if (user.country === 'South Africa' || user.country === 'ZA') {
-        // South African users should see South African and international methods
-        return props.paymentMethods.filter(method => 
-            method.region === 'south_africa' || method.region === 'international'
-        );
-    } else if (user.country === 'Malawi' || user.country === 'MW') {
-        // Malawian users should see Malawian and international methods
-        return props.paymentMethods.filter(method => 
-            method.region === 'malawi' || method.region === 'international'
-        );
-    }
-    
-    // Default to all methods if country is not specified or unknown
+    // Since backend now handles filtering correctly, we can simply return all methods
+    // The backend already filters by region + international methods
     return props.paymentMethods;
 });
 
@@ -127,6 +118,16 @@ const submit = () => {
     
     if (!form.reference_number || form.reference_number.trim() === '') {
         alert('Please enter a payment reference number');
+        return;
+    }
+
+    if (!form.terms_accepted) {
+        alert('Please read and accept the payment terms and conditions');
+        return;
+    }
+
+    if (!form.conduct_agreed) {
+        alert('Please agree to the community conduct guidelines');
         return;
     }
 
@@ -382,6 +383,39 @@ const setAccessDuration = (duration) => {
                         </div>
                     </div>
 
+                    <!-- Terms and Conditions -->
+                    <div class="bg-slate-50/50 rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-slate-800 mb-3">Terms and Conditions</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-3">
+                                <input 
+                                    type="checkbox" 
+                                    id="terms_accepted" 
+                                    v-model="form.terms_accepted"
+                                    class="mt-0.5 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                >
+                                <label for="terms_accepted" class="text-sm text-slate-700">
+                                    I agree to the 
+                                    <button type="button" @click="showTermsModal = true" class="text-indigo-600 hover:text-indigo-800 underline">
+                                        payment terms and conditions
+                                    </button>
+                                    including refund policy (14-day cancellation window)
+                                </label>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <input 
+                                    type="checkbox" 
+                                    id="conduct_agreed" 
+                                    v-model="form.conduct_agreed"
+                                    class="mt-0.5 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                >
+                                <label for="conduct_agreed" class="text-sm text-slate-700">
+                                    I agree to maintain respectful conduct in system interactions, community discussions, and understand that access will be granted within 24-48 hours after payment approval
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Second Row: Instructions & Submit -->
                     <div v-if="getSelectedMethod" class="bg-slate-50/50 rounded-lg p-3">
                         <div class="flex items-center justify-between">
@@ -401,7 +435,7 @@ const setAccessDuration = (duration) => {
                                 </Link>
                                 <button type="button"
                                         @click.prevent="submit"
-                                        :disabled="form.processing || !form.payment_method || !form.access_duration_id || hasPendingPayment || ((props.isUpgrade || form.upgrade) && form.selected_subjects.length === 0)"
+                                        :disabled="form.processing || !form.payment_method || !form.access_duration_id || hasPendingPayment || ((props.isUpgrade || form.upgrade) && form.selected_subjects.length === 0) || !form.terms_accepted || !form.conduct_agreed"
                                         class="px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <span v-if="form.processing">Submitting...</span>
                                     <span v-else>Submit Payment</span>
@@ -409,6 +443,103 @@ const setAccessDuration = (duration) => {
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" @click="showTermsModal = false">
+            <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto" @click.stop>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Payment Terms and Conditions</h2>
+                    <button @click="showTermsModal = false" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="prose prose-sm max-w-none space-y-6">
+                    <section>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-3">📋 Payment Terms</h3>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <ul class="space-y-2 text-sm text-slate-700">
+                                <li>• Payment must be completed before accessing premium features</li>
+                                <li>• Your account will be upgraded to Premium once payment is verified</li>
+                                <li>• Access will be granted within 24-48 hours after admin approval</li>
+                                <li>• All prices are final and include applicable fees</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-3">💸 Refund Policy</h3>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-green-800 mb-2">14-Day Money-Back Guarantee</p>
+                                    <ul class="space-y-1 text-sm text-green-700">
+                                        <li>• You can cancel and request a full refund within 14 days of enrollment with premium account</li>
+                                        <li>• Refunds are only available during the first 14 days from the day of premium enrollment</li>
+                                        <li>• After 14 days, no refunds or cancellations will be processed</li>
+                                        <li>• Refund requests must be submitted through our support system</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-3">👥 Community Guidelines</h3>
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                            <ul class="space-y-2 text-sm text-slate-700">
+                                <li>• Be respectful and kind to other students and teachers in all interactions</li>
+                                <li>• Maintain professional conduct in groups and community discussions</li>
+                                <li>• No harassment, bullying, or inappropriate behavior will be tolerated</li>
+                                <li>• Respect intellectual property - no unauthorized downloading or sharing of materials</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-3">⚠️ Prohibited Activities</h3>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <p class="text-sm text-red-800 font-medium mb-2">The following activities may result in account termination:</p>
+                            <ul class="space-y-1 text-sm text-red-700">
+                                <li>• Attempting to bypass payment methods or hack the system</li>
+                                <li>• Taking unauthorized screenshots or downloading videos</li>
+                                <li>• Sharing account credentials with others</li>
+                                <li>• Using the platform for illegal or unethical purposes</li>
+                                <li>• Violating any terms of service or community guidelines</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-3">🎓 School Registration & Exams</h3>
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                            <ul class="space-y-2 text-sm text-slate-700">
+                                <li>• Once your school selection is approved, you will receive contact details for a student representative</li>
+                                <li>• You are responsible for contacting the school directly regarding exam dates and arrangements</li>
+                                <li>• The platform provides learning materials but exam registration is handled separately by schools</li>
+                                <li>• Failure to write exams due to your own actions will be recorded in the system</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-slate-200">
+                    <button @click="showTermsModal = false" class="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors">
+                        Close
+                    </button>
+                    <button @click="form.terms_accepted = true; showTermsModal = false" class="px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200">
+                        Accept Terms
+                    </button>
                 </div>
             </div>
         </div>

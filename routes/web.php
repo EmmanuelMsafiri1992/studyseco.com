@@ -157,7 +157,25 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/dashboard', function () {
     $user = auth()->user();
-    $data = ['auth' => ['user' => $user]];
+    
+    // Get enrollment information for students to display country
+    $enrollment = null;
+    if ($user->role === 'student') {
+        $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
+            ->orWhere('email', $user->email)
+            ->first();
+    }
+    
+    // Add enrollment info to user data
+    $userData = $user->toArray();
+    if ($enrollment) {
+        $userData['enrollment'] = [
+            'country' => $enrollment->country,
+            'region' => $enrollment->region
+        ];
+    }
+    
+    $data = ['auth' => ['user' => $userData]];
     
     if ($user->role === 'admin') {
         // Get real statistics for admin dashboard
@@ -416,6 +434,8 @@ Route::middleware('auth')->group(function () {
         // Student Enrollment Management
         Route::get('/enrollment', [\App\Http\Controllers\Student\EnrollmentController::class, 'index'])->name('enrollment.index');
         Route::get('/enrollment/details', [\App\Http\Controllers\Student\EnrollmentController::class, 'show'])->name('enrollment.show');
+        Route::get('/enrollment/increase-subjects', [\App\Http\Controllers\Student\EnrollmentController::class, 'increaseSubjects'])->name('enrollment.increase-subjects');
+        Route::post('/enrollment/increase-subjects', [\App\Http\Controllers\Student\EnrollmentController::class, 'storeSubjectIncrease'])->name('enrollment.store-subject-increase');
         
         // Student Subject Management
         Route::get('/subjects', [\App\Http\Controllers\Student\SubjectController::class, 'index'])->name('subjects.index');
@@ -583,6 +603,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments/create', [PaymentController::class, 'create'])->name('payments.create');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+    Route::get('/payments/{payment}/receipt', [PaymentController::class, 'downloadReceipt'])->name('payments.receipt');
     Route::post('payments/{payment}/verify', [PaymentController::class, 'verify'])->middleware('role:admin')->name('payments.verify');
     Route::get('payments/statistics', [PaymentController::class, 'statistics'])->middleware('role:admin')->name('payments.statistics');
     Route::get('api/payments/check-access', [PaymentController::class, 'checkAccess'])->name('payments.check-access');
@@ -891,9 +912,42 @@ Route::middleware('auth')->group(function () {
                 'subjects_count' => count($enrollment->selected_subjects ?: []),
                 'access_expires_at' => $enrollment->access_expires_at,
                 'access_days_remaining' => $enrollment->access_days_remaining,
+                'country' => $enrollment->country ?: ($enrollment->region ? ucfirst(str_replace('_', ' ', $enrollment->region)) : null),
+                'region' => $enrollment->region,
             ] : null
         ]);
     })->name('account.settings');
+    
+    // Country Update Route
+    Route::post('/profile/country-update', function (Illuminate\Http\Request $request) {
+        $user = auth()->user();
+        
+        $request->validate([
+            'new_country' => 'required|string|in:malawi,south_africa,zambia,botswana,zimbabwe',
+            'new_phone' => 'required|string|max:20',
+            'reason' => 'required|string|max:500',
+            'verification_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        // Store verification document if provided
+        $documentPath = null;
+        if ($request->hasFile('verification_document')) {
+            $documentPath = $request->file('verification_document')->store('country-updates', 'public');
+        }
+
+        // Create country update request
+        \App\Models\CountryUpdateRequest::create([
+            'user_id' => $user->id,
+            'current_country' => $user->enrollment?->country ?? 'unknown',
+            'new_country' => $request->new_country,
+            'new_phone' => $request->new_phone,
+            'reason' => $request->reason,
+            'verification_document_path' => $documentPath,
+            'status' => 'pending'
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Country update request submitted successfully']);
+    })->name('profile.country-update');
 
     // Notification Settings Route
     Route::get('/notification-settings', function () {
@@ -1007,6 +1061,7 @@ Route::middleware('auth')->group(function () {
     // School Selection Routes (Students only)
     Route::prefix('school-selections')->name('school-selections.')->group(function () {
         Route::get('/', [\App\Http\Controllers\SchoolSelectionController::class, 'index'])->name('index');
+        Route::get('/confirmed', [\App\Http\Controllers\SchoolSelectionController::class, 'confirmed'])->name('confirmed');
         Route::post('/', [\App\Http\Controllers\SchoolSelectionController::class, 'store'])->name('store');
         Route::put('/{selection}', [\App\Http\Controllers\SchoolSelectionController::class, 'update'])->name('update');
         Route::delete('/{selection}', [\App\Http\Controllers\SchoolSelectionController::class, 'destroy'])->name('destroy');
@@ -1116,69 +1171,12 @@ Route::middleware('auth')->group(function () {
             return redirect()->back()->with('success', 'Meeting scheduled successfully!');
         })->name('calendar.store');
 
-        Route::get('/materials', function () {
-            $user = auth()->user();
-            
-            // Sample materials data (you'll need to create a TeachingMaterial model)
-            $materials = collect([
-                [
-                    'id' => 1,
-                    'title' => 'Algebra Fundamentals - Complete Guide',
-                    'subject' => 'Mathematics',
-                    'type' => 'lesson_plan',
-                    'description' => 'Comprehensive lesson plan covering basic algebra concepts including variables, equations, and problem solving.',
-                    'file_extension' => 'pdf',
-                    'file_size' => 2048000,
-                    'downloads' => 15,
-                    'created_at' => now()->subDays(5),
-                    'file_url' => '/storage/materials/algebra-guide.pdf'
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'English Grammar Workshop Slides',
-                    'subject' => 'English',
-                    'type' => 'presentation',
-                    'description' => 'Interactive presentation for teaching grammar rules and practical exercises.',
-                    'file_extension' => 'pptx',
-                    'file_size' => 5120000,
-                    'downloads' => 8,
-                    'created_at' => now()->subDays(2),
-                    'file_url' => '/storage/materials/grammar-workshop.pptx'
-                ]
-            ]);
-
-            return Inertia::render('Teacher/Materials/Index', [
-                'materials' => $materials,
-                'stats' => [
-                    'total_materials' => $materials->count(),
-                    'downloads_total' => $materials->sum('downloads')
-                ]
-            ]);
-        })->name('materials');
-
-        Route::post('/materials', function (\Illuminate\Http\Request $request) {
-            $user = auth()->user();
-            
-            $request->validate([
-                'title' => 'required|string|max:255',
-                'subject' => 'required|string|max:100',
-                'type' => 'required|in:lesson_plan,presentation,worksheet,video,reference',
-                'description' => 'nullable|string',
-                'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,mp4,mov,avi|max:51200',
-                'grade_level' => 'nullable|string',
-                'duration' => 'nullable|integer',
-                'tags' => 'nullable|string',
-                'is_public' => 'boolean'
-            ]);
-
-            // Store file
-            $filePath = $request->file('file')->store('teaching-materials', 'public');
-
-            // TODO: Create teaching material record in database
-            // For now, just return success
-            
-            return redirect()->back()->with('success', 'Teaching material uploaded successfully!');
-        })->name('materials.store');
+        Route::get('/materials', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'index'])->name('materials');
+        Route::post('/materials', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'store'])->name('materials.store');
+        Route::get('/materials/{material}', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'show'])->name('materials.show');
+        Route::get('/materials/{material}/download', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'download'])->name('materials.download');
+        Route::put('/materials/{material}', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'update'])->name('materials.update');
+        Route::delete('/materials/{material}', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'destroy'])->name('materials.destroy');
     });
 
 

@@ -15,18 +15,40 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->user();
+        
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => [
+                'sometimes',  // Only validate if present
+                'required',
+                'string', 
+                'max:255'
+            ],
             'email' => [
+                'sometimes',  // Only validate if present
                 'required',
                 'string',
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::unique(User::class)->ignore($user->id),
             ],
             'password' => ['nullable', 'string', 'min:8'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ];
+    }
+    
+    protected function prepareForValidation()
+    {
+        $user = $this->user();
+        
+        // If name or email are missing, fill them from the current user
+        if (!$this->has('name') || empty($this->input('name'))) {
+            $this->merge(['name' => $user->name]);
+        }
+        
+        if (!$this->has('email') || empty($this->input('email'))) {
+            $this->merge(['email' => $user->email]);
+        }
     }
 }

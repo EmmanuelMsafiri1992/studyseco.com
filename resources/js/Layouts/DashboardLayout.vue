@@ -348,7 +348,19 @@
           </div>
           <span class="text-lg font-bold text-slate-800">StudySeco</span>
         </div>
-        <div class="w-10"></div> <!-- Spacer for balance -->
+        <!-- Country Display for Students (Mobile) -->
+        <div v-if="$page.props.auth?.user?.role === 'student' && $page.props.auth?.user?.enrollment?.country" 
+             class="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200/50">
+          <div class="relative w-5 h-3 rounded-sm shadow-sm overflow-hidden">
+            <div :class="'fi fi-' + getCountryFlag($page.props.auth.user.enrollment.country) + ' w-full h-full'"></div>
+            <div :class="'flag-fallback fi-' + getCountryFlag($page.props.auth.user.enrollment.country) + ' w-full h-full absolute inset-0'" 
+                 style="background-image: none !important; font-size: 8px;">
+              {{ getCountryCode($page.props.auth.user.enrollment.country) }}
+            </div>
+          </div>
+          <span class="text-xs font-medium text-blue-800 hidden sm:block">{{ $page.props.auth.user.enrollment.country }}</span>
+        </div>
+        <div v-else class="w-10"></div> <!-- Spacer for balance -->
       </div>
       
       <!-- Desktop Header -->
@@ -363,6 +375,19 @@
         </div>
 
         <div class="flex items-center space-x-4">
+          <!-- Country Display for Students -->
+          <div v-if="$page.props.auth?.user?.role === 'student' && $page.props.auth?.user?.enrollment?.country" 
+               class="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/50">
+            <div class="relative w-6 h-4 rounded-sm shadow-sm overflow-hidden">
+              <div :class="'fi fi-' + getCountryFlag($page.props.auth.user.enrollment.country) + ' w-full h-full'"></div>
+              <div :class="'flag-fallback fi-' + getCountryFlag($page.props.auth.user.enrollment.country) + ' w-full h-full absolute inset-0'" 
+                   style="background-image: none !important;">
+                {{ getCountryCode($page.props.auth.user.enrollment.country) }}
+              </div>
+            </div>
+            <span class="text-sm font-medium text-blue-800">{{ $page.props.auth.user.enrollment.country }}</span>
+          </div>
+          
           <div class="relative">
             <input type="text" placeholder="Search anything..." class="bg-slate-100/70 backdrop-blur-sm px-4 py-3 pl-10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white w-80 transition-all duration-200">
             <svg class="absolute left-3 top-3.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,6 +570,106 @@ const page = usePage()
 
 const isActiveSection = (components) => {
   return components.some(component => page.component?.includes(component))
+}
+
+// Country flag mapping with CSS flag classes
+const getCountryFlag = (countryName) => {
+  const countryFlags = {
+    'malawi': 'mw',
+    'south africa': 'za',
+    'zambia': 'zm',
+    'botswana': 'bw',
+    'zimbabwe': 'zw',
+    'namibia': 'na',
+    'lesotho': 'ls',
+    'eswatini': 'sz',
+    'swaziland': 'sz',
+    'mozambique': 'mz',
+    'kenya': 'ke',
+    'tanzania': 'tz',
+    'uganda': 'ug',
+    'rwanda': 'rw',
+    'ethiopia': 'et',
+    'nigeria': 'ng',
+    'ghana': 'gh',
+    'senegal': 'sn',
+    'ivory coast': 'ci',
+    'cote divoire': 'ci',
+    'democratic republic of congo': 'cd',
+    'angola': 'ao',
+    'cameroon': 'cm',
+    'madagascar': 'mg',
+    'burkina faso': 'bf',
+    'mali': 'ml',
+    'niger': 'ne',
+    'chad': 'td',
+    'sudan': 'sd',
+    'south sudan': 'ss',
+    'eritrea': 'er',
+    'djibouti': 'dj',
+    'somalia': 'so',
+    'egypt': 'eg',
+    'libya': 'ly',
+    'tunisia': 'tn',
+    'algeria': 'dz',
+    'morocco': 'ma',
+    'international': 'un'
+  }
+  
+  if (!countryName) return 'un'
+  
+  const normalizedCountry = countryName.toLowerCase().trim()
+  return countryFlags[normalizedCountry] || 'un'
+}
+
+// Get country code for fallback display
+const getCountryCode = (countryName) => {
+  const countryCodes = {
+    'malawi': 'MW',
+    'south africa': 'ZA',
+    'zambia': 'ZM',
+    'botswana': 'BW',
+    'zimbabwe': 'ZW',
+    'namibia': 'NA',
+    'lesotho': 'LS',
+    'eswatini': 'SZ',
+    'swaziland': 'SZ',
+    'mozambique': 'MZ',
+    'kenya': 'KE',
+    'tanzania': 'TZ',
+    'uganda': 'UG',
+    'rwanda': 'RW',
+    'ethiopia': 'ET',
+    'nigeria': 'NG',
+    'ghana': 'GH',
+    'senegal': 'SN',
+    'ivory coast': 'CI',
+    'cote divoire': 'CI',
+    'democratic republic of congo': 'CD',
+    'angola': 'AO',
+    'cameroon': 'CM',
+    'madagascar': 'MG',
+    'burkina faso': 'BF',
+    'mali': 'ML',
+    'niger': 'NE',
+    'chad': 'TD',
+    'sudan': 'SD',
+    'south sudan': 'SS',
+    'eritrea': 'ER',
+    'djibouti': 'DJ',
+    'somalia': 'SO',
+    'egypt': 'EG',
+    'libya': 'LY',
+    'tunisia': 'TN',
+    'algeria': 'DZ',
+    'morocco': 'MA',
+    'international': 'UN'
+  }
+  
+  if (!countryName) return 'UN'
+  
+  const normalizedCountry = countryName.toLowerCase().trim()
+  return countryCodes[normalizedCountry] || 'UN'
 }
 
 // Initialize notification system

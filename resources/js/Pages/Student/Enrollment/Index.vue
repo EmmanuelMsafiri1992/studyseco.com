@@ -316,58 +316,97 @@ const submitEnrollment = () => {
             </div>
 
             <!-- Quick Actions -->
-            <div v-if="enrollmentData" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Link href="/student/subjects" class="block group">
-                    <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors">My Subjects</h3>
-                                <p class="text-sm text-slate-600">View enrolled subjects</p>
+            <div v-if="enrollmentData" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Link href="/student/subjects" class="block group">
+                        <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors">My Subjects</h3>
+                                    <p class="text-sm text-slate-600">View enrolled subjects</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
 
-                <Link :href="enrollmentData?.is_trial ? '/account-settings' : '/student/extension'" class="block group">
-                    <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-slate-800 group-hover:text-amber-600 transition-colors">
-                                    {{ enrollmentData?.is_trial ? 'Upgrade Account' : 'Extend Access' }}
-                                </h3>
-                                <p class="text-sm text-slate-600">
-                                    {{ enrollmentData?.is_trial ? 'Upgrade to Premium first' : 'Extend your access period' }}
-                                </p>
+                    <Link :href="enrollmentData?.is_trial ? '/account-settings' : '/student/extension'" class="block group">
+                        <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-800 group-hover:text-amber-600 transition-colors">
+                                        {{ enrollmentData?.is_trial ? 'Upgrade Account' : 'Extend Access' }}
+                                    </h3>
+                                    <p class="text-sm text-slate-600">
+                                        {{ enrollmentData?.is_trial ? 'Upgrade to Premium first' : 'Extend your access period' }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
 
-                <Link href="/profile" class="block group">
-                    <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
+                    <!-- Add More Subjects - Always show but with different behavior -->
+                    <Link v-if="enrollmentData && !enrollmentData?.is_trial && status?.status === 'approved'" 
+                          :href="route('student.enrollment.increase-subjects')" 
+                          class="block group">
+                        <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">Add More Subjects</h3>
+                                    <p class="text-sm text-slate-600">Expand your learning</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-slate-800 group-hover:text-rose-600 transition-colors">Profile Settings</h3>
-                                <p class="text-sm text-slate-600">Update your information</p>
+                        </div>
+                    </Link>
+
+                    <!-- Show disabled version if conditions not met -->
+                    <div v-else-if="enrollmentData" class="block cursor-not-allowed opacity-60">
+                        <div class="bg-gray-100 rounded-3xl p-6 shadow-xl border border-gray-200">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gray-400 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-600">Add More Subjects</h3>
+                                    <p class="text-sm text-gray-500">
+                                        {{ enrollmentData?.is_trial ? 'Upgrade to premium first' : 
+                                           status?.status !== 'approved' ? 'Enrollment needs approval' : 'Available for premium users' }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </Link>
+
+                    <Link href="/profile" class="block group">
+                        <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-800 group-hover:text-rose-600 transition-colors">Profile Settings</h3>
+                                    <p class="text-sm text-slate-600">Update your information</p>
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
             </div>
         </div>
     </DashboardLayout>

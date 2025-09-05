@@ -104,8 +104,31 @@ class ComplaintController extends Controller
 
     public function create()
     {
+        $user = auth()->user();
+        
+        // Get user's chat history to display
+        $chatHistory = SupportChat::where('user_id', $user->id)
+            ->with(['agent'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($chat) {
+                return [
+                    'id' => $chat->id,
+                    'session_id' => $chat->session_id,
+                    'status' => $chat->status,
+                    'priority' => $chat->priority,
+                    'category' => $chat->category,
+                    'initial_message' => $chat->initial_message,
+                    'agent_name' => $chat->agent ? $chat->agent->name : null,
+                    'created_at' => $chat->created_at,
+                    'closed_at' => $chat->closed_at,
+                    'resolution_summary' => $chat->resolution_summary,
+                ];
+            });
+
         return Inertia::render('Complaints/Create', [
-            'auth' => ['user' => auth()->user()],
+            'auth' => ['user' => $user],
+            'chatHistory' => $chatHistory,
         ]);
     }
 
@@ -120,6 +143,33 @@ class ComplaintController extends Controller
         ]);
 
         $user = auth()->user();
+        
+        // Check for similar recent complaints to prevent duplicates
+        $recentSimilarChat = SupportChat::where('user_id', $user->id)
+            ->where('status', '!=', 'closed')
+            ->where(function($query) use ($validated) {
+                $query->where('initial_message', 'like', '%' . substr($validated['description'], 0, 50) . '%')
+                      ->orWhere('category', $validated['category']);
+            })
+            ->where('created_at', '>', now()->subHours(24)) // Within last 24 hours
+            ->first();
+            
+        if ($recentSimilarChat) {
+            return back()->withErrors([
+                'duplicate' => 'You have a similar support request from the last 24 hours that is still open. Please check your chat history or wait for the existing chat to be resolved before submitting a new one.'
+            ])->withInput();
+        }
+        
+        // Check if user has too many open chats (limit to 3 open chats)
+        $openChatsCount = SupportChat::where('user_id', $user->id)
+            ->whereIn('status', ['waiting', 'active'])
+            ->count();
+            
+        if ($openChatsCount >= 3) {
+            return back()->withErrors([
+                'limit' => 'You have reached the maximum limit of 3 open support chats. Please wait for your existing chats to be resolved before creating a new one.'
+            ])->withInput();
+        }
 
         // Create support chat session
         $chat = SupportChat::create([
