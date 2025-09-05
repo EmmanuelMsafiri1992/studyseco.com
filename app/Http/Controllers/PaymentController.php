@@ -6,7 +6,9 @@ use App\Models\EnrollmentPayment;
 use App\Models\PaymentMethod;
 use App\Models\AccessDuration;
 use App\Models\Enrollment;
+use App\Models\Subject;
 use App\Services\AuditService;
+use App\Notifications\PaymentApproved;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -115,7 +117,7 @@ class PaymentController extends Controller
     /**
      * Show the payment submission form
      */
-    public function create()
+    public function create(Request $request)
     {
         $user = auth()->user();
 
@@ -129,15 +131,66 @@ class PaymentController extends Controller
         $paymentMethods = PaymentMethod::active()->get();
         $accessDurations = AccessDuration::active()->get();
 
+        // Ensure we have some subjects in the database
+        $this->ensureSubjectsExist();
+        
+        // Get available subjects
+        $availableSubjects = Subject::where('is_active', true)
+            ->orderBy('department')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($subject) {
+                return [
+                    'id' => (int) $subject->id, // Ensure it's an integer
+                    'name' => $subject->name,
+                    'description' => $subject->description,
+                    'department' => $subject->department,
+                    'grade_level' => $subject->grade_level,
+                    'icon' => match($subject->name) {
+                        'English' => '📚',
+                        'Chichewa' => '📖',
+                        'Mathematics' => '📐',
+                        'Life Skills' => '🧠',
+                        'Biology' => '🧬',
+                        'Physical Science' => '⚗️',
+                        'Chemistry' => '🧪',
+                        'Physics' => '⚡',
+                        'Geography' => '🗺️',
+                        'History' => '🏛️',
+                        'Social Studies' => '🌍',
+                        'Bible Knowledge' => '✝️',
+                        'Agriculture' => '🌾',
+                        'Home Economics' => '🏠',
+                        'Technical Drawing' => '📏',
+                        'Business Studies' => '💼',
+                        'French' => '🇫🇷',
+                        'Computer Studies' => '💻',
+                        default => '📚'
+                    },
+                ];
+            });
+
         // Add user country to user object for frontend filtering
         $userWithCountry = $user->toArray();
         $userWithCountry['country'] = $user->country ?? 'Malawi'; // Default to Malawi if not set
+
+        // Check if this is an upgrade request
+        $isUpgrade = $request->has('upgrade') && $request->get('upgrade') === 'true';
+
+        // Debug: Log what subjects we're sending to frontend
+        \Log::info('Subjects being sent to frontend:', [
+            'count' => $availableSubjects->count(),
+            'ids' => $availableSubjects->pluck('id')->toArray()
+        ]);
 
         return Inertia::render('Payments/Create', [
             'auth' => ['user' => $userWithCountry],
             'hasPendingPayment' => $hasPendingPayment,
             'paymentMethods' => $paymentMethods,
             'accessDurations' => $accessDurations,
+            'availableSubjects' => $availableSubjects,
+            'enrollment' => $enrollment,
+            'isUpgrade' => $isUpgrade,
         ]);
     }
 
@@ -150,13 +203,57 @@ class PaymentController extends Controller
         $validPaymentMethodCodes = PaymentMethod::active()->pluck('code')->toArray();
         $validAccessDurationIds = AccessDuration::active()->pluck('id')->toArray();
 
-        $validated = $request->validate([
+        // Debug: Log the request data
+        \Log::info('Payment request data:', $request->all());
+        \Log::info('Available subjects:', Subject::where('is_active', true)->pluck('id')->toArray());
+        
+        // Check if this is an upgrade request
+        $isUpgrade = $request->boolean('upgrade') || 
+                     $request->has('selected_subjects') || 
+                     $request->get('upgrade') === 'true';
+        
+        $rules = [
             'payment_method' => ['required', Rule::in($validPaymentMethodCodes)],
             'amount' => 'required|numeric|min:1|max:999999.99',
-            'reference_number' => 'nullable|string|max:255',
+            'reference_number' => 'required|string|max:255',
             'proof_screenshot' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
-            'access_duration_id' => ['required', Rule::in($validAccessDurationIds)]
-        ]);
+            'access_duration_id' => ['required', Rule::in($validAccessDurationIds)],
+        ];
+        
+        // Get valid subject IDs for validation
+        $validSubjectIds = Subject::where('is_active', true)->pluck('id')->toArray();
+        
+        // Only require subject selection for upgrades
+        if ($isUpgrade) {
+            $rules['selected_subjects'] = 'required|array|min:1';
+            $rules['selected_subjects.*'] = ['integer', Rule::in($validSubjectIds)];
+        } else {
+            $rules['selected_subjects'] = 'nullable|array';
+            $rules['selected_subjects.*'] = ['integer', Rule::in($validSubjectIds)];
+        }
+        
+        // Check if subjects table has data
+        $subjectCount = Subject::where('is_active', true)->count();
+        if ($isUpgrade && $subjectCount === 0) {
+            return back()->withErrors(['error' => 'No active subjects available. Please contact support.']);
+        }
+        
+        // Debug: Check what subjects are being sent vs what exists
+        if ($request->has('selected_subjects') && is_array($request->get('selected_subjects'))) {
+            $requestedSubjects = $request->get('selected_subjects');
+            $validSubjects = Subject::where('is_active', true)->pluck('id')->toArray();
+            $invalidSubjects = array_diff($requestedSubjects, $validSubjects);
+            
+            if (!empty($invalidSubjects)) {
+                \Log::error('Invalid subjects requested:', [
+                    'requested' => $requestedSubjects,
+                    'valid_subjects' => $validSubjects,
+                    'invalid' => $invalidSubjects
+                ]);
+            }
+        }
+        
+        $validated = $request->validate($rules);
 
         $user = auth()->user();
 
@@ -164,6 +261,14 @@ class PaymentController extends Controller
         $enrollment = Enrollment::where('user_id', $user->id)->orWhere('email', $user->email)->first();
         if (!$enrollment) {
             return back()->withErrors(['error' => 'Enrollment not found. Please enroll first.']);
+        }
+
+        // Update enrollment with selected subjects (for premium upgrade)
+        if (!empty($validated['selected_subjects'])) {
+            $enrollment->update([
+                'selected_subjects' => $validated['selected_subjects'],
+                'is_trial' => false, // Upgrade to premium
+            ]);
         }
 
         // Check if user already has pending payment
@@ -250,6 +355,9 @@ class PaymentController extends Controller
                     'approved_by' => auth()->id()
                 ]);
                 
+                // Send congratulatory notification
+                $enrollment->user->notify(new PaymentApproved($enrollment, $payment));
+                
                 // Log access granted
                 AuditService::logAccess($enrollment->user, true);
             }
@@ -311,5 +419,38 @@ class PaymentController extends Controller
             'daysRemaining' => $enrollment?->access_days_remaining ?? 0,
             'isTrialExpired' => $enrollment?->is_trial_expired ?? false
         ]);
+    }
+    
+    /**
+     * Ensure basic subjects exist in the database
+     */
+    private function ensureSubjectsExist()
+    {
+        // Check if subjects table is empty
+        if (Subject::count() === 0) {
+            $subjects = [
+                ['name' => 'English', 'code' => 'ENG', 'department' => 'Languages', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Chichewa', 'code' => 'CHI', 'department' => 'Languages', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Mathematics', 'code' => 'MATH', 'department' => 'Sciences', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Life Skills', 'code' => 'LIFE', 'department' => 'General', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Biology', 'code' => 'BIO', 'department' => 'Sciences', 'grade_level' => 'Form 3-4', 'is_active' => true],
+                ['name' => 'Physical Science', 'code' => 'PHYS', 'department' => 'Sciences', 'grade_level' => 'Form 1-2', 'is_active' => true],
+                ['name' => 'Chemistry', 'code' => 'CHEM', 'department' => 'Sciences', 'grade_level' => 'Form 3-4', 'is_active' => true],
+                ['name' => 'Physics', 'code' => 'PHY', 'department' => 'Sciences', 'grade_level' => 'Form 3-4', 'is_active' => true],
+                ['name' => 'Geography', 'code' => 'GEO', 'department' => 'Humanities', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'History', 'code' => 'HIST', 'department' => 'Humanities', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Social Studies', 'code' => 'SOC', 'department' => 'Humanities', 'grade_level' => 'Form 1-2', 'is_active' => true],
+                ['name' => 'Bible Knowledge', 'code' => 'BK', 'department' => 'Religious', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Agriculture', 'code' => 'AGR', 'department' => 'Practical', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Home Economics', 'code' => 'HE', 'department' => 'Practical', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Technical Drawing', 'code' => 'TD', 'department' => 'Technical', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Business Studies', 'code' => 'BUS', 'department' => 'Commercial', 'grade_level' => 'Form 1-4', 'is_active' => true],
+                ['name' => 'Computer Studies', 'code' => 'CS', 'department' => 'Technical', 'grade_level' => 'Form 1-4', 'is_active' => true],
+            ];
+
+            foreach ($subjects as $subject) {
+                Subject::create($subject);
+            }
+        }
     }
 }

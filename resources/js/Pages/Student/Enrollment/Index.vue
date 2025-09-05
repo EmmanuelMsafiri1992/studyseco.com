@@ -96,7 +96,7 @@ const submitEnrollment = () => {
                             </div>
                             <h3 class="text-lg font-semibold text-slate-800">Account Type</h3>
                         </div>
-                        <p class="text-3xl font-bold text-slate-800 mb-2">Premium</p>
+                        <p class="text-3xl font-bold text-slate-800 mb-2">{{ enrollmentData?.is_trial ? 'Free Trial' : 'Premium' }}</p>
                         <p class="text-sm text-slate-600">{{ enrollmentData?.is_trial ? '7 Days Free Trial' : 'Full Access' }}</p>
                     </div>
                 </div>
@@ -333,7 +333,7 @@ const submitEnrollment = () => {
                     </div>
                 </Link>
 
-                <Link href="/student/extension" class="block group">
+                <Link :href="enrollmentData?.is_trial ? '/account-settings' : '/student/extension'" class="block group">
                     <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
                         <div class="flex items-center space-x-4">
                             <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center">
@@ -342,8 +342,12 @@ const submitEnrollment = () => {
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-lg font-semibold text-slate-800 group-hover:text-amber-600 transition-colors">Extend Access</h3>
-                                <p class="text-sm text-slate-600">Extend your access period</p>
+                                <h3 class="text-lg font-semibold text-slate-800 group-hover:text-amber-600 transition-colors">
+                                    {{ enrollmentData?.is_trial ? 'Upgrade Account' : 'Extend Access' }}
+                                </h3>
+                                <p class="text-sm text-slate-600">
+                                    {{ enrollmentData?.is_trial ? 'Upgrade to Premium first' : 'Extend your access period' }}
+                                </p>
                             </div>
                         </div>
                     </div>

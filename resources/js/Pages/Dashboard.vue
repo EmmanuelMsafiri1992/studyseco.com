@@ -181,8 +181,11 @@ const navigateToAccessManagement = () => {
     if (!enrollment || props.stats?.enrollment_status === 'not_enrolled') {
         // Navigate to student enrollment
         window.location.href = '/student/enrollment';
+    } else if (props.stats?.is_trial) {
+        // For trial users, redirect to account settings to upgrade first
+        window.location.href = '/account-settings';
     } else if (props.stats?.access_remaining_days <= 0) {
-        // Navigate to extension page if access expired
+        // Navigate to extension page if access expired (premium users only)
         window.location.href = '/student/extension';
     } else {
         // Show enrollment details with access information

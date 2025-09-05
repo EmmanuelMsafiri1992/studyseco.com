@@ -19,6 +19,11 @@ class ExtensionController extends Controller
         if (!$enrollment) {
             return redirect()->route('dashboard')->with('error', 'You need to enroll in a course first before you can extend access. Please contact support if you need assistance with enrollment.');
         }
+
+        // Check if user has a premium account (not trial)
+        if ($enrollment->is_trial) {
+            return redirect()->route('account.settings')->with('error', 'You must upgrade to a Premium account before extending access. Please upgrade your account first.');
+        }
         
         // Get available payment methods for user's region
         // If region is empty, default to 'malawi' or show all available methods
@@ -68,6 +73,11 @@ class ExtensionController extends Controller
         
         if (!$enrollment) {
             return back()->withErrors(['enrollment' => 'No active enrollment found.']);
+        }
+
+        // Check if user has a premium account (not trial)
+        if ($enrollment->is_trial) {
+            return back()->withErrors(['error' => 'You must upgrade to a Premium account before extending access. Please upgrade your account first.']);
         }
         
         // Calculate extension price

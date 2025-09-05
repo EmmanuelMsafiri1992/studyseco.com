@@ -8,9 +8,19 @@ const props = defineProps({
     hasPendingPayment: Boolean,
     paymentMethods: Array,
     accessDurations: Array,
+    availableSubjects: Array,
+    enrollment: Object,
+    isUpgrade: Boolean,
 });
 
 const user = props.auth?.user || { name: 'Guest', role: 'guest', profile_photo_url: null };
+
+// Debug: Log what subjects are received from backend
+console.log('Available subjects from backend:', {
+    count: props.availableSubjects?.length || 0,
+    ids: props.availableSubjects?.map(s => s.id) || [],
+    subjects: props.availableSubjects
+});
 
 const form = useForm({
     payment_method: '',
@@ -18,11 +28,18 @@ const form = useForm({
     reference_number: '',
     proof_screenshot: null,
     access_duration_id: null,
+    selected_subjects: [],  // Start with empty array to avoid stale data
+    upgrade: props.isUpgrade || false,
 });
 
 const screenshotInput = ref(null);
 const screenshotPreview = ref(null);
 const showProcessing = ref(false);
+
+// Ensure selected subjects are always integers
+const selectedSubjectsAsIntegers = computed(() => {
+    return form.selected_subjects.map(id => parseInt(id)).filter(id => !isNaN(id));
+});
 
 const selectedAccessOption = computed(() => {
     return props.accessDurations.find(option => option.id === form.access_duration_id);
@@ -87,21 +104,93 @@ const updateScreenshotPreview = () => {
 };
 
 const submit = () => {
+    // Validate required fields before submission
+    if (!form.payment_method) {
+        alert('Please select a payment method');
+        return;
+    }
+    
+    if (!form.access_duration_id) {
+        alert('Please select an access duration');
+        return;
+    }
+    
+    if ((props.isUpgrade || form.upgrade) && form.selected_subjects.length === 0) {
+        alert('Please select at least one subject for your premium account');
+        return;
+    }
+    
+    if (!form.amount) {
+        alert('Please select an access duration to see the amount');
+        return;
+    }
+    
+    if (!form.reference_number || form.reference_number.trim() === '') {
+        alert('Please enter a payment reference number');
+        return;
+    }
+
+    // Ensure selected_subjects are integers and clean
+    const cleanedSubjects = [...new Set(form.selected_subjects.filter(id => id != null))].map(id => parseInt(id));
+    form.selected_subjects = cleanedSubjects;
+    
+    console.log('Final form data before submission:', {
+        payment_method: form.payment_method,
+        access_duration_id: form.access_duration_id,
+        selected_subjects: form.selected_subjects,
+        selected_subjects_array: [...form.selected_subjects],
+        selected_subjects_types: form.selected_subjects.map(id => typeof id),
+        amount: form.amount,
+        upgrade: form.upgrade,
+        reference_number: form.reference_number
+    });
+
     // Show processing animation
     showProcessing.value = true;
     
-    // Simulate processing time for better UX
-    setTimeout(() => {
-        form.post(route('payments.store'), {
-            onSuccess: () => {
-                showProcessing.value = false;
-            },
-            onError: (errors) => {
-                console.error('Payment errors:', errors);
-                showProcessing.value = false;
+    // Submit the form
+    form.post(route('payments.store'), {
+        onSuccess: (page) => {
+            showProcessing.value = false;
+            console.log('Payment submitted successfully');
+        },
+        onError: (errors) => {
+            showProcessing.value = false;
+            console.error('Payment errors:', errors);
+            console.log('Form data being sent:', {
+                payment_method: form.payment_method,
+                access_duration_id: form.access_duration_id,
+                selected_subjects: form.selected_subjects,
+                amount: form.amount,
+                upgrade: form.upgrade,
+                reference_number: form.reference_number,
+                proof_screenshot: form.proof_screenshot ? 'File selected' : 'No file'
+            });
+            
+            // Show specific error messages
+            if (errors.selected_subjects) {
+                alert('Subject selection error: ' + JSON.stringify(errors.selected_subjects));
+            } else if (errors.payment_method) {
+                alert('Payment method error: ' + JSON.stringify(errors.payment_method));
+            } else if (errors.access_duration_id) {
+                alert('Access duration error: ' + JSON.stringify(errors.access_duration_id));
+            } else if (errors.amount) {
+                alert('Amount error: ' + JSON.stringify(errors.amount));
+            } else if (errors.reference_number) {
+                alert('Reference number error: ' + JSON.stringify(errors.reference_number));
+            } else if (errors.proof_screenshot) {
+                alert('Proof screenshot error: ' + JSON.stringify(errors.proof_screenshot));
+            } else if (errors.error) {
+                alert('Error: ' + JSON.stringify(errors.error));
+            } else {
+                // Show all errors for debugging
+                alert('Validation errors: ' + JSON.stringify(errors));
             }
-        });
-    }, 2000);
+        },
+        onFinish: () => {
+            showProcessing.value = false;
+        }
+    });
 };
 
 const setAccessDuration = (duration) => {
@@ -148,6 +237,72 @@ const setAccessDuration = (duration) => {
                           class="text-sm px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all duration-200">
                         Payment History
                     </Link>
+                </div>
+
+                <!-- Upgrade Banner -->
+                <div v-if="props.isUpgrade" class="mb-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-purple-800">Upgrading to Premium</h3>
+                            <p class="text-sm text-purple-700">Select subjects and duration for your premium account</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Selection (for upgrades or new premium accounts) -->
+                <div v-if="props.isUpgrade || (enrollment?.is_trial && availableSubjects?.length > 0)" class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-3">📚 Select Subjects</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div 
+                            v-for="subject in availableSubjects" 
+                            :key="subject.id"
+                            class="relative"
+                        >
+                            <input 
+                                type="checkbox" 
+                                :id="`subject-${subject.id}`" 
+                                :value="subject.id"
+                                v-model="form.selected_subjects"
+                                class="sr-only peer"
+                                @change="console.log('Subject selected:', subject.id, 'Current selection:', form.selected_subjects)"
+                            >
+                            <label 
+                                :for="`subject-${subject.id}`" 
+                                class="flex items-center p-3 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-indigo-300 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 transition-all duration-200"
+                            >
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3">
+                                        <span class="text-xl">{{ subject.icon }}</span>
+                                        <div>
+                                            <h4 class="font-medium text-slate-800 text-sm">{{ subject.name }}</h4>
+                                            <p class="text-xs text-slate-500">{{ subject.department }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div :class="[
+                                    'w-4 h-4 border-2 rounded flex items-center justify-center transition-all duration-200',
+                                    form.selected_subjects.includes(subject.id) 
+                                        ? 'border-indigo-500 bg-indigo-500' 
+                                        : 'border-slate-300'
+                                ]">
+                                    <svg :class="[
+                                        'w-2 h-2 text-white transition-opacity duration-200',
+                                        form.selected_subjects.includes(subject.id) ? 'opacity-100' : 'opacity-0'
+                                    ]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div v-if="form.errors.selected_subjects" class="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                        <p class="text-sm text-red-600">{{ form.errors.selected_subjects }}</p>
+                    </div>
                 </div>
 
                 <!-- Main Form in 2 Rows -->
@@ -209,8 +364,9 @@ const setAccessDuration = (duration) => {
                                            class="w-full bg-slate-100 px-3 py-2 rounded-lg text-sm font-semibold border-0">
                                 </div>
                                 <div>
-                                    <input v-model="form.reference_number" type="text" placeholder="Reference Number"
-                                           class="w-full bg-white px-3 py-2 rounded-lg text-sm border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                    <input v-model="form.reference_number" type="text" placeholder="Reference Number *"
+                                           class="w-full bg-white px-3 py-2 rounded-lg text-sm border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400" required>
+                                    <div v-if="form.errors.reference_number" class="mt-1 text-xs text-red-600">{{ form.errors.reference_number }}</div>
                                 </div>
                                 <div class="border border-slate-300 rounded-lg p-2 text-center">
                                     <div v-if="screenshotPreview" class="mb-1">
@@ -245,7 +401,7 @@ const setAccessDuration = (duration) => {
                                 </Link>
                                 <button type="button"
                                         @click.prevent="submit"
-                                        :disabled="form.processing || !form.payment_method || !form.access_duration_id || hasPendingPayment"
+                                        :disabled="form.processing || !form.payment_method || !form.access_duration_id || hasPendingPayment || ((props.isUpgrade || form.upgrade) && form.selected_subjects.length === 0)"
                                         class="px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <span v-if="form.processing">Submitting...</span>
                                     <span v-else>Submit Payment</span>

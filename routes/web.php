@@ -878,7 +878,21 @@ Route::middleware('auth')->group(function () {
 
     // Account Settings Route (from dropdown)
     Route::get('/account-settings', function () {
-        return Inertia::render('Profile/AccountSettings');
+        $user = auth()->user();
+        $enrollment = \App\Models\Enrollment::where('user_id', $user->id)
+            ->orWhere('email', $user->email)
+            ->first();
+        
+        return Inertia::render('Profile/AccountSettings', [
+            'enrollment' => $enrollment,
+            'enrollmentStatus' => $enrollment ? [
+                'status' => $enrollment->status,
+                'is_trial' => $enrollment->is_trial,
+                'subjects_count' => count($enrollment->selected_subjects ?: []),
+                'access_expires_at' => $enrollment->access_expires_at,
+                'access_days_remaining' => $enrollment->access_days_remaining,
+            ] : null
+        ]);
     })->name('account.settings');
 
     // Notification Settings Route
