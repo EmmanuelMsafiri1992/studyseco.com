@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -83,6 +84,7 @@ class Enrollment extends Model
         return $this->belongsTo(User::class, 'assigned_tutor_id');
     }
 
+
     // Generate unique enrollment number
     protected static function booted()
     {
@@ -155,7 +157,7 @@ class Enrollment extends Model
             return 0;
         }
         
-        return now()->diffInDays($this->trial_expires_at, false);
+        return (int) ceil(now()->diffInDays($this->trial_expires_at, false));
     }
 
     // Get subjects with details from database
@@ -245,7 +247,7 @@ class Enrollment extends Model
             return 0;
         }
         
-        return now()->diffInDays($this->access_expires_at, false);
+        return (int) ceil(now()->diffInDays($this->access_expires_at, false));
     }
     
     // Scope for active access

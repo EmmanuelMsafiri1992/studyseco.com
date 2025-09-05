@@ -50,9 +50,37 @@ class PaymentController extends Controller
         
         if ($enrollment) {
             $payments = EnrollmentPayment::where('enrollment_id', $enrollment->id)
+                ->with(['paymentMethod'])
                 ->latest()
-                ->paginate(10);
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'amount' => $payment->amount,
+                        'currency' => $payment->currency,
+                        'status' => $payment->status,
+                        'payment_method' => $payment->paymentMethod->code ?? $payment->payment_method,
+                        'payment_method_name' => $payment->paymentMethod->name ?? 'Unknown',
+                        'reference_number' => $payment->reference_number,
+                        'access_duration_days' => $payment->extension_months ? $payment->extension_months * 30 : 30,
+                        'access_expires_at' => $payment->status === 'verified' ? $payment->enrollment->access_expires_at : null,
+                        'created_at' => $payment->created_at,
+                        'verified_at' => $payment->verified_at,
+                        'admin_notes' => $payment->admin_notes,
+                        'rejection_reason' => $payment->admin_notes && $payment->status === 'rejected' ? $payment->admin_notes : null,
+                    ];
+                });
         }
+
+        // Create pagination-like structure for the frontend
+        $paginatedPayments = (object) [
+            'data' => $payments,
+            'total' => $payments->count(),
+            'current_page' => 1,
+            'last_page' => 1,
+            'per_page' => $payments->count(),
+            'links' => []
+        ];
 
         $hasValidAccess = $enrollment && $enrollment->access_expires_at && $enrollment->access_expires_at->greaterThan(Carbon::now());
 
@@ -66,7 +94,7 @@ class PaymentController extends Controller
                     'total_subjects' => \App\Models\Subject::where('is_active', true)->count(),
                     'pending_enrollments' => \App\Models\Enrollment::where('status', 'pending')->count(),
                 ];
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 // Fallback if queries fail
                 $stats = [
                     'total_students' => 0,
@@ -78,7 +106,7 @@ class PaymentController extends Controller
         }
 
         return Inertia::render('Payments/Index', [
-            'payments' => $payments,
+            'payments' => $paginatedPayments,
             'hasValidAccess' => $hasValidAccess,
             'stats' => $stats
         ]);
@@ -101,8 +129,12 @@ class PaymentController extends Controller
         $paymentMethods = PaymentMethod::active()->get();
         $accessDurations = AccessDuration::active()->get();
 
+        // Add user country to user object for frontend filtering
+        $userWithCountry = $user->toArray();
+        $userWithCountry['country'] = $user->country ?? 'Malawi'; // Default to Malawi if not set
+
         return Inertia::render('Payments/Create', [
-            'auth' => ['user' => $user],
+            'auth' => ['user' => $userWithCountry],
             'hasPendingPayment' => $hasPendingPayment,
             'paymentMethods' => $paymentMethods,
             'accessDurations' => $accessDurations,
@@ -114,12 +146,12 @@ class PaymentController extends Controller
      */
     public function store(Request $request)
     {
-        // Get valid payment method keys and access duration IDs
-        $validPaymentMethodKeys = PaymentMethod::active()->pluck('key')->toArray();
+        // Get valid payment method codes and access duration IDs
+        $validPaymentMethodCodes = PaymentMethod::active()->pluck('code')->toArray();
         $validAccessDurationIds = AccessDuration::active()->pluck('id')->toArray();
 
         $validated = $request->validate([
-            'payment_method' => ['required', Rule::in($validPaymentMethodKeys)],
+            'payment_method' => ['required', Rule::in($validPaymentMethodCodes)],
             'amount' => 'required|numeric|min:1|max:999999.99',
             'reference_number' => 'nullable|string|max:255',
             'proof_screenshot' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
@@ -151,7 +183,7 @@ class PaymentController extends Controller
         // Create enrollment payment record
         $payment = EnrollmentPayment::create([
             'enrollment_id' => $enrollment->id,
-            'payment_method_id' => PaymentMethod::where('key', $validated['payment_method'])->first()?->id,
+            'payment_method_id' => PaymentMethod::where('code', $validated['payment_method'])->first()?->id,
             'reference_number' => $validated['reference_number'],
             'amount' => $validated['amount'],
             'currency' => 'MWK',
