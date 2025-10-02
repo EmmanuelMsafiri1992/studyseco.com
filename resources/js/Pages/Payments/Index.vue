@@ -21,8 +21,12 @@ const getStatusColor = (status) => {
     }
 };
 
-const formatAmount = (amount) => {
-    return 'MWK ' + new Intl.NumberFormat().format(amount);
+const formatAmount = (amount, currency = 'MWK') => {
+    const currencySymbol = currency === 'MWK' ? 'MWK ' : 
+                          currency === 'ZAR' ? 'ZAR ' : 
+                          currency === 'USD' ? 'USD ' : 
+                          currency + ' ';
+    return currencySymbol + new Intl.NumberFormat().format(amount);
 };
 
 const formatDate = (date) => {
@@ -69,7 +73,7 @@ const downloadReceipt = (payment) => {
 
 const activePayment = computed(() => {
     return props.payments.data.find(payment => 
-        payment.status === 'approved' && 
+        payment.status === 'verified' && 
         payment.access_expires_at && 
         new Date(payment.access_expires_at) > new Date()
     );
@@ -143,11 +147,15 @@ const activePayment = computed(() => {
 
                                 <div>
                                     <h3 class="font-semibold text-slate-800">
-                                        {{ payment.payment_method === 'tnm_mpamba' ? 'TNM Mpamba' : 
-                                           payment.payment_method === 'airtel_money' ? 'Airtel Money' : 'Bank Transfer' }}
+                                        {{ payment.payment_method_name || 
+                                           (payment.payment_method === 'tnm_mpamba' ? 'TNM Mpamba' : 
+                                            payment.payment_method === 'airtel_money' ? 'Airtel Money' : 
+                                            payment.payment_method === 'mukuru' ? 'Mukuru' :
+                                            'Bank Transfer') }}
+                                        <span v-if="payment.payment_type === 'subject_increase'" class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Subject Addition</span>
                                     </h3>
                                     <div class="flex items-center space-x-4 text-sm text-slate-600">
-                                        <span>{{ formatAmount(payment.amount) }}</span>
+                                        <span>{{ formatAmount(payment.amount, payment.currency) }}</span>
                                         <span>{{ payment.access_duration_days }} days access</span>
                                         <span>{{ formatDate(payment.created_at) }}</span>
                                         <span v-if="payment.reference_number">Ref: {{ payment.reference_number }}</span>
@@ -157,7 +165,7 @@ const activePayment = computed(() => {
 
                             <div class="flex items-center space-x-4">
                                 <!-- Access Expiry Info -->
-                                <div v-if="payment.status === 'approved' && payment.access_expires_at" class="text-right text-sm">
+                                <div v-if="payment.status === 'verified' && payment.access_expires_at" class="text-right text-sm">
                                     <div class="text-slate-600">Expires</div>
                                     <div class="font-semibold text-slate-800">{{ formatDate(payment.access_expires_at) }}</div>
                                     <div :class="[
@@ -172,7 +180,7 @@ const activePayment = computed(() => {
                                 <div :class="[
                                     'px-3 py-1 rounded-full text-xs font-semibold',
                                     payment.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                                    payment.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                    payment.status === 'verified' ? 'bg-green-100 text-green-800' :
                                     'bg-red-100 text-red-800'
                                 ]">
                                     {{ payment.status.charAt(0).toUpperCase() + payment.status.slice(1) }}
@@ -180,7 +188,7 @@ const activePayment = computed(() => {
 
                                 <!-- Download Receipt -->
                                 <button 
-                                    v-if="payment.status === 'approved'" 
+                                    v-if="payment.status === 'verified'" 
                                     @click="downloadReceipt(payment)"
                                     class="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors duration-200 group"
                                     title="Download Receipt"

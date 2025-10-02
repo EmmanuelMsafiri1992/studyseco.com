@@ -127,6 +127,18 @@ class LibraryController extends Controller
     {
         $user = auth()->user();
         
+        // Additional security checks
+        if (!request()->hasHeader('X-Requested-With') && !request()->ajax()) {
+            abort(403, 'Direct access not permitted');
+        }
+        
+        // Check referrer to ensure request comes from our application
+        $referer = request()->header('referer');
+        $appUrl = config('app.url');
+        if (!$referer || !str_starts_with($referer, $appUrl)) {
+            abort(403, 'Invalid request origin');
+        }
+        
         // Check access permission
         if (!$resource->canBeAccessedBy($user)) {
             abort(403, 'Access denied');
@@ -149,11 +161,17 @@ class LibraryController extends Controller
         return response($file)
             ->header('Content-Type', $mimeType)
             ->header('Content-Disposition', 'inline; filename="' . $resource->title . '"')
-            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate, private')
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0')
             ->header('X-Content-Type-Options', 'nosniff')
-            ->header('X-Frame-Options', 'SAMEORIGIN');
+            ->header('X-Frame-Options', 'SAMEORIGIN')
+            ->header('X-XSS-Protection', '1; mode=block')
+            ->header('Referrer-Policy', 'same-origin')
+            ->header('Content-Security-Policy', "default-src 'self'; script-src 'none'; object-src 'none'; media-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';")
+            ->header('X-Permitted-Cross-Domain-Policies', 'none')
+            ->header('Access-Control-Allow-Origin', request()->getSchemeAndHttpHost())
+            ->header('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex, nocache');
     }
 
     /**

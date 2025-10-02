@@ -31,9 +31,9 @@
 
       <nav class="px-4 py-6 space-y-2 overflow-y-auto flex-1 max-h-[calc(100vh-120px)]">
         <!-- Dashboard - Available to all roles -->
-        <Link href="/dashboard" :class="['flex items-center px-4 py-3 rounded-xl border transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
-                                         $page.component === 'Dashboard' ? 'text-slate-700 bg-indigo-50 border-indigo-100' : 'text-slate-600 border-transparent']">
-          <svg class="h-5 w-5 mr-4" :class="$page.component === 'Dashboard' ? 'text-indigo-600' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Link :href="dashboardLink" :class="['flex items-center px-4 py-3 rounded-xl border transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+                                         isDashboardActive ? 'text-slate-700 bg-indigo-50 border-indigo-100' : 'text-slate-600 border-transparent']">
+          <svg class="h-5 w-5 mr-4" :class="isDashboardActive ? 'text-indigo-600' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
           </svg>
           <span class="font-medium">Dashboard</span>
@@ -404,7 +404,7 @@
 
           <div class="relative group">
             <div class="flex items-center space-x-3 pl-4 border-l border-slate-200 cursor-pointer">
-              <img :src="$page.props.auth?.user?.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" 
+              <img :src="$page.props.auth?.user?.profile_photo_url ? `/storage/${$page.props.auth.user.profile_photo_url}` : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" 
                    :alt="$page.props.auth?.user?.name" class="h-12 w-12 rounded-2xl ring-2 ring-white shadow-md">
               <div class="text-sm">
                 <p class="font-semibold text-slate-800">{{ $page.props.auth?.user?.name }}</p>
@@ -466,9 +466,11 @@
 
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import NotificationSound from '@/Components/NotificationSound.vue'
 import { playNotificationSound, soundEnabled } from '@/composables/useNotificationSounds'
+
+const $page = usePage()
 
 defineProps({
   title: {
@@ -483,6 +485,15 @@ defineProps({
     type: Object,
     default: () => ({})
   }
+})
+
+// Computed properties for Dashboard navigation
+const dashboardLink = computed(() => {
+  return '/dashboard' // Let all users access dashboard
+})
+
+const isDashboardActive = computed(() => {
+  return $page.component === 'Dashboard'
 })
 
 const notificationCount = ref(0)

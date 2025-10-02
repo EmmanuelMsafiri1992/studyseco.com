@@ -22,9 +22,9 @@ const formatDate = (date) => {
 </script>
 
 <template>
-    <Head title="Course Access Expired - StudySeco" />
+    <Head title="Subject Access Expired - StudySeco" />
     
-    <DashboardLayout title="Course Access Expired" subtitle="Extend your enrollment to continue learning">
+    <DashboardLayout title="Subject Access Expired" subtitle="Extend your enrollment to continue learning">
         <div class="max-w-4xl mx-auto space-y-8">
             
             <!-- Alert Banner -->
@@ -36,7 +36,7 @@ const formatDate = (date) => {
                         </svg>
                     </div>
                     <div class="flex-1">
-                        <h1 class="text-2xl font-bold mb-2">Your Course Access Has Expired</h1>
+                        <h1 class="text-2xl font-bold mb-2">Your Subject Access Has Expired</h1>
                         <p class="text-red-100">
                             Your access expired {{ daysExpired }} {{ daysExpired === 1 ? 'day' : 'days' }} ago on 
                             <span class="font-semibold">{{ formatDate(enrollment?.access_expires_at) }}</span>
@@ -45,7 +45,7 @@ const formatDate = (date) => {
                 </div>
             </div>
 
-            <!-- Course Information -->
+            <!-- Subject Information -->
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 p-8">
                 <h2 class="text-xl font-bold text-slate-800 mb-6">Your Enrollment Details</h2>
                 
@@ -79,7 +79,7 @@ const formatDate = (date) => {
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 p-8">
                 <div class="text-center mb-8">
                     <h2 class="text-2xl font-bold text-slate-800 mb-3">Continue Your Learning Journey</h2>
-                    <p class="text-slate-600 text-lg">Choose an extension option to regain immediate access to all your course materials</p>
+                    <p class="text-slate-600 text-lg">Choose an extension option to regain immediate access to all your subject materials</p>
                 </div>
 
                 <!-- Extension Plans -->

@@ -158,6 +158,15 @@ Route::middleware('auth')->group(function () {
 Route::get('/dashboard', function () {
     $user = auth()->user();
     
+    // Allow students to access dashboard directly
+    // Note: Students can also access their school confirmation via navigation menu
+    // if ($user->role === 'student') {
+    //     $confirmedSchool = $user->confirmedSchool();
+    //     if ($confirmedSchool) {
+    //         return redirect()->route('school-selections.confirmed');
+    //     }
+    // }
+    
     // Get enrollment information for students to display country
     $enrollment = null;
     if ($user->role === 'student') {
@@ -425,7 +434,7 @@ Route::get('/dashboard', function () {
     }
     
     return Inertia::render('Dashboard', $data);
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
 
@@ -588,15 +597,18 @@ Route::middleware('auth')->group(function () {
         Route::patch('lessons/{lesson}/unpublish', [LessonController::class, 'unpublish'])->name('lessons.unpublish');
     });
 
-    Route::get('/fees', function () {
-        return Inertia::render('Fees/Index', [
-            'fees' => []
-        ]);
-    })->name('fees.index');
+    // Fees Management Routes (Admin only)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/fees', function () {
+            return Inertia::render('Fees/Index', [
+                'fees' => []
+            ]);
+        })->name('fees.index');
 
-    Route::get('/fees/create', function () {
-        return Inertia::render('Fees/Create');
-    })->name('fees.create');
+        Route::get('/fees/create', function () {
+            return Inertia::render('Fees/Create');
+        })->name('fees.create');
+    });
 
     // Payment Management Routes (Admin-only viewing, students can only create)
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
@@ -605,6 +617,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'downloadReceipt'])->name('payments.receipt');
     Route::post('payments/{payment}/verify', [PaymentController::class, 'verify'])->middleware('role:admin')->name('payments.verify');
+    Route::get('payments/{payment}/proof', [PaymentController::class, 'viewPaymentProof'])->middleware('role:admin')->name('payments.proof');
     Route::get('payments/statistics', [PaymentController::class, 'statistics'])->middleware('role:admin')->name('payments.statistics');
     Route::get('api/payments/check-access', [PaymentController::class, 'checkAccess'])->name('payments.check-access');
 

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     paymentMethods: Array,
@@ -119,8 +119,9 @@ const onTypeChange = () => {
 </script>
 
 <template>
-    <AuthenticatedLayout title="Payment Settings">
-        <template #subtitle>Configure payment methods and pricing options</template>
+    <DashboardLayout 
+        title="Payment Settings" 
+        subtitle="Configure payment methods and pricing options">
         
         <!-- Payment Methods Section -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 mb-8">
@@ -413,5 +414,5 @@ const onTypeChange = () => {
                 </form>
             </div>
         </div>
-    </AuthenticatedLayout>
+    </DashboardLayout>
 </template>

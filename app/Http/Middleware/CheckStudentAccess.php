@@ -31,7 +31,7 @@ class CheckStudentAccess
         // If no enrollment found, block access to protected content
         if (!$enrollment) {
             if ($this->isProtectedRoute($request)) {
-                return redirect()->route('dashboard')->with('error', 'You need to enroll in a course to access this content.');
+                return redirect()->route('dashboard')->with('error', 'You need to enroll in subjects to access this content.');
             }
             return $next($request);
         }
@@ -47,7 +47,7 @@ class CheckStudentAccess
         // Check if access has expired
         if ($enrollment->is_access_expired) {
             if ($this->isProtectedRoute($request)) {
-                return redirect()->route('student.access-expired')->with('error', 'Your course access has expired. Please extend your enrollment to continue learning.');
+                return redirect()->route('student.access-expired')->with('error', 'Your subject access has expired. Please extend your enrollment to continue learning.');
             }
             return $next($request);
         }
@@ -55,7 +55,7 @@ class CheckStudentAccess
         // Check if in grace period (last 7 days)
         $daysRemaining = $enrollment->access_days_remaining;
         if ($daysRemaining <= 7 && $daysRemaining > 0) {
-            session()->flash('warning', "Your course access expires in {$daysRemaining} days. Consider extending to avoid interruption.");
+            session()->flash('warning', "Your subject access expires in {$daysRemaining} days. Consider extending to avoid interruption.");
         }
         
         return $next($request);

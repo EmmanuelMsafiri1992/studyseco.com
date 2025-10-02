@@ -187,7 +187,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <div class="flex h-[calc(100vh-64px)]">
-            <!-- Left Sidebar - Course Structure -->
+            <!-- Left Sidebar - Subject Structure -->
             <div :class="[
                 'bg-white/90 backdrop-blur-xl border-r border-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col',
                 showSidebar ? 'w-80' : 'w-0',
@@ -208,7 +208,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <!-- Course Progress Overview -->
+                <!-- Subject Progress Overview -->
                 <div class="p-4 border-b border-slate-200/50">
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-slate-600">Progress</span>
@@ -219,7 +219,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <!-- Course Modules/Topics -->
+                <!-- Subject Modules/Topics -->
                 <div class="flex-1 overflow-y-auto">
                     <template v-for="topic in (subject?.topics || [])" :key="topic.id">
                         <div class="border-b border-slate-200/50">

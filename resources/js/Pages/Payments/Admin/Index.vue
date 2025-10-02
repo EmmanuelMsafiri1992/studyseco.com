@@ -24,8 +24,12 @@ const verificationForm = useForm({
     rejection_reason: '',
 });
 
-const formatAmount = (amount) => {
-    return 'MWK ' + new Intl.NumberFormat().format(amount);
+const formatAmount = (amount, currency = 'MWK') => {
+    const currencySymbol = currency === 'MWK' ? 'MWK ' : 
+                          currency === 'ZAR' ? 'ZAR ' : 
+                          currency === 'USD' ? 'USD ' : 
+                          currency + ' ';
+    return currencySymbol + new Intl.NumberFormat().format(amount);
 };
 
 const formatDate = (date) => {
@@ -91,11 +95,23 @@ const recentlyVerified = computed(() => {
 });
 
 const getPaymentMethodName = (method) => {
+    // Handle both string codes and objects
+    if (typeof method === 'object' && method !== null) {
+        return method.name || method.code || 'Unknown Method';
+    }
+    
     return {
         'tnm_mpamba': 'TNM Mpamba',
         'airtel_money': 'Airtel Money',
-        'bank_transfer': 'Bank Transfer'
-    }[method] || method;
+        'bank_transfer': 'Bank Transfer',
+        'mukuru': 'Mukuru',
+        'worldremit': 'WorldRemit',
+        'western_union': 'Western Union',
+        'moneygram': 'MoneyGram',
+        'paypal': 'PayPal',
+        'wise': 'Wise (TransferWise)',
+        'remitly': 'Remitly'
+    }[method] || (typeof method === 'string' ? method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Method');
 };
 
 const getStatusColor = (status) => {
@@ -160,7 +176,7 @@ const getStatusColor = (status) => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-indigo-600 text-sm font-medium">Total Revenue</p>
-                            <p class="text-2xl font-bold text-indigo-800">{{ formatAmount((payments?.data?.filter(p => p.status === 'approved') || []).reduce((sum, p) => sum + parseFloat(p.amount), 0)) }}</p>
+                            <p class="text-2xl font-bold text-indigo-800">{{ formatAmount((payments?.data?.filter(p => p.status === 'approved') || []).reduce((sum, p) => sum + parseFloat(p.calculated_amount || p.amount), 0)) }}</p>
                         </div>
                         <div class="w-10 h-10 bg-indigo-200 rounded-xl flex items-center justify-center">
                             <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,10 +205,13 @@ const getStatusColor = (status) => {
                                 </div>
 
                                 <div>
-                                    <h3 class="font-semibold text-slate-800">{{ payment.enrollment?.user?.name || 'Unknown User' }}</h3>
+                                    <h3 class="font-semibold text-slate-800">
+                                        {{ payment.enrollment?.user?.name || 'Unknown User' }}
+                                        <span v-if="payment.payment_type === 'subject_increase'" class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Subject Addition</span>
+                                    </h3>
                                     <div class="flex items-center space-x-4 text-sm text-slate-600">
-                                        <span>{{ getPaymentMethodName(payment.payment_method) }}</span>
-                                        <span>{{ formatAmount(payment.amount) }}</span>
+                                        <span>{{ payment.payment_method_name || getPaymentMethodName(payment.payment_method_code || payment.payment_method) }}</span>
+                                        <span>{{ formatAmount(payment.calculated_amount || payment.amount, payment.currency) }}</span>
                                         <span>{{ payment.access_duration_days }} days access</span>
                                         <span>{{ formatDate(payment.created_at) }}</span>
                                     </div>
@@ -204,8 +223,8 @@ const getStatusColor = (status) => {
 
                             <div class="flex items-center space-x-3">
                                 <!-- View Screenshot Button -->
-                                <button v-if="payment.proof_screenshot" 
-                                        @click="viewScreenshot('/storage/' + payment.proof_screenshot)"
+                                <button v-if="payment.payment_proof_path" 
+                                        @click="viewScreenshot(route('payments.proof', payment.id))"
                                         class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-colors duration-200">
                                     View Screenshot
                                 </button>
@@ -252,7 +271,7 @@ const getStatusColor = (status) => {
                                 <div>
                                     <h3 class="font-semibold text-slate-800">{{ payment.enrollment?.user?.name || 'Unknown User' }}</h3>
                                     <div class="flex items-center space-x-4 text-sm text-slate-600">
-                                        <span>{{ formatAmount(payment.amount) }}</span>
+                                        <span>{{ formatAmount(payment.calculated_amount || payment.amount, payment.currency) }}</span>
                                         <span>{{ formatDate(payment.verified_at) }}</span>
                                         <span v-if="payment.verified_by_user">by {{ payment.verified_by_user?.name || 'Unknown' }}</span>
                                     </div>
@@ -293,15 +312,19 @@ const getStatusColor = (status) => {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                             <span class="text-slate-500">Payment Method:</span>
-                            <span class="font-medium text-slate-800 ml-2">{{ getPaymentMethodName(selectedPayment?.payment_method) }}</span>
+                            <span class="font-medium text-slate-800 ml-2">{{ selectedPayment?.payment_method_name || getPaymentMethodName(selectedPayment?.payment_method_code || selectedPayment?.payment_method) }}</span>
                         </div>
                         <div>
                             <span class="text-slate-500">Amount:</span>
-                            <span class="font-medium text-slate-800 ml-2">{{ formatAmount(selectedPayment?.amount) }}</span>
+                            <span class="font-medium text-slate-800 ml-2">{{ formatAmount(selectedPayment?.calculated_amount || selectedPayment?.amount, selectedPayment?.currency) }}</span>
                         </div>
                         <div>
                             <span class="text-slate-500">Access Duration:</span>
                             <span class="font-medium text-slate-800 ml-2">{{ selectedPayment?.access_duration_days }} days</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500">Payment Type:</span>
+                            <span class="font-medium text-slate-800 ml-2">{{ selectedPayment?.payment_type === 'subject_increase' ? 'Subject Addition' : 'Regular Payment' }}</span>
                         </div>
                         <div>
                             <span class="text-slate-500">Submitted:</span>
@@ -310,6 +333,13 @@ const getStatusColor = (status) => {
                         <div v-if="selectedPayment?.reference_number" class="col-span-2">
                             <span class="text-slate-500">Reference Number:</span>
                             <span class="font-medium text-slate-800 ml-2">{{ selectedPayment?.reference_number }}</span>
+                        </div>
+                        <div v-if="selectedPayment?.payment_proof_path" class="col-span-2">
+                            <span class="text-slate-500">Payment Proof:</span>
+                            <button @click="viewScreenshot(route('payments.proof', selectedPayment.id))" 
+                                    class="ml-2 px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-colors duration-200">
+                                View Screenshot
+                            </button>
                         </div>
                     </div>
                 </div>

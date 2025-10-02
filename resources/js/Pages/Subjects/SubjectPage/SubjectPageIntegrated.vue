@@ -310,7 +310,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <div class="flex h-[calc(100vh-64px)]">
-            <!-- Left Sidebar - Course Structure -->
+            <!-- Left Sidebar - Subject Structure -->
             <div :class="[
                 'bg-white/90 backdrop-blur-xl border-r border-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col',
                 showSidebar ? 'w-80' : 'w-0',
@@ -319,7 +319,7 @@ onMounted(() => {
                 <!-- Sidebar Header -->
                 <div class="p-4 border-b border-slate-200/50">
                     <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-bold text-slate-800">Course Content</h2>
+                        <h2 class="text-lg font-bold text-slate-800">Subject Content</h2>
                         <button @click="toggleSidebar" class="p-1 hover:bg-slate-100 rounded-lg lg:hidden">
                             <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -328,7 +328,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <!-- Course Progress Overview -->
+                <!-- Subject Progress Overview -->
                 <div class="p-4 border-b border-slate-200/50">
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-slate-600">Progress</span>
@@ -341,7 +341,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <!-- Course Modules/Topics -->
+                <!-- Subject Modules/Topics -->
                 <div class="flex-1 overflow-y-auto">
                     <template v-for="topic in (subject?.topics || [])" :key="topic.id">
                         <div class="border-b border-slate-200/50">

@@ -1067,7 +1067,7 @@ onUnmounted(() => {
                         <h3 class="text-lg font-semibold text-amber-800">Important Information</h3>
                     </div>
                     <div class="text-amber-700 space-y-2">
-                        <p>🏫 <strong>Study Online:</strong> Complete 100% of your coursework through our digital platform</p>
+                        <p>🏫 <strong>Study Online:</strong> Complete 100% of your subject work through our digital platform</p>
                         <p>📝 <strong>Choose 5 Centers:</strong> Select at least 5 preferred examination centers to ensure placement</p>
                         <p>✈️ <strong>International Students:</strong> Arrive at least 2 weeks before examination dates</p>
                         <p>🎓 <strong>Final Exams:</strong> Physical attendance required only for final examinations</p>
@@ -1165,7 +1165,7 @@ onUnmounted(() => {
                             <span class="text-white font-bold text-lg">1</span>
                         </div>
                         <h4 class="font-semibold text-gray-900 mb-2">Complete Studies</h4>
-                        <p class="text-gray-600 text-sm">Finish all coursework online through our platform</p>
+                        <p class="text-gray-600 text-sm">Finish all subject work online through our platform</p>
                     </div>
                     <div class="text-center">
                         <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1655,7 +1655,7 @@ onUnmounted(() => {
                                     <ul class="text-amber-700 space-y-1">
                                         <li>• <strong>14-day cooling period:</strong> Cancel within 14 days for full refund via same payment method</li>
                                         <li>• <strong>Refund processing:</strong> 24-48 hours after cancellation approval</li>
-                                        <li>• <strong>No pausing:</strong> Course access cannot be paused once started</li>
+                                        <li>• <strong>No pausing:</strong> Subject access cannot be paused once started</li>
                                         <li>• <strong>Material policy:</strong> Resources are for personal use only, not downloadable or shareable outside the platform</li>
                                     </ul>
                                 </div>

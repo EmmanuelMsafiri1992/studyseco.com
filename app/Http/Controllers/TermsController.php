@@ -85,7 +85,7 @@ class TermsController extends Controller
                     'sections' => [
                         [
                             'title' => 'Enrollment Policy',
-                            'content' => 'By enrolling in StudySeco courses, you agree to attend classes regularly and complete assignments as required. Enrollment fees are non-refundable except as specified in our cancellation policy.'
+                            'content' => 'By enrolling in StudySeco subjects, you agree to attend classes regularly and complete assignments as required. Enrollment fees are non-refundable except as specified in our cancellation policy.'
                         ],
                         [
                             'title' => '14-Day Cancellation Policy',
@@ -96,8 +96,8 @@ class TermsController extends Controller
                             'content' => 'Students are expected to maintain high standards of academic integrity. Plagiarism, cheating, or any form of academic dishonesty will result in immediate termination of enrollment without refund.'
                         ],
                         [
-                            'title' => 'Course Access',
-                            'content' => 'Course materials and access are provided for the duration specified in your enrollment package. Access will be revoked upon expiration or violation of these terms.'
+                            'title' => 'Subject Access',
+                            'content' => 'Subject materials and access are provided for the duration specified in your enrollment package. Access will be revoked upon expiration or violation of these terms.'
                         ]
                     ]
                 ]);

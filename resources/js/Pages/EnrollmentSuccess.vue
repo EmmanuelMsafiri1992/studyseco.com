@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import { onMounted } from 'vue';
+import GuestLayout from '@/Layouts/GuestLayout.vue';
 
 const props = defineProps({
     enrollment: Object,
@@ -37,10 +38,11 @@ onMounted(() => {
 
 <template>
     <Head title="Enrollment Successful - StudySeco" />
+    
+    <GuestLayout>
+        <div id="confetti-container" class="fixed inset-0 pointer-events-none z-50"></div>
 
-    <div id="confetti-container" class="fixed inset-0 pointer-events-none z-50"></div>
-
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center p-4">
+        <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <!-- Background particles -->
         <div class="absolute inset-0 overflow-hidden">
             <div class="absolute top-20 left-10 w-20 h-20 bg-emerald-500/20 rounded-full animate-pulse"></div>
@@ -269,7 +271,8 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-    </div>
+        </div>
+    </GuestLayout>
 </template>
 
 <style>

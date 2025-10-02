@@ -63,13 +63,13 @@ const user = page.props.auth?.user || { name: 'Guest', role: 'guest', profile_ph
                     </svg>
                     <span class="font-medium">Academics</span>
                 </Link>
-                <Link href="/fees" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                <Link v-if="user.role === 'admin'" href="/fees" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
                     <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                     </svg>
                     <span class="font-medium">Finance</span>
                 </Link>
-                <Link href="/admin/payment-settings" 
+                <Link v-if="user.role === 'admin'" href="/admin/payment-settings" 
                       :class="page.url.startsWith('/admin/payment-settings') ? 'text-slate-700 bg-indigo-50 border border-indigo-100' : 'text-slate-600'"
                       class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
                     <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@ const user = page.props.auth?.user || { name: 'Guest', role: 'guest', profile_ph
                     <span class="font-medium">Support</span>
                     <span class="ml-auto text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">7</span>
                 </Link>
-                <Link href="/reports" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
+                <Link v-if="user.role === 'admin'" href="/reports" class="flex items-center px-4 py-3 text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800">
                     <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
@@ -139,7 +139,7 @@ const user = page.props.auth?.user || { name: 'Guest', role: 'guest', profile_ph
                     </button>
                     <div class="relative group">
                         <div class="flex items-center space-x-3 pl-4 border-l border-slate-200 cursor-pointer">
-                            <img :src="user.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" 
+                            <img :src="user.profile_photo_url ? `/storage/${user.profile_photo_url}` : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" 
                                  :alt="user.name" class="h-12 w-12 rounded-2xl ring-2 ring-white shadow-md">
                             <div class="text-sm">
                                 <p class="font-semibold text-slate-800">{{ user.name }}</p>

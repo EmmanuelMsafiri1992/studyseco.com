@@ -1,11 +1,67 @@
+<script setup>
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+
+const props = defineProps({
+    enrollment: Object,
+    accessDurations: Array,
+    paymentMethods: Array,
+    auth: Object
+});
+
+// Calculate days remaining
+const accessDaysRemaining = computed(() => {
+    if (!props.enrollment?.access_expires_at) return 0;
+    const expiryDate = new Date(props.enrollment.access_expires_at);
+    const today = new Date();
+    const diffTime = expiryDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+});
+
+const selectedDuration = ref(null);
+const selectedPaymentMethod = ref(null);
+const showPaymentDetails = ref(false);
+
+const extensionForm = useForm({
+    duration_id: null,
+    payment_method: null,
+    proof_screenshot: null
+});
+
+const handleDurationSelect = (duration) => {
+    selectedDuration.value = duration;
+    extensionForm.duration_id = duration.id;
+    showPaymentDetails.value = false;
+};
+
+const handlePaymentMethodSelect = (method) => {
+    selectedPaymentMethod.value = method;
+    extensionForm.payment_method = method.code;
+    showPaymentDetails.value = true;
+};
+
+const handleFileUpload = (event) => {
+    extensionForm.proof_screenshot = event.target.files[0];
+};
+
+const submitExtension = () => {
+    extensionForm.post(route('student.extension.store'));
+};
+</script>
+
 <template>
-    <div class="min-h-screen bg-gray-50">
-        <Head title="Extend Access" />
+    <Head title="Extend Access" />
+    
+    <DashboardLayout 
+        title="Extend Your Access" 
+        subtitle="Continue your learning journey by extending your subject access">
         
         <div class="max-w-4xl mx-auto px-4 py-8">
             <!-- Header -->
             <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Extend Your Course Access</h1>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Extend Your Subject Access</h1>
                 <p class="text-gray-600">Continue your learning journey by extending your access period</p>
             </div>
 
@@ -174,7 +230,7 @@
                             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         >
                         <label class="text-sm text-gray-700">
-                            I agree to the <a href="#" class="text-blue-600 underline">terms and conditions</a> for course extension
+                            I agree to the <a href="#" class="text-blue-600 underline">terms and conditions</a> for subject extension
                         </label>
                     </div>
 
