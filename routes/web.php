@@ -155,9 +155,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/enrollment/check-extension', [EnrollmentController::class, 'checkExtension'])->name('enrollment.check-extension');
 });
 
+
 Route::get('/dashboard', function () {
     $user = auth()->user();
-    
+
     // Get enrollment information for students to display country
     $enrollment = null;
     if ($user->role === 'student') {
@@ -165,7 +166,7 @@ Route::get('/dashboard', function () {
             ->orWhere('email', $user->email)
             ->first();
     }
-    
+
     // Add enrollment info to user data
     $userData = $user->toArray();
     if ($enrollment) {
@@ -280,15 +281,24 @@ Route::get('/dashboard', function () {
             $data['access_expired'] = $enrollment ? $enrollment->is_access_expired : true;
             
             // Add stats object for students with enrollment status
+            $enrollmentStatus = 'not_enrolled';
+            if ($enrollment) {
+                if ($enrollment->is_trial) {
+                    $enrollmentStatus = 'trial';
+                } else {
+                    $enrollmentStatus = $enrollment->status; // pending, approved, rejected
+                }
+            }
+
             $data['stats'] = [
-                'enrollment_status' => $enrollment ? ($enrollment->is_trial ? 'trial' : $enrollment->status) : 'not_enrolled',
+                'enrollment_status' => $enrollmentStatus,
                 'total_subjects' => $enrollment ? count($enrollment->selected_subjects ?: []) : 0,
                 'access_remaining_days' => $enrollment ? $enrollment->access_days_remaining : 0,
-                'is_trial' => $enrollment ? $enrollment->is_trial : false,
+                'is_trial' => $enrollment ? $enrollment->is_trial : null,
                 'trial_days_remaining' => $enrollment && $enrollment->is_trial ? $enrollment->access_days_remaining : null,
-                'trial_expires_at' => $enrollment && $enrollment->is_trial && $enrollment->access_expires_at ? 
+                'trial_expires_at' => $enrollment && $enrollment->is_trial && $enrollment->access_expires_at ?
                     \Carbon\Carbon::parse($enrollment->access_expires_at)->format('M j, Y') : null,
-                'access_expires_at' => $enrollment && !$enrollment->is_trial && $enrollment->access_expires_at ? 
+                'access_expires_at' => $enrollment && !$enrollment->is_trial && $enrollment->access_expires_at ?
                     \Carbon\Carbon::parse($enrollment->access_expires_at)->format('M j, Y') : null,
             ];
             
@@ -515,17 +525,33 @@ Route::middleware('auth')->group(function () {
         Route::delete('/teachers/{user}', [\App\Http\Controllers\TeacherController::class, 'destroy'])->name('teachers.destroy');
     });
 
+    // Public navigation routes - accessible to all authenticated users
+    Route::get('/subjects', function () {
+        $user = auth()->user();
+        if ($user->role === 'student') {
+            return redirect()->route('student.subjects.index');
+        }
+        return app(\App\Http\Controllers\SubjectController::class)->index();
+    })->name('subjects.index');
+
+    Route::get('/library', [\App\Http\Controllers\LibraryController::class, 'index'])->name('library.index');
+    Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+
     // Student Content Access Routes - Protected by access expiry check
     Route::middleware('check.student.access')->group(function () {
-        // Subject Management Routes
-        Route::resource('subjects', SubjectController::class);
-        
+        // Subject Management Routes (except index which is public above)
+        Route::post('subjects', [SubjectController::class, 'store'])->name('subjects.store');
+        Route::get('subjects/create', [SubjectController::class, 'create'])->name('subjects.create');
+        Route::get('subjects/{subject}', [SubjectController::class, 'show'])->name('subjects.show');
+        Route::put('subjects/{subject}', [SubjectController::class, 'update'])->name('subjects.update');
+        Route::delete('subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
+        Route::get('subjects/{subject}/edit', [SubjectController::class, 'edit'])->name('subjects.edit');
+
         // Lesson Player Route
         Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
-        
-        // Library Routes
+
+        // Library Routes (except index which is public above)
         Route::prefix('library')->name('library.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\LibraryController::class, 'index'])->name('index');
             Route::get('/books', [\App\Http\Controllers\LibraryController::class, 'books'])->name('books');
             Route::get('/past-papers', [\App\Http\Controllers\LibraryController::class, 'pastPapers'])->name('pastPapers');
             Route::get('/search', [\App\Http\Controllers\LibraryController::class, 'search'])->name('search');
@@ -556,20 +582,19 @@ Route::middleware('auth')->group(function () {
             Route::get('/subjects', [\App\Http\Controllers\AIChatController::class, 'getSubjects'])->name('subjects');
             Route::post('/book-session', [\App\Http\Controllers\AIChatController::class, 'bookSession'])->name('book-session');
         });
-        
-        // Chat Routes  
-        Route::prefix('chat')->name('chat.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\ChatController::class, 'index'])->name('index');
-            Route::get('/create', [\App\Http\Controllers\ChatController::class, 'create'])->name('create');
-            Route::post('/', [\App\Http\Controllers\ChatController::class, 'store'])->name('store');
-            Route::get('/{chatGroup}', [\App\Http\Controllers\ChatController::class, 'show'])->name('show');
-            Route::post('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'storeMessage'])->name('storeMessage');
-            Route::get('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('getMessages');
-            Route::post('/{chatGroup}/join', [\App\Http\Controllers\ChatController::class, 'join'])->name('join');
-            Route::post('/{chatGroup}/leave', [\App\Http\Controllers\ChatController::class, 'leave'])->name('leave');
-            Route::post('/{chatGroup}/add-member', [\App\Http\Controllers\ChatController::class, 'addMember'])->name('addMember');
-            Route::delete('/{chatGroup}/remove-member/{user}', [\App\Http\Controllers\ChatController::class, 'removeMember'])->name('removeMember');
-        });
+    });
+
+    // Chat Routes - accessible to all authenticated users (not restricted by enrollment)
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/create', [\App\Http\Controllers\ChatController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\ChatController::class, 'store'])->name('store');
+        Route::get('/{chatGroup}', [\App\Http\Controllers\ChatController::class, 'show'])->name('show');
+        Route::post('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'storeMessage'])->name('storeMessage');
+        Route::get('/{chatGroup}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('getMessages');
+        Route::post('/{chatGroup}/join', [\App\Http\Controllers\ChatController::class, 'join'])->name('join');
+        Route::post('/{chatGroup}/leave', [\App\Http\Controllers\ChatController::class, 'leave'])->name('leave');
+        Route::post('/{chatGroup}/add-member', [\App\Http\Controllers\ChatController::class, 'addMember'])->name('addMember');
+        Route::delete('/{chatGroup}/remove-member/{user}', [\App\Http\Controllers\ChatController::class, 'removeMember'])->name('removeMember');
     });
     
     // Topic Management Routes (API) - Admin/Teacher only

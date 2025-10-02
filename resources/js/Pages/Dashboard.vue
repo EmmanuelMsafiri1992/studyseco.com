@@ -362,11 +362,11 @@ const navigateToAccountSettings = () => {
                         <div>
                             <p class="text-slate-500 text-sm font-medium">Account Type</p>
                             <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-rose-600 transition-colors">
-                                {{ stats.is_trial === true ? 'Free Trial' : 'Premium' }}
+                                {{ stats.is_trial === true ? 'Free Trial' : (stats.enrollment_status === 'approved' ? 'Premium' : 'Not Enrolled') }}
                             </p>
                             <div class="flex items-center mt-2">
-                                <span :class="stats.is_trial === true ? 'text-blue-600' : 'text-purple-600'" class="text-sm font-semibold">
-                                    {{ stats.is_trial === true ? '🆓 7 Days Free Trial' : '⭐ Full Access' }}
+                                <span :class="stats.is_trial === true ? 'text-blue-600' : (stats.enrollment_status === 'approved' ? 'text-purple-600' : 'text-gray-600')" class="text-sm font-semibold">
+                                    {{ stats.is_trial === true ? '🆓 7 Days Free Trial' : (stats.enrollment_status === 'approved' ? '⭐ Full Access' : '⏳ Enrollment Pending') }}
                                 </span>
                             </div>
                         </div>

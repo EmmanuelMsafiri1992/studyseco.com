@@ -200,8 +200,13 @@ class PaymentController extends Controller
             });
 
         // Add user country to user object for frontend filtering
+        // Get country from enrollment if user doesn't have it
         $userWithCountry = $user->toArray();
-        $userWithCountry['country'] = $user->country ?? 'Malawi'; // Default to Malawi if not set
+        $userCountry = 'Malawi'; // Default
+        if ($enrollment) {
+            $userCountry = $enrollment->country ?? 'Malawi';
+        }
+        $userWithCountry['country'] = $userCountry;
 
         // Check if this is an upgrade request
         $isUpgrade = $request->has('upgrade') && $request->get('upgrade') === 'true';
@@ -402,16 +407,21 @@ class PaymentController extends Controller
                     }
                 } else {
                     // Regular payment - grant premium access and approve enrollment
+                    // Calculate access duration based on extension_months
+                    $accessDays = $payment->extension_months ? ($payment->extension_months * 30) : 30;
+
                     $enrollment->update([
                         'status' => 'approved',
                         'is_trial' => false, // NOW grant premium access
                         'approved_at' => now(),
                         'approved_by' => auth()->id(),
-                        'access_expires_at' => now()->addDays($payment->access_duration_days ?? 30)
+                        'access_expires_at' => now()->addDays($accessDays)
                     ]);
-                    
+
                     // Send congratulatory notification
-                    $enrollment->user->notify(new PaymentApproved($enrollment, $payment));
+                    if ($enrollment->user) {
+                        $enrollment->user->notify(new PaymentApproved($enrollment, $payment));
+                    }
                 }
                 
                 // Log access granted

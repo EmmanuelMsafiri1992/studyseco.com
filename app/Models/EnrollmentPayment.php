@@ -28,8 +28,17 @@ class EnrollmentPayment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'verified_at' => 'datetime',
-        'additional_data' => 'array'
+        'additional_data' => 'array',
+        'payment_details' => 'array'
     ];
+
+    /**
+     * Get access duration in days
+     */
+    public function getAccessDurationDaysAttribute()
+    {
+        return $this->extension_months ? $this->extension_months * 30 : 30;
+    }
 
     public function enrollment(): BelongsTo
     {
@@ -46,8 +55,11 @@ class EnrollmentPayment extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
-    public function user(): HasOneThrough
+    /**
+     * Get the user who owns the enrollment
+     */
+    public function user()
     {
-        return $this->hasOneThrough(User::class, Enrollment::class, 'id', 'id', 'enrollment_id', 'user_id');
+        return $this->enrollment?->user;
     }
 }

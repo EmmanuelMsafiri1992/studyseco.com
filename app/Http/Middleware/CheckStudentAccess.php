@@ -66,6 +66,19 @@ class CheckStudentAccess
      */
     private function isProtectedRoute(Request $request): bool
     {
+        $currentRoute = $request->route()->getName();
+
+        // Exclude public index routes that are accessible without enrollment
+        $publicRoutes = [
+            'subjects.index',
+            'library.index',
+            'chat.index',
+        ];
+
+        if (in_array($currentRoute, $publicRoutes)) {
+            return false;
+        }
+
         $protectedRoutes = [
             'subjects.*',
             'lessons.*',
@@ -74,15 +87,13 @@ class CheckStudentAccess
             'chat.*',
             'ai.*'
         ];
-        
-        $currentRoute = $request->route()->getName();
-        
+
         foreach ($protectedRoutes as $pattern) {
             if (fnmatch($pattern, $currentRoute)) {
                 return true;
             }
         }
-        
+
         return false;
     }
 }

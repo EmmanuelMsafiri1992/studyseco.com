@@ -117,7 +117,10 @@
       "Read(/C:\\laragon\\www\\studyseco.com\\storage\\logs/**)",
       "Read(/C:\\laragon\\www\\studyseco.com\\storage\\logs/**)",
       "Read(/C:\\laragon\\www\\studyseco.com\\resources\\js\\Pages\\Payments\\Admin/**)",
-      "Bash(del \"C:\\laragon\\www\\study\\database\\migrations\\2025_09_05_153450_add_payment_type_to_enrollment_payments_table.php\")"
+      "Bash(del \"C:\\laragon\\www\\study\\database\\migrations\\2025_09_05_153450_add_payment_type_to_enrollment_payments_table.php\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(del check_users.php create_test_user.php)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

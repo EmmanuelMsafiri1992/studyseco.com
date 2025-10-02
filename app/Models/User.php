@@ -79,11 +79,13 @@ class User extends Authenticatable
     }
 
     /**
-     * Get enrollment payments made by this user
+     * Get enrollment payments made by this user (through enrollments)
      */
-    public function enrollmentPayments(): HasMany
+    public function enrollmentPayments()
     {
-        return $this->hasMany(EnrollmentPayment::class, 'user_id');
+        return EnrollmentPayment::whereHas('enrollment', function ($query) {
+            $query->where('user_id', $this->id);
+        });
     }
 
     /**

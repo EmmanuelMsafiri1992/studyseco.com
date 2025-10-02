@@ -43,7 +43,8 @@ class PaymentApproved extends Notification implements ShouldQueue
     {
         $daysRemaining = $this->enrollment->access_days_remaining;
         $expiresAt = $this->enrollment->access_expires_at;
-        
+        $subjectCount = $this->enrollment->subject_count ?? count($this->enrollment->selected_subjects ?? []);
+
         return (new MailMessage)
             ->subject('🎉 Payment Approved - Welcome to StudySeco!')
             ->greeting('Congratulations, ' . $this->enrollment->user->name . '!')
@@ -51,7 +52,7 @@ class PaymentApproved extends Notification implements ShouldQueue
             ->line('**Access Details:**')
             ->line('• Expires: ' . $expiresAt->format('F j, Y'))
             ->line('• Duration: ' . $daysRemaining . ' days remaining')
-            ->line('• Subjects: ' . ($this->enrollment->subjects ? $this->enrollment->subjects->count() : 0) . ' enrolled')
+            ->line('• Subjects: ' . $subjectCount . ' enrolled')
             ->action('Access Your Dashboard', route('dashboard'))
             ->line('You can now access all your enrolled subjects and start learning!')
             ->line('If you have any questions, our support team is here to help.')

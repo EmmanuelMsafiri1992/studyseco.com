@@ -24,7 +24,7 @@ class EnrollmentController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email',
+            'email' => 'required|email|max:255', // Removed unique constraint - users can enroll before registering
             'phone' => 'required|string|max:20',
             'address' => 'required|string|max:500',
             'country' => 'required|string|max:100',
@@ -81,6 +81,14 @@ class EnrollmentController extends Controller
             };
         }
 
+        // Calculate subject price based on region/currency
+        $subjectPrice = match($currency) {
+            'MWK' => 50000,
+            'ZAR' => 350,
+            'USD' => 25,
+            default => 50000
+        };
+
         // Create enrollment record
         $enrollment = Enrollment::create([
             'name' => $validated['name'],
@@ -90,6 +98,8 @@ class EnrollmentController extends Controller
             'country' => $validated['country'],
             'region' => $region,
             'selected_subjects' => $validated['selected_subjects'],
+            'subject_count' => count($validated['selected_subjects']),
+            'price_per_subject' => $subjectPrice,
             'total_amount' => $totalAmount,
             'currency' => $currency,
             'is_trial' => $isTrial,
@@ -249,8 +259,6 @@ class EnrollmentController extends Controller
 
         // Send welcome email with login credentials
         try {
-            // Load subjects relationship before sending notification
-            $enrollment->load('subjects');
             $user->notify(new WelcomeEmail($user, $enrollment, $tempPassword));
         } catch (\Exception $e) {
             // Log error but don't fail the approval

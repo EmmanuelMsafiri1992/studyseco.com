@@ -47,4 +47,10 @@ class AccessDuration extends Model
             return $this->days === 1 ? '1 Day' : $this->days . ' Days';
         }
     }
+
+    // Get months (calculated from days for backward compatibility)
+    public function getMonthsAttribute()
+    {
+        return intval($this->days / 30);
+    }
 }
