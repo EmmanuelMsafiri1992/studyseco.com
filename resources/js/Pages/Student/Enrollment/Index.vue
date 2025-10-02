@@ -42,7 +42,7 @@ const submitEnrollment = () => {
 <template>
     <Head title="Student Enrollment" />
     
-    <DashboardLayout title="Enrollment Management" subtitle="Manage your course enrollment">
+    <DashboardLayout title="Enrollment Management" subtitle="Manage your subject enrollment">
         <div class="space-y-8">
             <!-- Enrollment Status Card -->
             <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-200/50">
@@ -109,7 +109,7 @@ const submitEnrollment = () => {
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold text-slate-800 mb-4">No Active Enrollment</h3>
-                        <p class="text-slate-600 mb-8">You haven't enrolled in any courses yet. Start your learning journey today!</p>
+                        <p class="text-slate-600 mb-8">You haven't enrolled in any subjects yet. Start your learning journey today!</p>
                     </div>
 
                     <!-- Enrollment Form -->

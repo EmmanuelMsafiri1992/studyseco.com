@@ -127,27 +127,11 @@ const paymentMethodOptions = computed(() => {
             </div>
 
             <!-- Add Subjects Form -->
-            <form @submit.prevent="submitForm" class="space-y-8">
+            <form @submit.prevent="submitForm" class="space-y-8" novalidate>
                 <!-- Subject Selection -->
                 <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-200/50">
                     <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Additional Subjects</h2>
                     
-                    <!-- Debug Info -->
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm mb-6">
-                        <p><strong>Debug:</strong></p>
-                        <p>• Available subjects: {{ availableSubjects.length }}</p>
-                        <p>• Selected subjects: {{ selectedSubjects }}</p>
-                        <p>• Selected count: {{ selectedSubjects?.length || 0 }}</p>
-                        <p>• Form subjects: {{ form.additional_subjects }}</p>
-                        <p>• Price per subject: {{ pricePerSubject }}</p>
-                        <p>• Currency: {{ currency }}</p>
-                        <p>• Total cost: {{ totalCost }}</p>
-                        <p>• Payment methods: {{ paymentMethodOptions.length }}</p>
-                        <p>• Region: {{ enrollment?.region }}</p>
-                        <p><strong>Subject Types:</strong></p>
-                        <p>• First available ID: {{ availableSubjects[0]?.id }} ({{ typeof availableSubjects[0]?.id }})</p>
-                        <p>• Form array type: {{ typeof form.additional_subjects }}</p>
-                    </div>
                     
                     <div v-if="availableSubjects.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div 
@@ -260,10 +244,11 @@ const paymentMethodOptions = computed(() => {
                         <label class="block text-sm font-medium text-slate-700 mb-2">Payment Reference Number</label>
                         <input 
                             type="text" 
+                            name="reference_number"
                             v-model="form.reference_number"
                             class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                             placeholder="Enter transaction/reference number"
-                            required
+                            :required="form.payment_method !== 'trial' && form.payment_method !== ''"
                         >
                         <div v-if="form.errors.reference_number" class="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
                             <p class="text-sm text-red-600">{{ form.errors.reference_number }}</p>
@@ -281,10 +266,11 @@ const paymentMethodOptions = computed(() => {
                                 <span class="text-sm text-slate-600">Upload Screenshot</span>
                                 <input 
                                     type="file" 
+                                    name="proof_screenshot"
                                     @change="handleFileUpload"
                                     accept="image/*"
                                     class="hidden"
-                                    required
+                                    :required="form.payment_method !== 'trial' && form.payment_method !== ''"
                                 >
                             </label>
                             

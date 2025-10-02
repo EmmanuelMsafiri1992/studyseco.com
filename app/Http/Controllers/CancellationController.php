@@ -233,7 +233,7 @@ class CancellationController extends Controller
     {
         return [
             'financial_hardship' => 'Financial hardship',
-            'course_not_suitable' => 'Course not suitable for my needs',
+            'course_not_suitable' => 'Subjects not suitable for my needs',
             'technical_issues' => 'Technical issues with platform',
             'quality_concerns' => 'Quality concerns',
             'time_constraints' => 'Time constraints',

@@ -26,9 +26,18 @@ class PaymentController extends Controller
 
         // Admin sees all payments for verification
         if ($user->role === 'admin') {
-            $payments = EnrollmentPayment::with(['enrollment.user'])
+            $payments = EnrollmentPayment::with(['enrollment.user', 'verifiedBy', 'paymentMethod'])
                 ->latest()
                 ->paginate(20);
+                
+            // Transform the payment data for admin interface
+            $payments->getCollection()->transform(function ($payment) {
+                $payment->calculated_amount = $payment->calculated_amount; // Use accessor
+                $payment->access_duration_days = $payment->access_duration_days; // Use accessor
+                $payment->payment_method_name = $payment->paymentMethod->name ?? 'Unknown Method';
+                $payment->payment_method_code = $payment->paymentMethod->code ?? $payment->payment_method;
+                return $payment;
+            });
 
             // Calculate stats
             $stats = [
@@ -58,18 +67,19 @@ class PaymentController extends Controller
                 ->map(function ($payment) {
                     return [
                         'id' => $payment->id,
-                        'amount' => $payment->amount,
+                        'amount' => $payment->calculated_amount, // Use calculated amount for display
                         'currency' => $payment->currency,
                         'status' => $payment->status,
                         'payment_method' => $payment->paymentMethod->code ?? $payment->payment_method,
                         'payment_method_name' => $payment->paymentMethod->name ?? 'Unknown',
                         'reference_number' => $payment->reference_number,
-                        'access_duration_days' => $payment->extension_months ? $payment->extension_months * 30 : 30,
+                        'access_duration_days' => $payment->access_duration_days, // Use accessor
                         'access_expires_at' => $payment->status === 'verified' ? $payment->enrollment->access_expires_at : null,
                         'created_at' => $payment->created_at,
                         'verified_at' => $payment->verified_at,
                         'admin_notes' => $payment->admin_notes,
                         'rejection_reason' => $payment->admin_notes && $payment->status === 'rejected' ? $payment->admin_notes : null,
+                        'payment_type' => $payment->payment_type, // Add payment type for display
                     ];
                 });
         }
@@ -349,11 +359,15 @@ class PaymentController extends Controller
         $user = auth()->user();
 
         // Only admin or payment owner can view
-        if ($user->role !== 'admin' && $payment->enrollment->user_id !== $user->id) {
+        if ($user->role !== 'admin' && $payment->enrollment->user_id !== $user->id && $payment->enrollment->email !== $user->email) {
             abort(403);
         }
 
         $payment->load(['enrollment.user', 'verifiedBy', 'paymentMethod']);
+        
+        // Add calculated fields for display
+        $payment->calculated_amount = $payment->calculated_amount;
+        $payment->access_duration_days = $payment->access_duration_days;
 
         return Inertia::render('Payments/Show', [
             'payment' => $payment
@@ -396,10 +410,21 @@ class PaymentController extends Controller
                         $newSubjects = array_merge($currentSubjects, $additionalSubjects);
                         $newSubjects = array_unique($newSubjects); // Remove duplicates
                         
+                        // Extend access time for subject increase
+                        $currentExpiry = $enrollment->access_expires_at;
+                        $newExpiry = $currentExpiry && $currentExpiry->greaterThan(now()) 
+                            ? $currentExpiry->addDays($payment->access_duration_days ?? 30)
+                            : now()->addDays($payment->access_duration_days ?? 30);
+
                         $enrollment->update([
                             'selected_subjects' => $newSubjects,
                             'subject_count' => count($newSubjects),
                             'total_amount' => $enrollment->total_amount + $payment->amount,
+                            'access_expires_at' => $newExpiry,
+                            'status' => 'approved',
+                            'is_trial' => false,
+                            'approved_at' => now(),
+                            'approved_by' => auth()->id(),
                         ]);
                         
                         // Send subject increase notification
@@ -534,13 +559,219 @@ class PaymentController extends Controller
             abort(404, 'Receipt not available for unverified payments.');
         }
 
-        // Create a simple HTML receipt and return as downloadable response
-        $receiptHtml = $this->generateReceiptHtml($payment);
+        // Generate printable receipt HTML that opens in new window for PDF printing
+        $receiptHtml = $this->generatePrintableReceiptHtml($payment);
         
         return response($receiptHtml, 200, [
             'Content-Type' => 'text/html',
-            'Content-Disposition' => 'attachment; filename="payment-receipt-' . $payment->id . '.html"'
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
         ]);
+    }
+
+    private function generateReceiptPdf(EnrollmentPayment $payment)
+    {
+        $enrollment = $payment->enrollment;
+        $user = $enrollment->user;
+        
+        // Create a simple PDF using TCPDF or HTML to PDF conversion
+        // For now, we'll create a simple HTML-to-PDF approach using DomPDF or similar
+        // Since we don't want to add complex dependencies, let's create a styled HTML that browsers can print as PDF
+        
+        $receiptHtml = $this->generatePrintableReceiptHtml($payment);
+        
+        // For now, return HTML that can be printed as PDF by browser
+        // In production, you might want to use a proper PDF library like DomPDF
+        return $receiptHtml;
+    }
+
+    private function generatePrintableReceiptHtml(EnrollmentPayment $payment)
+    {
+        $enrollment = $payment->enrollment;
+        $user = $enrollment->user;
+        
+        return '<!DOCTYPE html>
+        <html>
+        <head>
+            <title>Payment Receipt #' . $payment->id . '</title>
+            <meta charset="utf-8">
+            <style>
+                @media print { 
+                    body { margin: 0; }
+                    .no-print { display: none; }
+                }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 20px; 
+                    color: #333;
+                    line-height: 1.6;
+                }
+                .header { 
+                    text-align: center; 
+                    margin-bottom: 40px; 
+                    padding: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border-radius: 10px;
+                }
+                .header h1 { margin: 0; font-size: 28px; }
+                .header h2 { margin: 5px 0 0 0; font-size: 16px; opacity: 0.9; }
+                .receipt-id { 
+                    background: rgba(255,255,255,0.2); 
+                    padding: 10px; 
+                    border-radius: 5px; 
+                    margin-top: 15px;
+                    font-weight: bold;
+                }
+                .content { 
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                .row { 
+                    display: flex;
+                    justify-content: space-between;
+                    margin: 15px 0; 
+                    padding: 10px 0;
+                    border-bottom: 1px solid #eee;
+                }
+                .row:last-child { border-bottom: none; }
+                .label { 
+                    font-weight: bold; 
+                    color: #555;
+                    width: 40%;
+                }
+                .value { 
+                    color: #333;
+                    width: 60%;
+                    text-align: right;
+                }
+                .amount { 
+                    background: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+                    margin: 20px 0;
+                    border-left: 4px solid #28a745;
+                }
+                .amount .currency { font-size: 24px; font-weight: bold; color: #28a745; }
+                .status { 
+                    color: #28a745; 
+                    font-weight: bold; 
+                    text-transform: uppercase;
+                    padding: 5px 10px;
+                    background: #d4edda;
+                    border-radius: 5px;
+                }
+                .footer { 
+                    margin-top: 40px; 
+                    text-align: center; 
+                    color: #666;
+                    font-size: 14px;
+                    border-top: 2px solid #eee;
+                    padding-top: 20px;
+                }
+                .print-btn {
+                    background: #007bff;
+                    color: white;
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin: 20px auto;
+                    display: block;
+                }
+                .print-btn:hover { background: #0056b3; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>📄 Payment Receipt</h1>
+                <h2>StudySeco Learning Platform</h2>
+                <div class="receipt-id">Receipt #' . $payment->id . '</div>
+            </div>
+            
+            <div class="content">
+                <div class="row">
+                    <span class="label">Student Name:</span>
+                    <span class="value">' . htmlspecialchars($user ? $user->name : $enrollment->name) . '</span>
+                </div>
+                <div class="row">
+                    <span class="label">Email Address:</span>
+                    <span class="value">' . htmlspecialchars($enrollment->email) . '</span>
+                </div>
+                <div class="row">
+                    <span class="label">Payment Method:</span>
+                    <span class="value">' . htmlspecialchars($payment->paymentMethod->name ?? 'Unknown Method') . '</span>
+                </div>
+                <div class="row">
+                    <span class="label">Reference Number:</span>
+                    <span class="value">' . htmlspecialchars($payment->reference_number) . '</span>
+                </div>
+                
+                <div class="amount">
+                    <div class="currency">' . $payment->currency . ' ' . number_format($payment->calculated_amount, 2) . '</div>
+                    <div>Total Amount Paid</div>
+                </div>
+                
+                <div class="row">
+                    <span class="label">Payment Type:</span>
+                    <span class="value">' . ($payment->payment_type === 'subject_increase' ? 'Subject Addition' : 'Access Payment') . '</span>
+                </div>
+                <div class="row">
+                    <span class="label">Access Duration:</span>
+                    <span class="value">' . $payment->access_duration_days . ' days</span>
+                </div>
+                <div class="row">
+                    <span class="label">Payment Date:</span>
+                    <span class="value">' . $payment->created_at->format('M j, Y \a\t g:i A') . '</span>
+                </div>
+                <div class="row">
+                    <span class="label">Verified Date:</span>
+                    <span class="value">' . $payment->verified_at->format('M j, Y \a\t g:i A') . '</span>
+                </div>
+                <div class="row">
+                    <span class="label">Payment Status:</span>
+                    <span class="value"><span class="status">✓ Verified</span></span>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p><strong>This is an official receipt for payment verification.</strong></p>
+                <p>Generated on ' . now()->format('M j, Y \a\t g:i A') . '</p>
+                <p>StudySeco Learning Platform | Email: support@studyseco.com</p>
+            </div>
+            
+            <div class="no-print" style="text-align: center; margin-top: 30px;">
+                <button class="print-btn" onclick="window.print()">🖨️ Print Receipt</button>
+                <button class="print-btn" onclick="downloadAsPDF()" style="background: #28a745; margin-left: 10px;">📄 Save as PDF</button>
+                <button class="print-btn" onclick="window.close()" style="background: #6c757d; margin-left: 10px;">✕ Close</button>
+            </div>
+            
+            <script>
+                // Print functionality
+                function downloadAsPDF() {
+                    // For modern browsers with print-to-PDF support
+                    window.print();
+                }
+                
+                // Auto-focus and provide guidance
+                window.onload = function() {
+                    console.log(\"Receipt loaded successfully\");
+                    // You can print immediately by uncommenting the next line
+                    // window.print();
+                }
+                
+                // Handle print dialog
+                window.addEventListener(\"beforeprint\", function() {
+                    document.title = \"StudySeco Receipt #' . $payment->id . '\";
+                });
+            </script>
+        </body>
+        </html>';
     }
 
     private function generateReceiptHtml($payment)
@@ -796,6 +1027,48 @@ class PaymentController extends Controller
         $enrollment->update([
             'country' => $country,
             'region' => $region
+        ]);
+    }
+
+    /**
+     * View payment proof screenshot (admin only)
+     */
+    public function viewPaymentProof(EnrollmentPayment $payment)
+    {
+        // Ensure only admin can access
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Unauthorized access');
+        }
+
+        // Check if payment proof exists
+        if (!$payment->payment_proof_path) {
+            abort(404, 'Payment proof not found');
+        }
+
+        // Get the full path to the file
+        $filePath = storage_path('app/public/' . $payment->payment_proof_path);
+        
+        // Check if file exists
+        if (!file_exists($filePath)) {
+            abort(404, 'Payment proof file not found');
+        }
+
+        // Determine content type based on file extension
+        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+        $contentType = match(strtolower($extension)) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            default => 'image/jpeg'
+        };
+
+        // Return the file with appropriate headers
+        return response()->file($filePath, [
+            'Content-Type' => $contentType,
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
         ]);
     }
 }

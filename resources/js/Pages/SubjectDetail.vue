@@ -213,7 +213,7 @@ onMounted(() => {
                             <!-- Progress simulation -->
                             <div class="space-y-4 mb-6">
                                 <div class="flex items-center justify-between text-sm">
-                                    <span class="text-gray-600">Course Progress</span>
+                                    <span class="text-gray-600">Subject Progress</span>
                                     <span class="text-emerald-600 font-semibold">{{ subject.completion_rate }}% Complete</span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-3">

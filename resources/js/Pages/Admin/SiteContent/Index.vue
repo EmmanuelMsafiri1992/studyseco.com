@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     contents: Array,
@@ -141,8 +141,9 @@ const achievementIcons = ['🎓', '🏆', '⭐', '💼', '🌟', '🎯', '🚀',
 </script>
 
 <template>
-    <AuthenticatedLayout title="Site Content Management">
-        <template #subtitle>Manage website content and student stories</template>
+    <DashboardLayout 
+        title="Site Content Management" 
+        subtitle="Manage website content and student success stories">
         
         <!-- Website Content Section -->
         <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 mb-8">
@@ -416,5 +417,5 @@ const achievementIcons = ['🎓', '🏆', '⭐', '💼', '🌟', '🎯', '🚀',
                 </form>
             </div>
         </div>
-    </AuthenticatedLayout>
+    </DashboardLayout>
 </template>

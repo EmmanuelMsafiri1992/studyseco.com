@@ -438,7 +438,7 @@ const submitCountryUpdate = () => {
                                         </svg>
                                     </div>
                                     <h4 class="text-lg font-medium text-gray-900 mb-2">No Active Enrollment</h4>
-                                    <p class="text-gray-600 mb-4">You haven't enrolled in any courses yet.</p>
+                                    <p class="text-gray-600 mb-4">You haven't enrolled in any subjects yet.</p>
                                     <a 
                                         href="/student/enrollment" 
                                         class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

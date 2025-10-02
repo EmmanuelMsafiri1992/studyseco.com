@@ -17,6 +17,7 @@ public function run()
         UserSeeder::class,
         RolePermissionSeeder::class,
         MalawiSubjectsSeederV2::class,
+        TopicLessonSeeder::class,
         PaymentMethodSeeder::class,
         PaymentConfigurationSeeder::class,
         SiteContentSeeder::class,

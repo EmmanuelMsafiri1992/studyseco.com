@@ -196,6 +196,26 @@ const navigateToAccessManagement = () => {
 const navigateToAccountSettings = () => {
     window.location.href = '/account-settings';
 };
+
+// Teacher navigation methods
+const navigateToAssignedStudents = () => {
+    window.location.href = '/teacher/students';
+};
+
+const navigateToActiveStudents = () => {
+    // Navigate to students page with active filter
+    window.location.href = '/teacher/students?filter=active';
+};
+
+const navigateToTeachingSubjects = () => {
+    // Navigate to materials page to see subjects being taught
+    window.location.href = '/teacher/materials';
+};
+
+const navigateToExpiredStudents = () => {
+    // Navigate to students page with expired filter
+    window.location.href = '/teacher/students?filter=expired';
+};
 </script>
 
 <template>
@@ -238,7 +258,7 @@ const navigateToAccountSettings = () => {
                                 <span class="text-slate-500 text-xs ml-2">vs last month</span>
                             </div>
                         </div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
+                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -276,6 +296,93 @@ const navigateToAccountSettings = () => {
                             </div>
                         </div>
                         <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Teacher Stats -->
+            <template v-else-if="user.role === 'teacher'">
+                <!-- Total Students Assigned -->
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToAssignedStudents"
+                >
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Assigned Students</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-indigo-600 transition-colors">{{ stats.total_assigned || 0 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-indigo-600 text-sm font-semibold">👨‍🎓 Total assigned</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Students -->
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToActiveStudents"
+                >
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Active Students</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-emerald-600 transition-colors">{{ stats.active_students || 0 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-emerald-600 text-sm font-semibold">✅ Currently active</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subjects Taught -->
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToTeachingSubjects"
+                >
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Subjects Teaching</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-blue-600 transition-colors">{{ stats.subjects_covered || 0 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-blue-600 text-sm font-semibold">📚 Subjects covered</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Needing Extension -->
+                <div 
+                    class="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-slate-200/50 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    @click="navigateToExpiredStudents"
+                >
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm font-medium">Students Needing Extension</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-2 group-hover:text-red-600 transition-colors">{{ stats.expired_students || 0 }}</p>
+                            <div class="flex items-center mt-2">
+                                <span class="text-red-600 text-sm font-semibold">⏰ Expired access</span>
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -322,7 +429,7 @@ const navigateToAccountSettings = () => {
                                 <span class="text-emerald-600 text-sm font-semibold">{{ stats.total_subjects ? 'Active' : 'None' }}</span>
                             </div>
                         </div>
-                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform group-hover:scale-105 transition-transform">
                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                             </svg>
