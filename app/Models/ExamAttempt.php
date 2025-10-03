@@ -22,6 +22,8 @@ class ExamAttempt extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'score' => 'integer',
+        'percentage' => 'float',
         'answers' => 'array',
         'weak_areas' => 'array',
     ];

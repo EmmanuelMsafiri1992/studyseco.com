@@ -20,14 +20,15 @@ const formatDate = (date) => {
 };
 
 const getScoreColor = () => {
-    if (props.attempt.percentage >= 90) return 'text-green-600';
-    if (props.attempt.percentage >= 75) return 'text-blue-600';
-    if (props.attempt.percentage >= 60) return 'text-yellow-600';
+    const percentage = Number(props.attempt.percentage) || 0;
+    if (percentage >= 90) return 'text-green-600';
+    if (percentage >= 75) return 'text-blue-600';
+    if (percentage >= 60) return 'text-yellow-600';
     return 'text-red-600';
 };
 
 const getPerformanceMessage = () => {
-    const percentage = props.attempt.percentage;
+    const percentage = Number(props.attempt.percentage) || 0;
     if (percentage >= 90) return 'Outstanding Performance!';
     if (percentage >= 75) return 'Great Job!';
     if (percentage >= 60) return 'Good Effort!';
@@ -62,11 +63,11 @@ const getPerformanceMessage = () => {
                 <div class="text-center mb-8">
                     <p :class="['text-8xl font-bold mb-2', getScoreColor()]">{{ attempt.score }}</p>
                     <p class="text-2xl text-slate-600 mb-2">out of {{ exam.total_marks }} marks</p>
-                    <p class="text-5xl font-bold text-slate-900 mb-4">{{ attempt.percentage.toFixed(1) }}%</p>
+                    <p class="text-5xl font-bold text-slate-900 mb-4">{{ Number(attempt.percentage || 0).toFixed(1) }}%</p>
 
                     <div class="w-full max-w-2xl mx-auto bg-slate-200 rounded-full h-4 mb-6">
                         <div :class="['h-4 rounded-full transition-all', isPassing ? 'bg-green-600' : 'bg-red-600']"
-                             :style="`width: ${attempt.percentage}%`"></div>
+                             :style="`width: ${Number(attempt.percentage || 0)}%`"></div>
                     </div>
 
                     <!-- Pass/Fail Badge -->
