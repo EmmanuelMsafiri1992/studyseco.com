@@ -570,19 +570,19 @@ onUnmounted(() => {
         'fixed top-0 w-full z-50 transition-all duration-500',
         isNavbarScrolled ? 'glass shadow-medium' : 'bg-transparent'
     ]">
-        <div class="container-custom">
-            <div class="flex items-center justify-between h-20">
+        <div class="container-custom px-4">
+            <div class="flex items-center justify-between h-16 sm:h-20">
                 <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-600 to-accent-600 flex items-center justify-center shadow-soft">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary-600 to-accent-600 flex items-center justify-center shadow-soft">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white sm:w-6 sm:h-6">
                             <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
                             <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                         </svg>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-2xl font-bold text-secondary-900">StudySeco</span>
-                        <span class="text-xs text-secondary-500 font-medium -mt-1">International Education</span>
+                        <span class="text-lg sm:text-2xl font-bold text-secondary-900">StudySeco</span>
+                        <span class="text-[10px] sm:text-xs text-secondary-500 font-medium -mt-0.5 sm:-mt-1 hidden sm:block">International Education</span>
                     </div>
                 </div>
 
@@ -596,21 +596,21 @@ onUnmounted(() => {
                 </div>
 
                 <!-- CTA Buttons -->
-                <div class="flex items-center space-x-4" v-if="canLogin">
+                <div class="flex items-center gap-2 sm:gap-4" v-if="canLogin">
                     <template v-if="$page.props.auth.user">
-                        <Link :href="route('dashboard')" class="btn-secondary">
+                        <Link :href="route('dashboard')" class="btn-secondary text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2 hidden sm:inline-flex">
                             Dashboard
                         </Link>
-                        <button @click="toggleEnrollmentModal" class="btn-primary">
-                            Extend/Enroll
+                        <button @click="toggleEnrollmentModal" class="btn-primary text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2">
+                            Enroll
                         </button>
                     </template>
                     <template v-else>
-                        <Link :href="route('login')" class="btn-secondary">
+                        <Link :href="route('login')" class="btn-secondary text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2">
                             Sign In
                         </Link>
-                        <button @click="toggleEnrollmentModal" class="btn-primary">
-                            Enroll Now
+                        <button @click="toggleEnrollmentModal" class="btn-primary text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2 whitespace-nowrap">
+                            Enroll
                         </button>
                     </template>
                 </div>
@@ -619,7 +619,7 @@ onUnmounted(() => {
     </nav>
 
     <!-- Hero Section -->
-    <section id="home" class="hero-gradient hero-pattern min-h-screen flex items-center pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+    <section id="home" class="hero-gradient hero-pattern min-h-screen flex items-center pt-20 sm:pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div class="container-custom">
             <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                 <!-- Hero Content -->
