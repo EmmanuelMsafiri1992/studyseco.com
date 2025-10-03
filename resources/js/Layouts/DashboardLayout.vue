@@ -178,8 +178,53 @@
         </div>
 
         
+        <!-- Assignments - Students only -->
+        <Link v-if="$page.props.auth?.user?.role === 'student'" :href="route('student.assignments.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                    $page.component?.includes('Student/Assignments') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span class="font-medium">Assignments</span>
+        </Link>
+
+        <!-- Quizzes - Students only -->
+        <Link v-if="$page.props.auth?.user?.role === 'student'" :href="route('student.quizzes.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                    $page.component?.includes('Student/Quizzes') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+          </svg>
+          <span class="font-medium">Quizzes</span>
+        </Link>
+
+        <!-- Mock Exams - Students only -->
+        <Link v-if="$page.props.auth?.user?.role === 'student'" :href="route('student.mock-exams.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                    $page.component?.includes('Student/MockExams') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+          <span class="font-medium">Mock Exams</span>
+        </Link>
+
+        <!-- Certificates - Students only -->
+        <Link v-if="$page.props.auth?.user?.role === 'student'" :href="route('student.certificates.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                    $page.component?.includes('Student/Certificates') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+          </svg>
+          <span class="font-medium">Certificates</span>
+        </Link>
+
+        <!-- Games - Students only -->
+        <Link v-if="$page.props.auth?.user?.role === 'student'" :href="route('student.games.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                    $page.component?.includes('Student/Games') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+          <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="font-medium">Games</span>
+        </Link>
+
         <!-- School Selection - Students only -->
-        <Link v-if="$page.props.auth?.user?.role === 'student'" href="/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+        <Link v-if="$page.props.auth?.user?.role === 'student'" href="/school-selections" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
                                     $page.component?.includes('SchoolSelection') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M9 7l3-3 3 3M4 10h16v11H4V10z"></path>
@@ -188,7 +233,7 @@
         </Link>
 
         <!-- Course Extension - Students only -->
-        <Link v-if="$page.props.auth?.user?.role === 'student'" href="/student/extension" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+        <Link v-if="$page.props.auth?.user?.role === 'student'" href="/student/extension" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
                                     $page.component?.includes('Extension') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -197,7 +242,7 @@
         </Link>
 
         <!-- Payments for Students - Limited access to own payments -->
-        <Link v-if="$page.props.auth?.user?.role === 'student'" href="/payments/create" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+        <Link v-if="$page.props.auth?.user?.role === 'student'" href="/payments/create" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
                                     $page.component?.includes('Payment') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
           <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
@@ -227,12 +272,39 @@
           </Link>
           
           <!-- Teaching Materials - Teachers only -->
-          <Link :href="route('teacher.materials')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800', 
+          <Link :href="route('teacher.materials')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
                                           $page.component?.includes('TeacherMaterial') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
             <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
             <span class="font-medium">Materials</span>
+          </Link>
+
+          <!-- Assignments - Teachers only -->
+          <Link :href="route('teacher.assignments.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                          $page.component?.includes('Teacher/Assignments') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span class="font-medium">Assignments</span>
+          </Link>
+
+          <!-- Quizzes - Teachers only -->
+          <Link :href="route('teacher.quizzes.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                          $page.component?.includes('Teacher/Quizzes') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            <span class="font-medium">Quizzes</span>
+          </Link>
+
+          <!-- Certificates - Teachers only -->
+          <Link :href="route('teacher.certificates.index')" :class="['flex items-center px-4 py-3 rounded-xl transition-all duration-200 hover:bg-slate-50 hover:text-slate-800',
+                                          $page.component?.includes('Teacher/Certificates') ? 'text-slate-700 bg-indigo-50' : 'text-slate-600']">
+            <svg class="h-5 w-5 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+            </svg>
+            <span class="font-medium">Certificates</span>
           </Link>
         </div>
 
@@ -318,9 +390,17 @@
                                                            $page.component?.includes('PaymentMethod') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
                 <span>💳 Payment Methods</span>
               </Link>
-              <Link href="/payments" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50', 
+              <Link href="/payments" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50',
                                              $page.component?.includes('Payment') && !$page.component?.includes('PaymentMethod') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
                 <span>💰 Payments Overview</span>
+              </Link>
+              <Link :href="route('admin.mock-exams.index')" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50',
+                                                                     $page.component?.includes('MockExam') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>📝 Mock Exams</span>
+              </Link>
+              <Link :href="route('admin.games.index')" :class="['flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 hover:bg-indigo-50',
+                                                                     $page.component?.includes('Admin/Games') ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:text-indigo-700']">
+                <span>🎮 Games</span>
               </Link>
             </div>
           </div>
@@ -404,7 +484,7 @@
 
           <div class="relative group">
             <div class="flex items-center space-x-3 pl-4 border-l border-slate-200 cursor-pointer">
-              <img :src="$page.props.auth?.user?.profile_photo_url ? `/storage/${$page.props.auth.user.profile_photo_url}` : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'" 
+              <img :src="$page.props.auth?.user?.profile_photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&facepad=2&bg=white'"
                    :alt="$page.props.auth?.user?.name" class="h-12 w-12 rounded-2xl ring-2 ring-white shadow-md">
               <div class="text-sm">
                 <p class="font-semibold text-slate-800">{{ $page.props.auth?.user?.name }}</p>

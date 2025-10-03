@@ -35,6 +35,7 @@ class SystemSettingsController extends Controller
 
         $validated = $request->validate([
             'settings' => 'required',
+            'logo' => 'nullable|file|mimes:png,jpg,jpeg,svg|max:2048',
             'favicon' => 'nullable|file|mimes:ico,png,jpg,jpeg|max:2048',
         ]);
 
@@ -42,6 +43,12 @@ class SystemSettingsController extends Controller
         $settings = $validated['settings'];
         if (is_string($settings)) {
             $settings = json_decode($settings, true);
+        }
+
+        // Handle logo upload
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('logos', 'public');
+            SystemSetting::set('logo_url', '/storage/' . $logoPath);
         }
 
         // Handle favicon upload

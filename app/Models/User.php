@@ -374,4 +374,22 @@ class User extends Authenticatable
             ->with('secondarySchool')
             ->first();
     }
+
+    /**
+     * Get the profile photo URL accessor
+     */
+    public function getProfilePhotoUrlAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        // If it's already a full URL, return it
+        if (str_starts_with($value, 'http')) {
+            return $value;
+        }
+
+        // Return the storage URL
+        return asset('storage/' . $value);
+    }
 }

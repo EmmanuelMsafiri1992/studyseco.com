@@ -619,12 +619,12 @@ onUnmounted(() => {
     </nav>
 
     <!-- Hero Section -->
-    <section id="home" class="hero-gradient hero-pattern min-h-screen flex items-center section-padding">
+    <section id="home" class="hero-gradient hero-pattern min-h-screen flex items-center pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div class="container-custom">
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
+            <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                 <!-- Hero Content -->
                 <div class="fade-in-up animate">
-                    <div class="inline-flex items-center px-4 py-2 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-sm font-medium mb-8">
+                    <div class="inline-flex items-center px-3 py-2 sm:px-4 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-xs sm:text-sm font-medium mb-6 sm:mb-8">
                         <span class="relative flex h-2 w-2 mr-2">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
@@ -632,24 +632,24 @@ onUnmounted(() => {
                         Now accepting international students
                     </div>
                     
-                    <h1 class="heading-xl text-secondary-900 mb-6 text-balance">
-                        Complete Your 
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-secondary-900 mb-6 leading-tight">
+                        Complete Your
                         <span class="text-gradient">Malawi Secondary</span>
                         Education Online
                     </h1>
-                    
-                    <p class="text-xl text-secondary-600 mb-8 leading-relaxed">
+
+                    <p class="text-base sm:text-lg md:text-xl text-secondary-600 mb-8 leading-relaxed">
                         Join {{ studentCount }}+ students worldwide studying the official Malawi curriculum with certified teachers, flexible schedules, and international accessibility.
                     </p>
                     
                     <div class="flex flex-col sm:flex-row gap-4 mb-8">
-                        <button @click="toggleEnrollmentModal" class="btn-primary btn-lg text-base sm:text-lg py-4 px-6">
+                        <button @click="toggleEnrollmentModal" class="btn-primary text-base py-3 px-5 sm:py-4 sm:px-6 w-full sm:w-auto">
                             Start Learning Today
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
                                 <path d="M5 12h14m-7-7 7 7-7 7"/>
                             </svg>
                         </button>
-                        <button @click="showLibraryModal = true" class="btn-secondary btn-lg text-base sm:text-lg py-4 px-6">
+                        <button @click="showLibraryModal = true" class="btn-secondary text-base py-3 px-5 sm:py-4 sm:px-6 w-full sm:w-auto">
                             Explore Resources
                         </button>
                     </div>

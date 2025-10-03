@@ -123,7 +123,8 @@
       "Bash(grep:*)",
       "Bash(del \"C:\\laragon\\www\\studyseco.com\\resources\\js\\Pages\\Students\\Profile.vue\")",
       "Bash(del test_content.php)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(composer:*)"
     ],
     "deny": [],
     "ask": []

@@ -462,7 +462,43 @@ Route::middleware('auth')->group(function () {
         // Student Extension Routes
         Route::get('/extension', [\App\Http\Controllers\ExtensionController::class, 'index'])->name('extension.index');
         Route::post('/extension', [\App\Http\Controllers\ExtensionController::class, 'store'])->name('extension.store');
-        
+
+        // Student Assignment Routes
+        Route::get('/assignments', [\App\Http\Controllers\Student\AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{assignment}', [\App\Http\Controllers\Student\AssignmentController::class, 'show'])->name('assignments.show');
+        Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\Student\AssignmentController::class, 'submit'])->name('assignments.submit');
+        Route::get('/assignments/{assignment}/submission', [\App\Http\Controllers\Student\AssignmentController::class, 'viewSubmission'])->name('assignments.submission');
+
+        // Student Quiz Routes
+        Route::get('/quizzes', [\App\Http\Controllers\Student\QuizController::class, 'index'])->name('quizzes.index');
+        Route::get('/quizzes/{quiz}', [\App\Http\Controllers\Student\QuizController::class, 'show'])->name('quizzes.show');
+        Route::post('/quizzes/{quiz}/start', [\App\Http\Controllers\Student\QuizController::class, 'start'])->name('quizzes.start');
+        Route::get('/quiz-attempts/{attempt}/take', [\App\Http\Controllers\Student\QuizController::class, 'take'])->name('quizzes.take');
+        Route::post('/quiz-attempts/{attempt}/submit', [\App\Http\Controllers\Student\QuizController::class, 'submit'])->name('quizzes.submit');
+        Route::get('/quiz-attempts/{attempt}/result', [\App\Http\Controllers\Student\QuizController::class, 'result'])->name('quizzes.result');
+
+        // Student Certificate Routes
+        Route::get('/certificates', [\App\Http\Controllers\Student\CertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/certificates/{certificate}', [\App\Http\Controllers\Student\CertificateController::class, 'show'])->name('certificates.show');
+        Route::get('/certificates/{certificate}/download', [\App\Http\Controllers\Student\CertificateController::class, 'download'])->name('certificates.download');
+
+        // Student Mock Exams Routes
+        Route::get('/mock-exams', [\App\Http\Controllers\Student\MockExamController::class, 'index'])->name('mock-exams.index');
+        Route::get('/mock-exams/{mockExam}', [\App\Http\Controllers\Student\MockExamController::class, 'show'])->name('mock-exams.show');
+        Route::post('/mock-exams/{mockExam}/start', [\App\Http\Controllers\Student\MockExamController::class, 'start'])->name('mock-exams.start');
+        Route::get('/exam-attempts/{attempt}/take', [\App\Http\Controllers\Student\MockExamController::class, 'take'])->name('mock-exams.take');
+        Route::post('/exam-attempts/{attempt}/submit', [\App\Http\Controllers\Student\MockExamController::class, 'submit'])->name('mock-exams.submit');
+        Route::get('/exam-attempts/{attempt}/result', [\App\Http\Controllers\Student\MockExamController::class, 'result'])->name('mock-exams.result');
+
+        // Student Games Routes
+        Route::get('/games', [\App\Http\Controllers\Student\GameController::class, 'index'])->name('games.index');
+        Route::get('/games/{game}', [\App\Http\Controllers\Student\GameController::class, 'show'])->name('games.show');
+        Route::post('/games/{game}/start', [\App\Http\Controllers\Student\GameController::class, 'start'])->name('games.start');
+        Route::get('/game-sessions/{session}/play', [\App\Http\Controllers\Student\GameController::class, 'play'])->name('games.play');
+        Route::post('/game-sessions/{session}/submit', [\App\Http\Controllers\Student\GameController::class, 'submit'])->name('games.submit');
+        Route::get('/game-sessions/{session}/result', [\App\Http\Controllers\Student\GameController::class, 'result'])->name('games.result');
+        Route::get('/games/{game}/leaderboard', [\App\Http\Controllers\Student\GameController::class, 'leaderboard'])->name('games.leaderboard');
+
         // Student Access Expired Page
         Route::get('/access-expired', function () {
             $user = auth()->user();
@@ -504,7 +540,9 @@ Route::middleware('auth')->group(function () {
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile', [ProfileController::class, 'update']);
+    Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Admin-Only School Management Routes
@@ -1215,6 +1253,63 @@ Route::middleware('auth')->group(function () {
         Route::get('/materials/{material}/download', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'download'])->name('materials.download');
         Route::put('/materials/{material}', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'update'])->name('materials.update');
         Route::delete('/materials/{material}', [\App\Http\Controllers\Teacher\TeachingMaterialController::class, 'destroy'])->name('materials.destroy');
+
+        // Teacher Assignment Routes
+        Route::get('/assignments', [\App\Http\Controllers\Teacher\AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/create', [\App\Http\Controllers\Teacher\AssignmentController::class, 'create'])->name('assignments.create');
+        Route::post('/assignments', [\App\Http\Controllers\Teacher\AssignmentController::class, 'store'])->name('assignments.store');
+        Route::get('/assignments/{assignment}', [\App\Http\Controllers\Teacher\AssignmentController::class, 'show'])->name('assignments.show');
+        Route::get('/assignments/{assignment}/edit', [\App\Http\Controllers\Teacher\AssignmentController::class, 'edit'])->name('assignments.edit');
+        Route::put('/assignments/{assignment}', [\App\Http\Controllers\Teacher\AssignmentController::class, 'update'])->name('assignments.update');
+        Route::delete('/assignments/{assignment}', [\App\Http\Controllers\Teacher\AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::get('/assignments/{assignment}/submissions', [\App\Http\Controllers\Teacher\AssignmentController::class, 'submissions'])->name('assignments.submissions');
+        Route::post('/submissions/{submission}/grade', [\App\Http\Controllers\Teacher\AssignmentController::class, 'gradeSubmission'])->name('submissions.grade');
+
+        // Teacher Quiz Routes
+        Route::get('/quizzes', [\App\Http\Controllers\Teacher\QuizController::class, 'index'])->name('quizzes.index');
+        Route::get('/quizzes/create', [\App\Http\Controllers\Teacher\QuizController::class, 'create'])->name('quizzes.create');
+        Route::post('/quizzes', [\App\Http\Controllers\Teacher\QuizController::class, 'store'])->name('quizzes.store');
+        Route::get('/quizzes/{quiz}', [\App\Http\Controllers\Teacher\QuizController::class, 'show'])->name('quizzes.show');
+        Route::get('/quizzes/{quiz}/edit', [\App\Http\Controllers\Teacher\QuizController::class, 'edit'])->name('quizzes.edit');
+        Route::put('/quizzes/{quiz}', [\App\Http\Controllers\Teacher\QuizController::class, 'update'])->name('quizzes.update');
+        Route::delete('/quizzes/{quiz}', [\App\Http\Controllers\Teacher\QuizController::class, 'destroy'])->name('quizzes.destroy');
+        Route::get('/quizzes/{quiz}/results', [\App\Http\Controllers\Teacher\QuizController::class, 'results'])->name('quizzes.results');
+        Route::post('/quizzes/{quiz}/questions', [\App\Http\Controllers\Teacher\QuizController::class, 'addQuestion'])->name('quizzes.questions.add');
+        Route::put('/quizzes/{quiz}/questions/{question}', [\App\Http\Controllers\Teacher\QuizController::class, 'updateQuestion'])->name('quizzes.questions.update');
+        Route::delete('/quizzes/{quiz}/questions/{question}', [\App\Http\Controllers\Teacher\QuizController::class, 'deleteQuestion'])->name('quizzes.questions.delete');
+
+        // Teacher Certificate Routes
+        Route::get('/certificates', [\App\Http\Controllers\Teacher\CertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/certificates/create', [\App\Http\Controllers\Teacher\CertificateController::class, 'create'])->name('certificates.create');
+        Route::post('/certificates', [\App\Http\Controllers\Teacher\CertificateController::class, 'store'])->name('certificates.store');
+        Route::get('/certificates/{certificate}', [\App\Http\Controllers\Teacher\CertificateController::class, 'show'])->name('certificates.show');
+        Route::delete('/certificates/{certificate}', [\App\Http\Controllers\Teacher\CertificateController::class, 'destroy'])->name('certificates.destroy');
+        Route::get('/certificates/{certificate}/download', [\App\Http\Controllers\Teacher\CertificateController::class, 'download'])->name('certificates.download');
+        Route::get('/subjects/{subject}/students', [\App\Http\Controllers\Teacher\CertificateController::class, 'getStudents'])->name('subjects.students');
+    });
+
+
+    // Admin Mock Exams Routes
+    Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/mock-exams', [\App\Http\Controllers\Admin\MockExamController::class, 'index'])->name('mock-exams.index');
+        Route::get('/mock-exams/create', [\App\Http\Controllers\Admin\MockExamController::class, 'create'])->name('mock-exams.create');
+        Route::post('/mock-exams', [\App\Http\Controllers\Admin\MockExamController::class, 'store'])->name('mock-exams.store');
+        Route::get('/mock-exams/{mockExam}/edit', [\App\Http\Controllers\Admin\MockExamController::class, 'edit'])->name('mock-exams.edit');
+        Route::put('/mock-exams/{mockExam}', [\App\Http\Controllers\Admin\MockExamController::class, 'update'])->name('mock-exams.update');
+        Route::delete('/mock-exams/{mockExam}', [\App\Http\Controllers\Admin\MockExamController::class, 'destroy'])->name('mock-exams.destroy');
+        Route::get('/mock-exams/{mockExam}/results', [\App\Http\Controllers\Admin\MockExamController::class, 'results'])->name('mock-exams.results');
+        Route::post('/mock-exams/{mockExam}/questions', [\App\Http\Controllers\Admin\MockExamController::class, 'addQuestion'])->name('mock-exams.questions.add');
+        Route::put('/mock-exams/{mockExam}/questions/{question}', [\App\Http\Controllers\Admin\MockExamController::class, 'updateQuestion'])->name('mock-exams.questions.update');
+        Route::delete('/mock-exams/{mockExam}/questions/{question}', [\App\Http\Controllers\Admin\MockExamController::class, 'deleteQuestion'])->name('mock-exams.questions.delete');
+
+        // Games Routes
+        Route::get('/games', [\App\Http\Controllers\Admin\GameController::class, 'index'])->name('games.index');
+        Route::get('/games/create', [\App\Http\Controllers\Admin\GameController::class, 'create'])->name('games.create');
+        Route::post('/games', [\App\Http\Controllers\Admin\GameController::class, 'store'])->name('games.store');
+        Route::get('/games/{game}/edit', [\App\Http\Controllers\Admin\GameController::class, 'edit'])->name('games.edit');
+        Route::put('/games/{game}', [\App\Http\Controllers\Admin\GameController::class, 'update'])->name('games.update');
+        Route::delete('/games/{game}', [\App\Http\Controllers\Admin\GameController::class, 'destroy'])->name('games.destroy');
+        Route::get('/games/{game}/leaderboard', [\App\Http\Controllers\Admin\GameController::class, 'leaderboard'])->name('games.leaderboard');
     });
 
 
